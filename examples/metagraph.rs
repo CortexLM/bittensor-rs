@@ -4,7 +4,7 @@ use sp_core::crypto::Ss58Codec;
 
 use bittensor_rs::chain::BittensorClient;
 use bittensor_rs::core::SS58_FORMAT;
-use bittensor_rs::queries::neurons_bulk;
+use bittensor_rs::queries::neurons;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
     let netuid: u16 = rng.gen_range(0..total);
     println!("netuid={}\n", netuid);
 
-    let neurons_list = neurons_bulk::neurons_bulk(&client, netuid, None).await?;
+    let neurons_list = neurons::neurons(&client, netuid, None).await?;
 
     // Display first 10 neurons with full information
     for (i, neuron) in neurons_list.iter().take(10).enumerate() {
@@ -51,6 +51,8 @@ async fn main() -> Result<()> {
         println!("Coldkey:          {}", cold_ss58);
         println!("Active:           {}", neuron.active);
         println!("Stake:            {} RAO", neuron.stake);
+        println!("Total Stake:      {} RAO", neuron.total_stake);
+        println!("Root Stake:       {} RAO", neuron.root_stake);
         println!("Rank:             {:.6}", neuron.rank);
         println!("Trust:            {:.6}", neuron.trust);
         println!("Consensus:        {:.6}", neuron.consensus);

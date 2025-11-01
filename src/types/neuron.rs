@@ -17,8 +17,10 @@ pub struct NeuronInfo {
     pub stake: u128,
     /// Dictionary mapping coldkey to amount staked to this neuron
     pub stake_dict: std::collections::HashMap<AccountId32, u128>,
-    /// Total stake
+    /// Total stake on this subnet (alpha)
     pub total_stake: u128,
+    /// Total stake on root subnet (TAO) - used for dividend calculations
+    pub root_stake: u128,
     /// Neuron's rank score (normalized)
     pub rank: f64,
     /// Neuron's trust score (normalized)
@@ -65,6 +67,7 @@ impl NeuronInfo {
         stake: u128,
         stake_dict: std::collections::HashMap<AccountId32, u128>,
         total_stake: u128,
+        root_stake: u128,
         rank: f64,
         trust: f64,
         consensus: f64,
@@ -90,6 +93,7 @@ impl NeuronInfo {
             stake,
             stake_dict,
             total_stake,
+            root_stake,
             rank,
             trust,
             consensus,
