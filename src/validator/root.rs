@@ -1,0 +1,36 @@
+use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
+use anyhow::Result;
+
+const ROOT_NETUID: u16 = 0;
+
+/// Register on root network (netuid 0)
+pub async fn root_register(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    // Root register is just register on netuid 0
+    crate::validator::registration::register(client, signer, ROOT_NETUID, wait_for).await
+}
+
+/// Set root weights (weights on root network)
+pub async fn root_set_weights(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    uids: &[u64],
+    weights: &[f32],
+    version_key: Option<u64>,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    crate::validator::weights::set_weights(
+        client,
+        signer,
+        ROOT_NETUID,
+        uids,
+        weights,
+        version_key,
+        wait_for,
+    )
+    .await
+}
+
