@@ -1,10 +1,24 @@
-# Bittensor Rust SDK
+<div align="center">
 
-A high-performance Rust SDK for interacting with the Bittensor network, providing comprehensive blockchain queries and network operations.
+<pre>
 
-## Overview
 
-The Bittensor Rust SDK offers a complete interface to the Bittensor blockchain, enabling developers to query network state, retrieve neuron information, manage wallets, and interact with various network components. Built on top of Substrate's subxt library, it provides type-safe, asynchronous access to all Bittensor functionality.
+██████╗░██╗████████╗████████╗███████╗███╗░░██╗░██████╗░█████╗░██████╗░  ░██████╗██████╗░██╗░░██╗
+██╔══██╗██║╚══██╔══╝╚══██╔══╝██╔════╝████╗░██║██╔════╝██╔══██╗██╔══██╗  ██╔════╝██╔══██╗██║░██╔╝
+██████╦╝██║░░░██║░░░░░░██║░░░█████╗░░██╔██╗██║╚█████╗░██║░░██║██████╔╝  ╚█████╗░██║░░██║█████═╝░
+██╔══██╗██║░░░██║░░░░░░██║░░░██╔══╝░░██║╚████║░╚═══██╗██║░░██║██╔══██╗  ░╚═══██╗██║░░██║██╔═██╗░
+██████╦╝██║░░░██║░░░░░░██║░░░███████╗██║░╚███║██████╔╝╚█████╔╝██║░░██║  ██████╔╝██████╔╝██║░╚██╗
+╚═════╝░╚═╝░░░╚═╝░░░░░░╚═╝░░░╚══════╝╚═╝░░╚══╝╚═════╝░░╚════╝░╚═╝░░╚═╝  ╚═════╝░╚═════╝░╚═╝░░╚═╝
+</pre>
+
+**Bittensor SDK for Rust.**
+
+[![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE)
+
+![Alt](https://repobeats.axiom.co/api/embed/233c07ffcbc977111ef312ccfaeeeee736e29a5b.svg "Repobeats analytics image")
+
+</div>
+
 
 ## Installation
 
