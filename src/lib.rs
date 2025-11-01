@@ -21,7 +21,6 @@ pub use queries::{
     metagraph_queries::*,
     // All query functions except liquidity module
     neurons::*,
-    neurons_storage::*,
     stakes::*,
     subnets::*,
 };

@@ -6,8 +6,6 @@ pub mod identity;
 pub mod liquidity;
 pub mod metagraph_queries;
 pub mod neurons;
-pub mod neurons_bulk;
-pub mod neurons_storage;
 pub mod stakes;
 pub mod subnets;
 pub mod voting;

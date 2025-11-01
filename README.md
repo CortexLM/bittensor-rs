@@ -13,7 +13,7 @@
 
 **Bittensor SDK for Rust.**
 
-[![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](https://github.com/CortexLM/bittensor-rs/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](https://github.com/CortexLM/bittensor-rs/releases) ![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
 
 ![Alt](https://repobeats.axiom.co/api/embed/233c07ffcbc977111ef312ccfaeeeee736e29a5b.svg "Repobeats analytics image")
 

@@ -31,7 +31,7 @@ pub async fn sync_metagraph(client: &BittensorClient, netuid: u16) -> Result<Met
     Ok(metagraph)
 }
 
-// Helper functions removed - now using neurons_storage module functions
+// Helper functions use implementations from neurons module
 
 /// Fetch axon information from storage
 #[allow(dead_code)]
@@ -41,8 +41,8 @@ async fn fetch_axon_info(
     entry: &str,
     keys: Vec<Value>,
 ) -> Option<AxonInfo> {
-    // Use the implementation from neurons_storage module
-    use crate::queries::neurons_storage::fetch_axon_info as fetch_axon_impl;
+    // Use the implementation from neurons module
+    use crate::queries::neurons::fetch_axon_info as fetch_axon_impl;
     fetch_axon_impl(client, module, entry, keys).await
 }
 
@@ -54,7 +54,7 @@ async fn fetch_prometheus_info(
     entry: &str,
     keys: Vec<Value>,
 ) -> Option<PrometheusInfo> {
-    // Use the implementation from neurons_storage module
-    use crate::queries::neurons_storage::fetch_prometheus_info as fetch_prometheus_impl;
+    // Use the implementation from neurons module
+    use crate::queries::neurons::fetch_prometheus_info as fetch_prometheus_impl;
     fetch_prometheus_impl(client, module, entry, keys).await
 }
