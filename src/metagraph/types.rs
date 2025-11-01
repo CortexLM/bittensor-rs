@@ -1,6 +1,6 @@
 use crate::types::{AxonInfo, NeuronInfo};
-use std::collections::HashMap;
 use sp_core::crypto::AccountId32;
+use std::collections::HashMap;
 
 /// Metagraph containing all neurons and state for a subnet
 #[derive(Debug, Clone)]
@@ -43,10 +43,7 @@ impl Metagraph {
 
     /// Get all active neurons
     pub fn active_neurons(&self) -> Vec<&NeuronInfo> {
-        self.neurons
-            .values()
-            .filter(|n| n.active)
-            .collect()
+        self.neurons.values().filter(|n| n.active).collect()
     }
 
     /// Get all validators (neurons with validator_permit)
@@ -59,9 +56,7 @@ impl Metagraph {
 
     /// Get neuron by hotkey
     pub fn get_neuron_by_hotkey(&self, hotkey: &AccountId32) -> Option<&NeuronInfo> {
-        self.neurons
-            .values()
-            .find(|n| &n.hotkey == hotkey)
+        self.neurons.values().find(|n| &n.hotkey == hotkey)
     }
 
     /// Get total stake in the subnet
@@ -69,4 +64,3 @@ impl Metagraph {
         self.neurons.values().map(|n| n.stake).sum()
     }
 }
-

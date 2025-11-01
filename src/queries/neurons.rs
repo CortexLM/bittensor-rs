@@ -1,10 +1,10 @@
 use crate::chain::BittensorClient;
 use crate::types::{NeuronInfo, NeuronInfoLite};
-use anyhow::{Result, Context};
+use crate::utils::value_decode::*;
+use anyhow::{Context, Result};
+use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
-use parity_scale_codec::Encode;
-use crate::utils::value_decode::*;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -17,7 +17,7 @@ pub async fn neuron(
 ) -> Result<Option<NeuronInfo>> {
     // Import neurons_storage for storage-based implementation
     use crate::queries::neurons_storage::query_neuron_from_storage;
-    
+
     // Prefer storage-based implementation (robust across runtimes)
     query_neuron_from_storage(client, netuid, uid, block).await
 }
@@ -30,13 +30,20 @@ pub async fn neurons(
 ) -> Result<Vec<NeuronInfo>> {
     // SubnetworkN for count
     let n_key = vec![Value::u128(netuid as u128)];
-    let n_value = client.storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key).await?
-        .ok_or_else(|| anyhow::anyhow!("Subnet {} not found (SubnetworkN storage entry missing)", netuid))?;
+    let n_value = client
+        .storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key)
+        .await?
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Subnet {} not found (SubnetworkN storage entry missing)",
+                netuid
+            )
+        })?;
     let n = decode_u64(&n_value).context("Failed to decode SubnetworkN")?;
 
     // Get all the vector storages for the subnet
     let netuid_key = vec![Value::u128(netuid as u128)];
-    
+
     // Fetch all vectors at once for efficiency
     let rank_vec = fetch_normalized_vec(client, "Rank", &netuid_key).await?;
     let trust_vec = fetch_normalized_vec(client, "Trust", &netuid_key).await?;
@@ -54,11 +61,23 @@ pub async fn neurons(
     for uid in 0..n {
         // Use the helper that fetches individual neuron data
         if let Some(neuron) = query_neuron_from_vectors(
-            client, netuid, uid,
-            &rank_vec, &trust_vec, &consensus_vec, &validator_trust_vec,
-            &incentive_vec, &dividends_vec, &emission_vec, &active_vec,
-            &last_update_vec, &validator_permit_vec, &pruning_score_vec,
-        ).await? {
+            client,
+            netuid,
+            uid,
+            &rank_vec,
+            &trust_vec,
+            &consensus_vec,
+            &validator_trust_vec,
+            &incentive_vec,
+            &dividends_vec,
+            &emission_vec,
+            &active_vec,
+            &last_update_vec,
+            &validator_permit_vec,
+            &pruning_score_vec,
+        )
+        .await?
+        {
             list.push(neuron);
         }
     }
@@ -96,13 +115,20 @@ pub async fn neurons_lite(
 ) -> Result<Vec<NeuronInfoLite>> {
     // Build from storage without weights/bonds
     let n_key = vec![Value::u128(netuid as u128)];
-    let n_value = client.storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key).await?
-        .ok_or_else(|| anyhow::anyhow!("Subnet {} not found (SubnetworkN storage entry missing)", netuid))?;
+    let n_value = client
+        .storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key)
+        .await?
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Subnet {} not found (SubnetworkN storage entry missing)",
+                netuid
+            )
+        })?;
     let n = decode_u64(&n_value).context("Failed to decode SubnetworkN")?;
 
     // Get all the vector storages for the subnet
     let netuid_key = vec![Value::u128(netuid as u128)];
-    
+
     // Fetch all vectors at once for efficiency
     let rank_vec = fetch_normalized_vec(client, "Rank", &netuid_key).await?;
     let trust_vec = fetch_normalized_vec(client, "Trust", &netuid_key).await?;
@@ -119,7 +145,7 @@ pub async fn neurons_lite(
     let mut list = Vec::new();
     for uid in 0..n {
         let idx = uid as usize;
-        
+
         // hotkey
         let uid_key = vec![Value::u128(netuid as u128), Value::u128(uid as u128)];
         let hotkey = match client
@@ -129,18 +155,26 @@ pub async fn neurons_lite(
             Some(v) => decode_account_id32(&v).ok(),
             None => None,
         };
-        if hotkey.is_none() { continue; }
+        if hotkey.is_none() {
+            continue;
+        }
         let hotkey = hotkey.unwrap();
 
         // owner (coldkey)
         let coldkey = match client
-            .storage_with_keys(SUBTENSOR_MODULE, "Owner", vec![Value::from_bytes(&hotkey.encode())])
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "Owner",
+                vec![Value::from_bytes(&hotkey.encode())],
+            )
             .await?
         {
             Some(v) => decode_account_id32(&v).ok(),
             None => None,
         };
-        if coldkey.is_none() { continue; }
+        if coldkey.is_none() {
+            continue;
+        }
         let coldkey = coldkey.unwrap();
 
         // Get values from vectors
@@ -159,14 +193,20 @@ pub async fn neurons_lite(
 
         // Stake: TotalHotkeyAlpha[(hotkey, netuid)]
         let total_stake = if let Some(ts_val) = client
-            .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", vec![
-                Value::from_bytes(&hotkey.encode()),
-                Value::u128(netuid as u128),
-            ])
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "TotalHotkeyAlpha",
+                vec![
+                    Value::from_bytes(&hotkey.encode()),
+                    Value::u128(netuid as u128),
+                ],
+            )
             .await?
         {
             decode_u128(&ts_val).unwrap_or(0)
-        } else { 0 };
+        } else {
+            0
+        };
 
         // Build Lite type by converting into NeuronInfoLite
         let lite = NeuronInfoLite {
@@ -211,10 +251,7 @@ async fn fetch_normalized_vec(
         .ok_or_else(|| anyhow::anyhow!("{} not found", storage_name))
 }
 
-async fn fetch_emission_vec(
-    client: &BittensorClient,
-    keys: &[Value],
-) -> Result<Vec<u128>> {
+async fn fetch_emission_vec(client: &BittensorClient, keys: &[Value]) -> Result<Vec<u128>> {
     client
         .storage_with_keys(SUBTENSOR_MODULE, "Emission", keys.to_vec())
         .await?
@@ -272,17 +309,16 @@ pub async fn uid_for_hotkey_on_subnet(
         Value::u128(netuid as u128),
         Value::from_bytes(&hotkey.encode()),
     ];
-    
+
     if let Some(uid_value) = client
         .storage_with_keys(SUBTENSOR_MODULE, "Uids", keys)
         .await?
     {
         // Decode u64 from Value
-        let uid = decode_u64(&uid_value)
-            .context("Failed to decode UID from storage")?;
+        let uid = decode_u64(&uid_value).context("Failed to decode UID from storage")?;
         return Ok(Some(uid));
     }
-    
+
     Ok(None)
 }
 
@@ -292,17 +328,17 @@ pub async fn is_hotkey_registered_any(
     hotkey: &AccountId32,
 ) -> Result<bool> {
     use crate::queries::subnets::all_subnets;
-    
+
     // Get all subnets
     let subnets = all_subnets(client).await?;
-    
+
     // Check each subnet
     for subnet in subnets {
         if is_hotkey_registered_on_subnet(client, subnet.netuid, hotkey).await? {
             return Ok(true);
         }
     }
-    
+
     Ok(false)
 }
 

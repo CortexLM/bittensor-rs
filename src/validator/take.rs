@@ -12,9 +12,15 @@ pub async fn increase_take(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![Value::u128(take as u128)];
-    
+
     client
-        .submit_extrinsic(SUBTENSOR_MODULE, "increase_delegate_take", args, signer, wait_for)
+        .submit_extrinsic(
+            SUBTENSOR_MODULE,
+            "increase_delegate_take",
+            args,
+            signer,
+            wait_for,
+        )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to increase take: {}", e))
 }
@@ -27,10 +33,15 @@ pub async fn decrease_take(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![Value::u128(take as u128)];
-    
+
     client
-        .submit_extrinsic(SUBTENSOR_MODULE, "decrease_delegate_take", args, signer, wait_for)
+        .submit_extrinsic(
+            SUBTENSOR_MODULE,
+            "decrease_delegate_take",
+            args,
+            signer,
+            wait_for,
+        )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to decrease take: {}", e))
 }
-

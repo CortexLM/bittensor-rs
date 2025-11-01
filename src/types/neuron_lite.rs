@@ -1,6 +1,6 @@
+use crate::types::{AxonInfo, PrometheusInfo};
 use serde::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
-use crate::types::{AxonInfo, PrometheusInfo};
 
 /// Lightweight neuron information without weights and bonds
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,4 +103,3 @@ impl NeuronInfoLite {
         }
     }
 }
-

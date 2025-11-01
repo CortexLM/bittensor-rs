@@ -1,4 +1,3 @@
-
 /// Convert raw units (RAO) to TAO
 /// 1 TAO = 1e9 RAO
 pub fn rao_to_tao(rao: u128) -> f64 {
@@ -76,4 +75,3 @@ impl std::fmt::Display for Balance {
         write!(f, "{:.9} TAO", self.as_tao())
     }
 }
-

@@ -1,6 +1,6 @@
-use parity_scale_codec::Encode;
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use anyhow::Result;
+use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
@@ -18,13 +18,7 @@ pub async fn register(
     let args = vec![Value::u128(netuid as u128)];
 
     let tx_hash = client
-        .submit_extrinsic(
-            SUBTENSOR_MODULE,
-            REGISTER_FUNCTION,
-            args,
-            signer,
-            wait_for,
-        )
+        .submit_extrinsic(SUBTENSOR_MODULE, REGISTER_FUNCTION, args, signer, wait_for)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to register: {}", e))?;
 
@@ -83,4 +77,3 @@ pub async fn is_registered(
         None => Ok(false),
     }
 }
-

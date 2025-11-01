@@ -14,7 +14,7 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u64>, Vec
 
     // Calculate sum
     let sum: f32 = weights.iter().sum();
-    
+
     // Normalize weights
     let normalized: Vec<f32> = if sum.abs() > f32::EPSILON {
         weights.iter().map(|w| w / sum).collect()
@@ -56,4 +56,3 @@ pub fn denormalize_weights(weight_vals: &[u64]) -> Vec<f32> {
         .map(|val| (*val as f64 / scale) as f32)
         .collect()
 }
-

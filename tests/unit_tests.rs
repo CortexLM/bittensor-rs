@@ -1,12 +1,12 @@
-use bittensor_rust::{
-    types::{AxonInfo, PrometheusInfo, NeuronInfo, SubnetInfo, DelegateInfo},
+use bittensor_rs::{
     delegate::DelegateInfoBase,
     metagraph::Metagraph,
+    types::{AxonInfo, DelegateInfo, NeuronInfo, PrometheusInfo, SubnetInfo},
 };
 use sp_core::crypto::AccountId32;
-use std::str::FromStr;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
+use std::str::FromStr;
 
 #[test]
 fn test_axon_info_creation() {
@@ -20,7 +20,7 @@ fn test_axon_info_creation() {
         placeholder1: 0,
         placeholder2: 0,
     };
-    
+
     assert_eq!(axon.version, 1);
     assert_eq!(axon.port, 8080);
     assert_eq!(axon.ip_type, 4); // IPv4
@@ -31,13 +31,13 @@ fn test_axon_info_creation() {
 #[test]
 fn test_prometheus_info_creation() {
     let prometheus = PrometheusInfo::from_chain_data(
-        1000,  // block
-        1,     // version
+        1000,                   // block
+        1,                      // version
         "10.0.0.1".to_string(), // ip
-        9090,  // port
-        4,     // ip_type (IPv4)
+        9090,                   // port
+        4,                      // ip_type (IPv4)
     );
-    
+
     assert_eq!(prometheus.version, 1);
     assert_eq!(prometheus.port, 9090);
     assert_eq!(prometheus.ip_type, 4);
@@ -46,9 +46,10 @@ fn test_prometheus_info_creation() {
 #[test]
 fn test_neuron_info_structure() {
     let mut stake_dict = HashMap::new();
-    let coldkey = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
+    let coldkey =
+        AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
     stake_dict.insert(coldkey, 1000000u128);
-    
+
     let neuron = NeuronInfo {
         hotkey: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
         coldkey: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
@@ -75,7 +76,7 @@ fn test_neuron_info_structure() {
         is_null: false,
         version: 100,
     };
-    
+
     assert_eq!(neuron.total_stake, 1000000);
     assert_eq!(neuron.version, 100);
     assert!(!neuron.is_null);
@@ -100,7 +101,7 @@ fn test_subnet_info_creation() {
         name: Some("Test Subnet".to_string()),
         description: Some("A test subnet".to_string()),
     };
-    
+
     assert_eq!(subnet.netuid, 1);
     assert_eq!(subnet.neuron_count, 256);
     assert_eq!(subnet.total_stake, 1000000);
@@ -112,13 +113,13 @@ fn test_subnet_info_creation() {
 fn test_delegate_info_creation() {
     let hotkey = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
     let owner = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
-    
+
     let delegate = DelegateInfo::new(
         hotkey.clone(),
         owner.clone(),
         0.18, // 18% take
     );
-    
+
     assert_eq!(delegate.base.take, 0.18);
     assert_eq!(delegate.base.hotkey_ss58, hotkey);
     assert_eq!(delegate.base.owner_ss58, owner);
@@ -129,7 +130,7 @@ fn test_delegate_info_creation() {
 fn test_account_id_from_string() {
     let account_str = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
     let account_id = AccountId32::from_str(account_str).unwrap();
-    
+
     // Vérifier que l'AccountId a été créé correctement
     let bytes: &[u8] = account_id.as_ref();
     assert_eq!(bytes.len(), 32); // AccountId32 doit avoir 32 bytes
@@ -140,10 +141,10 @@ fn test_hashmap_functionality() {
     let mut map = HashMap::new();
     let key1 = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
     let key2 = AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
-    
+
     map.insert(key1.clone(), 100u128);
     map.insert(key2.clone(), 200u128);
-    
+
     assert_eq!(map.get(&key1), Some(&100u128));
     assert_eq!(map.get(&key2), Some(&200u128));
     assert_eq!(map.len(), 2);
@@ -152,7 +153,7 @@ fn test_hashmap_functionality() {
 #[test]
 fn test_metagraph_neuron_access() {
     let mut metagraph = Metagraph::new(1);
-    
+
     let neuron = NeuronInfo {
         hotkey: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
         coldkey: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
@@ -179,10 +180,10 @@ fn test_metagraph_neuron_access() {
         is_null: false,
         version: 100,
     };
-    
+
     metagraph.neurons.insert(0, neuron);
     metagraph.n = 1;
-    
+
     assert_eq!(metagraph.neurons.len(), 1);
     assert_eq!(metagraph.n, 1);
     assert_eq!(metagraph.neurons.get(&0).unwrap().total_stake, 1000);

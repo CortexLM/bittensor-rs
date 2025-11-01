@@ -13,7 +13,7 @@ pub fn commit_weights_hash(uids: &[u64], weights: &[u64], salt: &[u8]) -> Vec<u8
         data.extend_from_slice(&weight.to_le_bytes());
     }
     data.extend_from_slice(salt);
-    
+
     // Hash with Blake2b
     blake2_256(&data).to_vec()
 }
@@ -27,4 +27,3 @@ pub fn commit_hash_to_hex(hash: &[u8]) -> String {
 pub fn hex_to_commit_hash(hex_str: &str) -> Result<Vec<u8>> {
     hex::decode(hex_str).map_err(|e| anyhow::anyhow!("Invalid hex string: {}", e))
 }
-

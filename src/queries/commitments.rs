@@ -1,15 +1,24 @@
 use crate::chain::BittensorClient;
 use anyhow::Result;
-use subxt::dynamic::Value;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
+use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const COMMITMENTS_PALLET: &str = "Commitments";
 
 /// Get commitment: SubtensorModule.Commits[(netuid, block, uid)] -> bytes
-pub async fn get_commitment(client: &BittensorClient, netuid: u16, block: u64, uid: u64) -> Result<Option<String>> {
-    let keys = vec![Value::u128(netuid as u128), Value::u128(block as u128), Value::u128(uid as u128)];
+pub async fn get_commitment(
+    client: &BittensorClient,
+    netuid: u16,
+    block: u64,
+    uid: u64,
+) -> Result<Option<String>> {
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::u128(block as u128),
+        Value::u128(uid as u128),
+    ];
     if let Some(val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "Commits", keys)
         .await?
@@ -25,7 +34,10 @@ pub async fn get_revealed_commitment_by_hotkey(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Vec<(u64, String)>> {
-    let keys = vec![Value::u128(netuid as u128), Value::from_bytes(&hotkey.encode())];
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(&hotkey.encode()),
+    ];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
         .await?
@@ -41,21 +53,33 @@ pub async fn get_revealed_commitment(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Option<(u64, String)>> {
-    let keys = vec![Value::u128(netuid as u128), Value::from_bytes(&hotkey.encode())];
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(&hotkey.encode()),
+    ];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
         .await?
     {
         let items = decode_revealed_vec(&val);
-        if let Some(last) = items.last() { return Ok(Some(last.clone())); }
+        if let Some(last) = items.last() {
+            return Ok(Some(last.clone()));
+        }
     }
     Ok(None)
 }
 
 /// Get current weight commit info: SubtensorModule.CRV3WeightCommitsV2[(netuid)] -> Vec<Vec<u8>>
-pub async fn get_current_weight_commit_info(client: &BittensorClient, netuid: u16) -> Result<Vec<Vec<u8>>> {
+pub async fn get_current_weight_commit_info(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Vec<Vec<u8>>> {
     if let Some(val) = client
-        .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommitsV2", vec![Value::u128(netuid as u128)])
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "CRV3WeightCommitsV2",
+            vec![Value::u128(netuid as u128)],
+        )
         .await?
     {
         return Ok(extract_vec_of_bytes(&val));
@@ -64,9 +88,16 @@ pub async fn get_current_weight_commit_info(client: &BittensorClient, netuid: u1
 }
 
 /// Get timelocked weight commits
-pub async fn get_timelocked_weight_commits(client: &BittensorClient, netuid: u16) -> Result<Vec<Vec<u8>>> {
+pub async fn get_timelocked_weight_commits(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Vec<Vec<u8>>> {
     if let Some(val) = client
-        .storage_with_keys(SUBTENSOR_MODULE, "TimelockedWeightCommits", vec![Value::u128(netuid as u128)])
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "TimelockedWeightCommits",
+            vec![Value::u128(netuid as u128)],
+        )
         .await?
     {
         return Ok(extract_vec_of_bytes(&val));
@@ -81,25 +112,38 @@ pub async fn get_all_commitments(
 ) -> Result<std::collections::HashMap<AccountId32, String>> {
     // Gather all hotkeys from subnet, then read each commitment entry
     let n_val = client
-        .storage_with_keys("SubtensorModule", "SubnetworkN", vec![Value::u128(netuid as u128)])
+        .storage_with_keys(
+            "SubtensorModule",
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
         .await?;
-    let n = n_val.and_then(|v| crate::utils::value_decode::decode_u64(&v).ok()).unwrap_or(0);
+    let n = n_val
+        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
         if let Some(hk_val) = client
-            .storage_with_keys("SubtensorModule", "Keys", vec![Value::u128(netuid as u128), Value::u128(uid as u128)])
+            .storage_with_keys(
+                "SubtensorModule",
+                "Keys",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
             .await?
         {
             if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
                 if let Some(val) = client
-                    .storage_with_keys(COMMITMENTS_PALLET, "CommitmentOf", vec![
-                        Value::u128(netuid as u128),
-                        Value::from_bytes(&hk.encode()),
-                    ])
+                    .storage_with_keys(
+                        COMMITMENTS_PALLET,
+                        "CommitmentOf",
+                        vec![Value::u128(netuid as u128), Value::from_bytes(&hk.encode())],
+                    )
                     .await?
                 {
                     let msg = decode_metadata_like(&val);
-                    if !msg.is_empty() { map.insert(hk, msg); }
+                    if !msg.is_empty() {
+                        map.insert(hk, msg);
+                    }
                 }
             }
         }
@@ -113,25 +157,38 @@ pub async fn get_all_revealed_commitments(
     netuid: u16,
 ) -> Result<std::collections::HashMap<AccountId32, Vec<(u64, String)>>> {
     let n_val = client
-        .storage_with_keys("SubtensorModule", "SubnetworkN", vec![Value::u128(netuid as u128)])
+        .storage_with_keys(
+            "SubtensorModule",
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
         .await?;
-    let n = n_val.and_then(|v| crate::utils::value_decode::decode_u64(&v).ok()).unwrap_or(0);
+    let n = n_val
+        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
         if let Some(hk_val) = client
-            .storage_with_keys("SubtensorModule", "Keys", vec![Value::u128(netuid as u128), Value::u128(uid as u128)])
+            .storage_with_keys(
+                "SubtensorModule",
+                "Keys",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
             .await?
         {
             if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
                 if let Some(val) = client
-                    .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", vec![
-                        Value::u128(netuid as u128),
-                        Value::from_bytes(&hk.encode()),
-                    ])
+                    .storage_with_keys(
+                        COMMITMENTS_PALLET,
+                        "RevealedCommitments",
+                        vec![Value::u128(netuid as u128), Value::from_bytes(&hk.encode())],
+                    )
                     .await?
                 {
                     let entries = decode_revealed_vec(&val);
-                    if !entries.is_empty() { map.insert(hk, entries); }
+                    if !entries.is_empty() {
+                        map.insert(hk, entries);
+                    }
                 }
             }
         }
@@ -146,10 +203,14 @@ pub async fn get_last_commitment_bonds_reset_block(
     hotkey: &AccountId32,
 ) -> Result<Option<u64>> {
     if let Some(val) = client
-        .storage_with_keys(COMMITMENTS_PALLET, "LastBondsReset", vec![
-            Value::u128(netuid as u128),
-            Value::from_bytes(&hotkey.encode()),
-        ])
+        .storage_with_keys(
+            COMMITMENTS_PALLET,
+            "LastBondsReset",
+            vec![
+                Value::u128(netuid as u128),
+                Value::from_bytes(&hotkey.encode()),
+            ],
+        )
         .await?
     {
         let s = format!("{:?}", val);
@@ -164,7 +225,11 @@ pub async fn get_current_weight_commit_info_v2(
     netuid: u16,
 ) -> Result<Vec<(AccountId32, u64, String, u64)>> {
     if let Some(val) = client
-        .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommitsV2", vec![Value::u128(netuid as u128)])
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "CRV3WeightCommitsV2",
+            vec![Value::u128(netuid as u128)],
+        )
         .await?
     {
         let s = format!("{:?}", val);
@@ -186,7 +251,9 @@ pub async fn get_current_weight_commit_info_v2(
 }
 
 // helper decoders unchanged below
-fn decode_metadata_like(value: &Value) -> String { decode_bytes_as_utf8(value) }
+fn decode_metadata_like(value: &Value) -> String {
+    decode_bytes_as_utf8(value)
+}
 
 fn decode_bytes_as_utf8(value: &Value) -> String {
     let s = format!("{:?}", value);
@@ -195,9 +262,15 @@ fn decode_bytes_as_utf8(value: &Value) -> String {
     while let Some(pos) = rem.find("U128(") {
         let after = &rem[pos + 5..];
         if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() { if n <= 255 { bytes.push(n as u8); } }
-            rem = &after[end+1..];
-        } else { break; }
+            if let Ok(n) = after[..end].trim().parse::<u128>() {
+                if n <= 255 {
+                    bytes.push(n as u8);
+                }
+            }
+            rem = &after[end + 1..];
+        } else {
+            break;
+        }
     }
     String::from_utf8_lossy(&bytes).to_string()
 }
@@ -206,7 +279,12 @@ fn decode_bytes_as_utf8(value: &Value) -> String {
 fn decode_revealed_tuple(value: &Value) -> Result<(u64, String)> {
     let s = format!("{:?}", value);
     let mut block: u64 = 0;
-    if let Some(pos) = s.rfind("U64(") { let after = &s[pos+4..]; if let Some(end) = after.find(')') { block = after[..end].trim().parse::<u64>().unwrap_or(0); } }
+    if let Some(pos) = s.rfind("U64(") {
+        let after = &s[pos + 4..];
+        if let Some(end) = after.find(')') {
+            block = after[..end].trim().parse::<u64>().unwrap_or(0);
+        }
+    }
     Ok((block, decode_bytes_as_utf8(value)))
 }
 
@@ -217,7 +295,9 @@ fn decode_revealed_vec(value: &Value) -> Vec<(u64, String)> {
         if part.contains("U128(") && part.contains("U64(") {
             let msg = decode_bytes_as_utf8_from_str(part);
             let block = extract_last_u64_from_str(part);
-            if block.is_some() || !msg.is_empty() { out.push((block.unwrap_or(0), msg)); }
+            if block.is_some() || !msg.is_empty() {
+                out.push((block.unwrap_or(0), msg));
+            }
         }
     }
     out
@@ -229,20 +309,36 @@ fn decode_bytes_as_utf8_from_str(s: &str) -> String {
     while let Some(pos) = rem.find("U128(") {
         let after = &rem[pos + 5..];
         if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() { if n <= 255 { bytes.push(n as u8); } }
-            rem = &after[end+1..];
-        } else { break; }
+            if let Ok(n) = after[..end].trim().parse::<u128>() {
+                if n <= 255 {
+                    bytes.push(n as u8);
+                }
+            }
+            rem = &after[end + 1..];
+        } else {
+            break;
+        }
     }
     String::from_utf8_lossy(&bytes).to_string()
 }
 
 fn extract_last_u64_from_str(s: &str) -> Option<u64> {
-    if let Some(pos) = s.rfind("U64(") { let after = &s[pos+4..]; if let Some(end) = after.find(')') { return after[..end].trim().parse::<u64>().ok(); } }
+    if let Some(pos) = s.rfind("U64(") {
+        let after = &s[pos + 4..];
+        if let Some(end) = after.find(')') {
+            return after[..end].trim().parse::<u64>().ok();
+        }
+    }
     None
 }
 
 fn extract_first_u64_from_str(s: &str) -> Option<u64> {
-    if let Some(pos) = s.find("U64(") { let after = &s[pos+4..]; if let Some(end) = after.find(')') { return after[..end].trim().parse::<u64>().ok(); } }
+    if let Some(pos) = s.find("U64(") {
+        let after = &s[pos + 4..];
+        if let Some(end) = after.find(')') {
+            return after[..end].trim().parse::<u64>().ok();
+        }
+    }
     None
 }
 
@@ -254,22 +350,37 @@ fn extract_vec_of_bytes(value: &Value) -> Vec<Vec<u8>> {
     while let Some(pos) = rem.find("U128(") {
         let after = &rem[pos + 5..];
         if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() { if n <= 255 { current.push(n as u8); } }
-            if let Some(close) = after[end..].find(")") { if close > 0 && !current.is_empty() { groups.push(std::mem::take(&mut current)); } }
-            rem = &after[end+1..];
-        } else { break; }
+            if let Ok(n) = after[..end].trim().parse::<u128>() {
+                if n <= 255 {
+                    current.push(n as u8);
+                }
+            }
+            if let Some(close) = after[end..].find(")") {
+                if close > 0 && !current.is_empty() {
+                    groups.push(std::mem::take(&mut current));
+                }
+            }
+            rem = &after[end + 1..];
+        } else {
+            break;
+        }
     }
-    if !current.is_empty() { groups.push(current); }
+    if !current.is_empty() {
+        groups.push(current);
+    }
     groups
 }
 
 fn extract_first_account_from_str(s: &str) -> Option<AccountId32> {
     if let Some(pos) = s.find("0x") {
-        let hexstr: String = s[pos+2..].chars().take_while(|c| c.is_ascii_hexdigit()).collect();
+        let hexstr: String = s[pos + 2..]
+            .chars()
+            .take_while(|c| c.is_ascii_hexdigit())
+            .collect();
         if hexstr.len() >= 64 {
             if let Ok(bytes) = hex::decode(&hexstr[0..64]) {
-                if bytes.len()==32 {
-                    if let Ok(arr) = <[u8;32]>::try_from(bytes.as_slice()) {
+                if bytes.len() == 32 {
+                    if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
                         return Some(AccountId32::from(arr));
                     }
                 }

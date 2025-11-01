@@ -45,11 +45,7 @@ pub struct DelegatedInfo {
 }
 
 impl DelegateInfo {
-    pub fn new(
-        hotkey: AccountId32,
-        owner: AccountId32,
-        take: f64,
-    ) -> Self {
+    pub fn new(hotkey: AccountId32, owner: AccountId32, take: f64) -> Self {
         Self {
             base: DelegateInfoBase {
                 hotkey_ss58: hotkey,
@@ -65,4 +61,3 @@ impl DelegateInfo {
         }
     }
 }
-

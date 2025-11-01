@@ -1,7 +1,7 @@
-use parity_scale_codec::Encode;
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::utils::value_decode::{decode_vec_account_id32, decode_vec_tuple_u64_account};
 use anyhow::Result;
+use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
@@ -26,13 +26,13 @@ pub async fn set_children(
             ])
         })
         .collect();
-    
+
     let args = vec![
         Value::from_bytes(&hotkey.encode()),
         Value::u128(netuid as u128),
         Value::unnamed_composite(children_values),
     ];
-    
+
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "set_children", args, signer, wait_for)
         .await
@@ -49,7 +49,7 @@ pub async fn get_parents(
         Value::u128(netuid as u128),
         Value::from_bytes(&hotkey.encode()),
     ];
-    
+
     if let Some(parents_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ParentKeys", keys)
         .await?
@@ -57,7 +57,7 @@ pub async fn get_parents(
         // Decode the list of parent AccountId32s
         return decode_vec_account_id32(&parents_val);
     }
-    
+
     Ok(vec![])
 }
 
@@ -71,23 +71,23 @@ pub async fn get_children(
         Value::u128(netuid as u128),
         Value::from_bytes(&hotkey.encode()),
     ];
-    
+
     if let Some(children_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ChildKeys", keys)
         .await?
     {
         // Decode the list of children with proportions
         let children_with_proportions = decode_vec_tuple_u64_account(&children_val)?;
-        
+
         // Convert to the expected format: (AccountId32, proportion)
         let result: Vec<(AccountId32, u64)> = children_with_proportions
             .into_iter()
             .map(|(proportion, account)| (account, proportion))
             .collect();
-        
+
         return Ok(result);
     }
-    
+
     Ok(vec![])
 }
 
@@ -101,7 +101,7 @@ pub async fn get_children_pending(
         Value::u128(netuid as u128),
         Value::from_bytes(&hotkey.encode()),
     ];
-    
+
     if let Some(pending_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ChildrenPending", keys)
         .await?
@@ -109,7 +109,6 @@ pub async fn get_children_pending(
         // Decode the list of pending AccountId32s
         return decode_vec_account_id32(&pending_val);
     }
-    
+
     Ok(vec![])
 }
-
