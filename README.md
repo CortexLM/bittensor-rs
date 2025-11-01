@@ -13,7 +13,7 @@
 
 **Bittensor SDK for Rust.**
 
-[![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](https://github.com/CortexLM/bittensor-rs/releases)
 
 ![Alt](https://repobeats.axiom.co/api/embed/233c07ffcbc977111ef312ccfaeeeee736e29a5b.svg "Repobeats analytics image")
 
@@ -21,6 +21,26 @@
 
 
 ## Installation
+
+The SDK is currently at version **0.1.0**.
+
+### Using cargo add (Recommended)
+
+```bash
+cargo add --git https://github.com/CortexLM/bittensor-rs bittensor-rs
+```
+
+To install a specific version or branch:
+
+```bash
+# Install from a specific branch
+cargo add --git https://github.com/CortexLM/bittensor-rs --branch main bittensor-rs
+
+# Install from a specific tag (when tags are available)
+cargo add --git https://github.com/CortexLM/bittensor-rs --tag v0.1.0 bittensor-rs
+```
+
+### Manual Installation
 
 Add the following to your `Cargo.toml`:
 
