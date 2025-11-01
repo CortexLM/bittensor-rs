@@ -1,7 +1,9 @@
 use anyhow::Result;
 
 /// Normalize weights to ensure they sum to 1.0 and convert to fixed point representation
-pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u64>, Vec<u64>)> {
+/// Returns (uids as Vec<u16>, weights as Vec<u16>) matching Subtensor's expected format
+/// Weights use u16::MAX (65535) as the scale factor to represent 1.0
+pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u16>, Vec<u16>)> {
     if uids.len() != weights.len() {
         return Err(anyhow::anyhow!(
             "UIDS and weights must have the same length"
@@ -24,23 +26,25 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u64>, Vec
         weights.iter().map(|_| 1.0 / count).collect()
     };
 
-    // Convert to fixed point (u64) - using u32::MAX as the scale factor
-    let scale = u32::MAX as u64;
-    let weight_vals: Vec<u64> = normalized
+    // Convert to fixed point (u16) - using u16::MAX (65535) as the scale factor
+    // This matches Subtensor's expected format where u16::MAX represents 1.0
+    let scale = u16::MAX as f32;
+    let weight_vals: Vec<u16> = normalized
         .iter()
         .map(|w| {
-            let val = (w * scale as f32) as u64;
-            val.min(scale)
+            let val = (w * scale) as u16;
+            val.min(u16::MAX)
         })
         .collect();
 
-    // Filter out zero weights
+    // Filter out zero weights and convert uids to u16
     let mut filtered_uids = Vec::new();
     let mut filtered_vals = Vec::new();
 
     for (uid, val) in uids.iter().zip(weight_vals.iter()) {
         if *val > 0 {
-            filtered_uids.push(*uid);
+            // Convert uid from u64 to u16 (Subtensor expects Vec<u16>)
+            filtered_uids.push(*uid as u16);
             filtered_vals.push(*val);
         }
     }
@@ -48,9 +52,9 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u64>, Vec
     Ok((filtered_uids, filtered_vals))
 }
 
-/// Convert weights back from fixed point to float
-pub fn denormalize_weights(weight_vals: &[u64]) -> Vec<f32> {
-    let scale = u32::MAX as f64;
+/// Convert weights back from fixed point (u16) to float
+pub fn denormalize_weights(weight_vals: &[u16]) -> Vec<f32> {
+    let scale = u16::MAX as f64;
     weight_vals
         .iter()
         .map(|val| (*val as f64 / scale) as f32)

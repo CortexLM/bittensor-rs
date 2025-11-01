@@ -28,7 +28,8 @@ pub async fn set_weights(
     let version =
         version_key.ok_or_else(|| anyhow::anyhow!("Version key is required for set_weights"))?;
 
-    // Build call arguments - set_weights takes (netuid, uids, weights, version_key)
+    // Build call arguments - set_weights takes (netuid, dests: Vec<u16>, weights: Vec<u16>, version_key)
+    // Subtensor expects Vec<u16> for both uids (dests) and weights
     let uid_values: Vec<Value> = weight_uids
         .iter()
         .map(|uid| Value::u128(*uid as u128))
@@ -88,12 +89,13 @@ pub async fn commit_weights(
 }
 
 /// Reveal committed weights
+/// Subtensor expects: uids: Vec<u16>, values: Vec<u16>, salt: Vec<u16>
 pub async fn reveal_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
     uids: &[u64],
-    weights: &[u64],
+    weights: &[u16],  // Changed from u64 to u16 to match Subtensor format
     salt: &[u8],
     version_key: u64,
     wait_for: ExtrinsicWait,
@@ -104,12 +106,15 @@ pub async fn reveal_weights(
         ));
     }
 
-    // Convert salt to vector of u8 values
-    let salt_vec: Vec<u64> = salt.iter().map(|b| *b as u64).collect();
+    // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
+    let uid_u16: Vec<u16> = uids.iter().map(|uid| *uid as u16).collect();
+    
+    // Convert salt from u8 to u16 (Subtensor expects Vec<u16>)
+    let salt_u16: Vec<u16> = salt.iter().map(|b| *b as u16).collect();
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    let uid_values: Vec<Value> = uid_u16.iter().map(|uid| Value::u128(*uid as u128)).collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
-    let salt_values: Vec<Value> = salt_vec.iter().map(|s| Value::u128(*s as u128)).collect();
+    let salt_values: Vec<Value> = salt_u16.iter().map(|s| Value::u128(*s as u128)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
@@ -134,7 +139,8 @@ pub async fn reveal_weights(
 }
 
 /// Generate commit hash from weights for commit-reveal pattern
-pub fn generate_commit_hash(uids: &[u64], weights: &[u64], salt: &[u8]) -> Result<String> {
+/// Uses u16 format for weights to match Subtensor's internal representation
+pub fn generate_commit_hash(uids: &[u64], weights: &[u16], salt: &[u8]) -> Result<String> {
     let hash = commit_weights_hash(uids, weights, salt);
     Ok(hex::encode(hash))
 }

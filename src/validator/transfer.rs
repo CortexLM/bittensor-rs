@@ -5,6 +5,7 @@ use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
 const BALANCES_MODULE: &str = "Balances";
+const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
 /// Transfer TAO to another account
 pub async fn transfer(
@@ -33,17 +34,28 @@ pub async fn transfer(
         .map_err(|e| anyhow::anyhow!("Failed to transfer: {}", e))
 }
 
-/// Transfer stake from one hotkey to another
+/// Transfer stake from one coldkey to another, optionally across subnets
+/// Subtensor expects: (destination_coldkey, hotkey, origin_netuid, destination_netuid, alpha_amount)
 pub async fn transfer_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
-    from_hotkey: &AccountId32,
-    to_hotkey: &AccountId32,
+    destination_coldkey: &AccountId32,
+    hotkey: &AccountId32,
+    origin_netuid: u16,
+    destination_netuid: u16,
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    use crate::validator::staking::move_stake;
+    let args = vec![
+        Value::from_bytes(&destination_coldkey.encode()),
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(origin_netuid as u128),
+        Value::u128(destination_netuid as u128),
+        Value::u128(amount),
+    ];
 
-    // transfer_stake is equivalent to move_stake
-    move_stake(client, signer, from_hotkey, to_hotkey, amount, wait_for).await
+    client
+        .submit_extrinsic(SUBTENSOR_MODULE, "transfer_stake", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to transfer stake: {}", e))
 }

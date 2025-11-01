@@ -19,6 +19,8 @@
 
 </div>
 
+> [!WARNING]
+> This code is currently under active development and may contain bugs. Please thoroughly test the code before using it in production environments.
 
 ## Installation
 
