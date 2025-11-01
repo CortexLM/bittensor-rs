@@ -18,7 +18,7 @@ pub async fn add_liquidity(
         Value::u128(amount_a),
         Value::u128(amount_b),
     ];
-    
+
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "add_liquidity", args, signer, wait_for)
         .await
@@ -33,11 +33,8 @@ pub async fn remove_liquidity(
     liquidity_amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(liquidity_amount),
-    ];
-    
+    let args = vec![Value::u128(netuid as u128), Value::u128(liquidity_amount)];
+
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "remove_liquidity", args, signer, wait_for)
         .await
@@ -60,7 +57,7 @@ pub async fn modify_liquidity(
         Value::i128(tick_upper as i128),
         Value::i128(liquidity_delta),
     ];
-    
+
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "modify_liquidity", args, signer, wait_for)
         .await
@@ -75,14 +72,16 @@ pub async fn toggle_user_liquidity(
     enabled: bool,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![
-        Value::u128(netuid as u128),
-        Value::bool(enabled),
-    ];
-    
+    let args = vec![Value::u128(netuid as u128), Value::bool(enabled)];
+
     client
-        .submit_extrinsic(SUBTENSOR_MODULE, "toggle_user_liquidity", args, signer, wait_for)
+        .submit_extrinsic(
+            SUBTENSOR_MODULE,
+            "toggle_user_liquidity",
+            args,
+            signer,
+            wait_for,
+        )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to toggle user liquidity: {}", e))
 }
-

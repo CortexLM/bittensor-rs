@@ -2,11 +2,11 @@
 use crate::chain::BittensorClient;
 use crate::types::NeuronInfo;
 use crate::utils::value_decode::*;
-use anyhow::{Result, Context};
-use subxt::dynamic::Value;
+use anyhow::{Context, Result};
+use futures::stream::{FuturesUnordered, StreamExt};
 use parity_scale_codec::Encode;
 use std::collections::HashMap;
-use futures::stream::{FuturesUnordered, StreamExt};
+use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -18,14 +18,16 @@ pub async fn neurons_bulk(
 ) -> Result<Vec<NeuronInfo>> {
     // First get the count
     let n_key = vec![Value::u128(netuid as u128)];
-    let n_value = client.storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key.clone()).await?
+    let n_value = client
+        .storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key.clone())
+        .await?
         .ok_or_else(|| anyhow::anyhow!("Subnet {} not found", netuid))?;
     let n = decode_u64(&n_value).context("Failed to decode SubnetworkN")?;
-    
+
     if n == 0 {
         return Ok(vec![]);
     }
-    
+
     // Step 1: Fetch all vector storages for the subnet (these are bulk already)
     let rank_vec = fetch_vec_u16(client, "Rank", &n_key).await?;
     let trust_vec = fetch_vec_u16(client, "Trust", &n_key).await?;
@@ -42,7 +44,7 @@ pub async fn neurons_bulk(
     // Step 2: Batch fetch all hotkeys
     let mut hotkeys = Vec::with_capacity(n as usize);
     let mut futures = FuturesUnordered::new();
-    
+
     for uid in 0..n {
         let uid_key = vec![Value::u128(netuid as u128), Value::u128(uid as u128)];
         let client_ref = client;
@@ -55,7 +57,7 @@ pub async fn neurons_bulk(
             (uid, hotkey_val)
         });
     }
-    
+
     while let Some((uid, hotkey_val)) = futures.next().await {
         if let Some(val) = hotkey_val {
             if let Ok(hotkey) = decode_account_id32(&val) {
@@ -67,7 +69,7 @@ pub async fn neurons_bulk(
     // Step 3: Batch fetch all coldkeys (owners)
     let mut coldkeys = HashMap::new();
     let mut futures = FuturesUnordered::new();
-    
+
     for (uid, hotkey) in &hotkeys {
         let owner_key = vec![Value::from_bytes(&hotkey.encode())];
         let client_ref = client;
@@ -82,7 +84,7 @@ pub async fn neurons_bulk(
             (u, hk, coldkey_val)
         });
     }
-    
+
     while let Some((uid, hotkey, coldkey_val)) = futures.next().await {
         if let Some(val) = coldkey_val {
             if let Ok(coldkey) = decode_account_id32(&val) {
@@ -94,9 +96,12 @@ pub async fn neurons_bulk(
     // Step 4: Batch fetch all stakes
     let mut stakes = HashMap::new();
     let mut futures = FuturesUnordered::new();
-    
+
     for (uid, (hotkey, _)) in &coldkeys {
-        let stake_key = vec![Value::from_bytes(&hotkey.encode()), Value::u128(netuid as u128)];
+        let stake_key = vec![
+            Value::from_bytes(&hotkey.encode()),
+            Value::u128(netuid as u128),
+        ];
         let client_ref = client;
         let u = *uid;
         futures.push(async move {
@@ -108,7 +113,7 @@ pub async fn neurons_bulk(
             (u, stake_val)
         });
     }
-    
+
     while let Some((uid, stake_val)) = futures.next().await {
         if let Some(val) = stake_val {
             if let Ok(stake) = decode_u128(&val) {
@@ -119,10 +124,10 @@ pub async fn neurons_bulk(
 
     // Step 5: Build all neurons from the collected data
     let mut neurons = Vec::new();
-    
+
     for (uid, (hotkey, coldkey)) in coldkeys {
         let idx = uid as usize;
-        
+
         // Get values from vectors
         let rank = rank_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
         let trust = trust_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
@@ -136,9 +141,9 @@ pub async fn neurons_bulk(
         let emission_raw = emission_vec.get(idx).copied().unwrap_or(0);
         let emission = emission_raw as f64 / 1e9;
         let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
-        
+
         let total_stake = stakes.get(&uid).copied().unwrap_or(0);
-        
+
         neurons.push(NeuronInfo::create(
             uid,
             netuid,
@@ -157,7 +162,7 @@ pub async fn neurons_bulk(
             active,
             last_update,
             validator_permit,
-            0, // version
+            0,          // version
             Vec::new(), // weights
             Vec::new(), // bonds
             pruning_score,
@@ -165,7 +170,7 @@ pub async fn neurons_bulk(
             None, // axon_info
         ));
     }
-    
+
     neurons.sort_by_key(|n| n.uid);
     Ok(neurons)
 }

@@ -18,7 +18,7 @@ pub struct WeightCommitInfo {
 
 impl WeightCommitInfo {
     /// Create WeightCommitInfo from chain data - all fields must be provided
-    /// 
+    ///
     /// # Arguments
     /// * `hotkey` - AccountId32 of the hotkey that made the commitment
     /// * `block` - Block number when commitment was made
@@ -42,4 +42,3 @@ impl WeightCommitInfo {
         }
     }
 }
-

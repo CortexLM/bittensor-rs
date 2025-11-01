@@ -20,7 +20,10 @@ pub async fn last_drand_round(client: &BittensorClient) -> Result<Option<u64>> {
 
 /// Get tx rate limit from Subtensor module
 pub async fn tx_rate_limit(client: &BittensorClient) -> Result<Option<u64>> {
-    if let Some(val) = client.storage("SubtensorModule", "TxRateLimit", None).await? {
+    if let Some(val) = client
+        .storage("SubtensorModule", "TxRateLimit", None)
+        .await?
+    {
         return Ok(crate::utils::value_decode::decode_u64(&val).ok());
     }
     Ok(None)

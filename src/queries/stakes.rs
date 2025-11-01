@@ -1,7 +1,7 @@
-use parity_scale_codec::Encode;
 use crate::chain::BittensorClient;
 use crate::utils::value_decode::{decode_u128, decode_u64, decode_vec_account_id32};
 use anyhow::Result;
+use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
@@ -22,14 +22,15 @@ pub async fn get_stake(
         Value::from_bytes(&coldkey.encode()),
         Value::u128(netuid as u128),
     ];
-    
+
     let alpha_val = client
         .storage_with_keys(SUBTENSOR_MODULE, "Alpha", keys)
         .await?
-        .ok_or_else(|| anyhow::anyhow!("Alpha not found for hotkey, coldkey, and netuid {}", netuid))?;
-    
-    decode_u128(&alpha_val)
-        .map_err(|e| anyhow::anyhow!("Failed to decode Alpha stake: {}", e))
+        .ok_or_else(|| {
+            anyhow::anyhow!("Alpha not found for hotkey, coldkey, and netuid {}", netuid)
+        })?;
+
+    decode_u128(&alpha_val).map_err(|e| anyhow::anyhow!("Failed to decode Alpha stake: {}", e))
 }
 
 /// Get total stake for a coldkey across all hotkeys
@@ -42,7 +43,11 @@ pub async fn get_stake_for_coldkey(
     // 2) For each netuid, sum Alpha[(hotkey, coldkey, netuid)] across all owned hotkeys
     // 3) Return non-zero entries as (netuid, total)
     let owned_hotkeys_val = client
-        .storage_with_keys("SubtensorModule", "OwnedHotkeys", vec![Value::from_bytes(&coldkey.encode())])
+        .storage_with_keys(
+            "SubtensorModule",
+            "OwnedHotkeys",
+            vec![Value::from_bytes(&coldkey.encode())],
+        )
         .await?;
     let owned_hotkeys: Vec<AccountId32> = match owned_hotkeys_val {
         Some(v) => decode_vec_account_id32(&v).unwrap_or_default(),
@@ -71,10 +76,14 @@ pub async fn get_stake_for_coldkey(
                 .storage_with_keys(SUBTENSOR_MODULE, "Alpha", alpha_keys)
                 .await?
             {
-                if let Ok(stake) = decode_u128(&alpha_val) { total = total.saturating_add(stake); }
+                if let Ok(stake) = decode_u128(&alpha_val) {
+                    total = total.saturating_add(stake);
+                }
             }
         }
-        if total > 0 { result.push((netuid, total)); }
+        if total > 0 {
+            result.push((netuid, total));
+        }
     }
 
     Ok(result)
@@ -91,14 +100,18 @@ pub async fn get_stake_for_hotkey(
         Value::from_bytes(&hotkey.encode()),
         Value::u128(netuid as u128),
     ];
-    
+
     let alpha_val = client
         .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", keys)
         .await?
-        .ok_or_else(|| anyhow::anyhow!("TotalHotkeyAlpha not found for hotkey and netuid {}", netuid))?;
-    
-    decode_u128(&alpha_val)
-        .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "TotalHotkeyAlpha not found for hotkey and netuid {}",
+                netuid
+            )
+        })?;
+
+    decode_u128(&alpha_val).map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))
 }
 
 /// Get stake for specific coldkey-hotkey pair across multiple subnets
@@ -109,7 +122,9 @@ pub async fn get_stake_for_coldkey_and_hotkey(
     hotkey: &AccountId32,
     netuids: Option<Vec<u16>>,
 ) -> Result<std::collections::HashMap<u16, u128>> {
-    let all_netuids = if let Some(nets) = netuids { nets } else {
+    let all_netuids = if let Some(nets) = netuids {
+        nets
+    } else {
         // Build from TotalNetworks
         let total_val = client
             .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
@@ -123,7 +138,9 @@ pub async fn get_stake_for_coldkey_and_hotkey(
     for netuid in all_netuids {
         match get_stake(client, coldkey, hotkey, netuid).await {
             Ok(stake) => {
-                if stake > 0 { stakes.insert(netuid, stake); }
+                if stake > 0 {
+                    stakes.insert(netuid, stake);
+                }
             }
             Err(_) => { /* no stake for this pair on this netuid */ }
         }
@@ -176,15 +193,15 @@ pub async fn get_stake_weight(
         Value::u128(netuid as u128),
         Value::from_bytes(&hotkey.encode()),
     ];
-    
+
     let weight_val = client
         .storage_with_keys(SUBTENSOR_MODULE, "StakeWeight", keys)
         .await?
         .ok_or_else(|| anyhow::anyhow!("StakeWeight not found for hotkey and netuid {}", netuid))?;
-    
+
     let weight = decode_u64(&weight_val)
         .map_err(|e| anyhow::anyhow!("Failed to decode StakeWeight: {}", e))?;
-    
+
     // Normalize from u64 to 0.0-1.0 range
     Ok(weight as f64 / u64::MAX as f64)
 }
@@ -195,8 +212,7 @@ pub async fn get_minimum_required_stake(client: &BittensorClient) -> Result<u128
         .storage(SUBTENSOR_MODULE, "NominatorMinRequiredStake", None)
         .await?
         .ok_or_else(|| anyhow::anyhow!("NominatorMinRequiredStake storage entry not found"))?;
-    
+
     decode_u128(&min_stake_val)
         .map_err(|e| anyhow::anyhow!("Failed to decode NominatorMinRequiredStake: {}", e))
 }
-

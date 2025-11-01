@@ -17,13 +17,7 @@ pub struct PrometheusInfo {
 
 impl PrometheusInfo {
     /// Create PrometheusInfo from chain data - all fields required
-    pub fn from_chain_data(
-        block: u64,
-        version: u64,
-        ip: String,
-        port: u16,
-        ip_type: u8,
-    ) -> Self {
+    pub fn from_chain_data(block: u64, version: u64, ip: String, port: u16, ip_type: u8) -> Self {
         Self {
             block,
             version,
@@ -32,10 +26,9 @@ impl PrometheusInfo {
             ip_type,
         }
     }
-    
+
     /// Check if Prometheus is serving (not 0.0.0.0)
     pub fn is_serving(&self) -> bool {
         self.ip != "0.0.0.0" && self.ip != "0:0:0:0:0:0:0:0" && self.port != 0
     }
 }
-

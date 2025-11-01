@@ -1,13 +1,12 @@
 use sp_core::{sr25519, Pair};
 use sp_runtime::{
-    MultiSignature as SpMultiSignature,
     traits::{IdentifyAccount, Verify},
+    MultiSignature as SpMultiSignature,
 };
 use subxt::{
-    Config,
-    PolkadotConfig,
     config::substrate::{AccountId32, MultiSignature},
     tx::Signer,
+    Config, PolkadotConfig,
 };
 
 /// A concrete PairSigner implementation for sr25519::Pair compatible with subxt 0.44

@@ -66,4 +66,3 @@ pub struct SubnetIdentity {
     /// Additional information
     pub additional: String,
 }
-

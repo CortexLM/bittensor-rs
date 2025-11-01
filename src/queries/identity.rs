@@ -1,14 +1,21 @@
 use crate::chain::BittensorClient;
 use crate::types::ChainIdentity;
 use anyhow::Result;
-use subxt::dynamic::Value;
 use parity_scale_codec::Encode;
+use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
-pub async fn query_identity(client: &BittensorClient, coldkey: &sp_core::crypto::AccountId32) -> Result<Option<ChainIdentity>> {
+pub async fn query_identity(
+    client: &BittensorClient,
+    coldkey: &sp_core::crypto::AccountId32,
+) -> Result<Option<ChainIdentity>> {
     if let Some(val) = client
-        .storage_with_keys(SUBTENSOR_MODULE, "IdentitiesV2", vec![Value::from_bytes(&coldkey.encode())])
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "IdentitiesV2",
+            vec![Value::from_bytes(&coldkey.encode())],
+        )
         .await?
     {
         let fields = decode_identity_map(&val);

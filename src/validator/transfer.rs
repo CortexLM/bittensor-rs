@@ -1,6 +1,6 @@
-use parity_scale_codec::Encode;
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use anyhow::Result;
+use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
@@ -17,15 +17,16 @@ pub async fn transfer(
 ) -> Result<String> {
     let dest_bytes = dest.encode();
     let dest_value = Value::from_bytes(&dest_bytes);
-    
+
     // Choose function based on keep_alive
-    let function = if keep_alive { "transfer_keep_alive" } else { "transfer" };
-    
-    let args = vec![
-        dest_value,
-        Value::u128(amount),
-    ];
-    
+    let function = if keep_alive {
+        "transfer_keep_alive"
+    } else {
+        "transfer"
+    };
+
+    let args = vec![dest_value, Value::u128(amount)];
+
     client
         .submit_extrinsic(BALANCES_MODULE, function, args, signer, wait_for)
         .await
@@ -42,8 +43,7 @@ pub async fn transfer_stake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     use crate::validator::staking::move_stake;
-    
+
     // transfer_stake is equivalent to move_stake
     move_stake(client, signer, from_hotkey, to_hotkey, amount, wait_for).await
 }
-

@@ -1,34 +1,31 @@
 use crate::chain::BittensorClient;
 use crate::metagraph::Metagraph;
-use crate::types::{AxonInfo, PrometheusInfo};
 use crate::queries::neurons;
-use anyhow::{Result, Context};
+use crate::types::{AxonInfo, PrometheusInfo};
+use anyhow::{Context, Result};
 use subxt::dynamic::Value;
 
-
 /// Synchronize metagraph data from the chain
-pub async fn sync_metagraph(
-    client: &BittensorClient,
-    netuid: u16,
-) -> Result<Metagraph> {
+pub async fn sync_metagraph(client: &BittensorClient, netuid: u16) -> Result<Metagraph> {
     let mut metagraph = Metagraph::new(netuid);
 
     // Get current block
     metagraph.block = client.block_number().await?;
 
     // Use runtime API to get all neurons at once (more efficient)
-    let neurons_list = neurons::neurons(client, netuid, None).await
+    let neurons_list = neurons::neurons(client, netuid, None)
+        .await
         .context("Failed to query neurons via runtime API")?;
-    
+
     for neuron in neurons_list {
         metagraph.neurons.insert(neuron.uid, neuron.clone());
-        
+
         // Extract axon info if available
         if let Some(ref axon) = neuron.axon_info {
             metagraph.axons.insert(neuron.uid, axon.clone());
         }
     }
-    
+
     metagraph.n = metagraph.neurons.len() as u64;
 
     Ok(metagraph)

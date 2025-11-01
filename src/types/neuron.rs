@@ -1,6 +1,6 @@
+use crate::types::{AxonInfo, PrometheusInfo};
 use serde::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
-use crate::types::{AxonInfo, PrometheusInfo};
 
 /// Information about a neuron in the Bittensor network (complete version with all fields)
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -33,4 +33,3 @@ pub async fn root_set_weights(
     )
     .await
 }
-

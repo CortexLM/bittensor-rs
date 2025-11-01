@@ -5,4 +5,3 @@ pub use parity_scale_codec::Encode as ScaleEncode;
 pub fn encode_account(account: &sp_core::crypto::AccountId32) -> Vec<u8> {
     account.encode()
 }
-

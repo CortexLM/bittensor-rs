@@ -1,5 +1,5 @@
 use anyhow::Result;
-use parity_scale_codec::{Decode, Encode, Compact};
+use parity_scale_codec::{Compact, Decode, Encode};
 
 /// SCALE encoding/decoding utilities
 
@@ -10,8 +10,7 @@ pub fn encode_scale<T: Encode>(value: &T) -> Vec<u8> {
 
 /// Decode SCALE bytes to a value
 pub fn decode_scale<T: Decode>(bytes: &[u8]) -> Result<T> {
-    T::decode(&mut &bytes[..])
-        .map_err(|e| anyhow::anyhow!("Failed to decode SCALE: {:?}", e))
+    T::decode(&mut &bytes[..]).map_err(|e| anyhow::anyhow!("Failed to decode SCALE: {:?}", e))
 }
 
 /// Decode Option<T> from SCALE bytes
@@ -19,7 +18,7 @@ pub fn decode_scale_option<T: Decode>(bytes: &[u8]) -> Result<Option<T>> {
     if bytes.is_empty() {
         return Ok(None);
     }
-    
+
     // Option encoding: 0 = None, 1 followed by value = Some
     if bytes[0] == 0 {
         Ok(None)
@@ -38,7 +37,7 @@ pub fn decode_scale_vec<T: Decode>(bytes: &[u8]) -> Result<Vec<T>> {
     let mut input = &bytes[..];
     let len_compact = Compact::<u32>::decode(&mut input)
         .map_err(|e| anyhow::anyhow!("Failed to decode Vec length: {:?}", e))?;
-    
+
     let len = len_compact.0 as usize;
     let mut items = Vec::new();
     for _ in 0..len {
@@ -46,7 +45,7 @@ pub fn decode_scale_vec<T: Decode>(bytes: &[u8]) -> Result<Vec<T>> {
             .map_err(|e| anyhow::anyhow!("Failed to decode Vec item: {:?}", e))?;
         items.push(item);
     }
-    
+
     Ok(items)
 }
 
@@ -54,4 +53,3 @@ pub fn decode_scale_vec<T: Decode>(bytes: &[u8]) -> Result<Vec<T>> {
 pub fn decode_scale_tuple<T: Decode>(bytes: &[u8]) -> Result<T> {
     decode_scale(bytes)
 }
-

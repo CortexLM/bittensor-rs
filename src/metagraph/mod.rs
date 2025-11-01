@@ -1,6 +1,5 @@
-pub mod types;
 pub mod sync;
+pub mod types;
 
-pub use types::Metagraph;
 pub use sync::sync_metagraph;
-
+pub use types::Metagraph;

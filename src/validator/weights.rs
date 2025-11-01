@@ -1,5 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
-use crate::utils::{normalize_weights, commit_weights_hash};
+use crate::utils::{commit_weights_hash, normalize_weights};
 use anyhow::Result;
 use subxt::dynamic::Value;
 
@@ -20,17 +20,24 @@ pub async fn set_weights(
 ) -> Result<String> {
     // Normalize weights
     let (weight_uids, weight_vals) = normalize_weights(uids, weights)?;
-    
+
     if weight_uids.is_empty() {
         return Err(anyhow::anyhow!("No valid weights to set"));
     }
 
-    let version = version_key.ok_or_else(|| anyhow::anyhow!("Version key is required for set_weights"))?;
+    let version =
+        version_key.ok_or_else(|| anyhow::anyhow!("Version key is required for set_weights"))?;
 
     // Build call arguments - set_weights takes (netuid, uids, weights, version_key)
-    let uid_values: Vec<Value> = weight_uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
-    let weight_values: Vec<Value> = weight_vals.iter().map(|w| Value::u128(*w as u128)).collect();
-    
+    let uid_values: Vec<Value> = weight_uids
+        .iter()
+        .map(|uid| Value::u128(*uid as u128))
+        .collect();
+    let weight_values: Vec<Value> = weight_vals
+        .iter()
+        .map(|w| Value::u128(*w as u128))
+        .collect();
+
     let args = vec![
         Value::u128(netuid as u128),
         Value::unnamed_composite(uid_values),
@@ -64,10 +71,7 @@ pub async fn commit_weights(
     let hash_bytes = hex::decode(commit_hash)
         .map_err(|e| anyhow::anyhow!("Invalid commit hash format: {}", e))?;
 
-    let args = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(&hash_bytes),
-    ];
+    let args = vec![Value::u128(netuid as u128), Value::from_bytes(&hash_bytes)];
 
     let tx_hash = client
         .submit_extrinsic(
@@ -95,7 +99,9 @@ pub async fn reveal_weights(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     if uids.len() != weights.len() {
-        return Err(anyhow::anyhow!("UIDS and weights must have the same length"));
+        return Err(anyhow::anyhow!(
+            "UIDS and weights must have the same length"
+        ));
     }
 
     // Convert salt to vector of u8 values
@@ -104,7 +110,7 @@ pub async fn reveal_weights(
     let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
     let salt_values: Vec<Value> = salt_vec.iter().map(|s| Value::u128(*s as u128)).collect();
-    
+
     let args = vec![
         Value::u128(netuid as u128),
         Value::unnamed_composite(uid_values),
@@ -128,12 +134,7 @@ pub async fn reveal_weights(
 }
 
 /// Generate commit hash from weights for commit-reveal pattern
-pub fn generate_commit_hash(
-    uids: &[u64],
-    weights: &[u64],
-    salt: &[u8],
-) -> Result<String> {
+pub fn generate_commit_hash(uids: &[u64], weights: &[u64], salt: &[u8]) -> Result<String> {
     let hash = commit_weights_hash(uids, weights, salt);
     Ok(hex::encode(hash))
 }
-

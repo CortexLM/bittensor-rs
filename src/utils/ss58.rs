@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sp_core::crypto::{AccountId32, Ss58Codec, Ss58AddressFormat};
+use sp_core::crypto::{AccountId32, Ss58AddressFormat, Ss58Codec};
 use std::str::FromStr;
 
 /// SS58 format constant for Bittensor (42 = "bt")
@@ -17,11 +17,12 @@ pub fn decode_ss58(ss58: &str) -> Result<AccountId32> {
             let (account, _format) = AccountId32::from_ss58check_with_version(ss58)?;
             Ok(account)
         })
-        .map_err(|e: sp_core::crypto::PublicError| anyhow::anyhow!("Failed to decode SS58 address: {:?}", e))
+        .map_err(|e: sp_core::crypto::PublicError| {
+            anyhow::anyhow!("Failed to decode SS58 address: {:?}", e)
+        })
 }
 
 /// Validate SS58 address format
 pub fn is_valid_ss58(ss58: &str) -> bool {
     decode_ss58(ss58).is_ok()
 }
-

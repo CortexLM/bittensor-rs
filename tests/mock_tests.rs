@@ -1,9 +1,9 @@
-use bittensor_rust::{
-    types::{SubnetInfo, DelegateInfo, DelegatedInfo, SubnetHyperparameters},
+use bittensor_rs::{
     delegate::DelegateInfoBase,
+    types::{DelegateInfo, DelegatedInfo, SubnetHyperparameters, SubnetInfo},
 };
-use std::collections::HashMap;
 use sp_core::crypto::AccountId32;
+use std::collections::HashMap;
 use std::str::FromStr;
 
 #[test]
@@ -16,7 +16,7 @@ fn test_subnet_info_basic() {
         name: Some("Test Subnet".to_string()),
         description: Some("Test description".to_string()),
     };
-    
+
     assert_eq!(subnet.netuid, 1);
     assert_eq!(subnet.neuron_count, 256);
     assert_eq!(subnet.name.as_ref().unwrap(), "Test Subnet");
@@ -37,7 +37,7 @@ fn test_subnet_hyperparameters() {
         tempo: 99,
         max_allowed_uids: 4096,
     };
-    
+
     assert_eq!(params.tempo, 99);
     assert_eq!(params.max_allowed_uids, 4096);
     assert_eq!(params.weights_version, 1);
@@ -48,17 +48,20 @@ fn test_delegate_info_structure() {
     let mut nominators = HashMap::new();
     let mut subnet_stakes = HashMap::new();
     subnet_stakes.insert(1u16, 1000000u128);
-    
-    let nominator = AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
+
+    let nominator =
+        AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
     nominators.insert(nominator, subnet_stakes);
-    
+
     let mut total_stake = HashMap::new();
     total_stake.insert(1u16, 1000000u128);
-    
+
     let delegate = DelegateInfo {
         base: DelegateInfoBase {
-            hotkey_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
-            owner_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
+            hotkey_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+                .unwrap(),
+            owner_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+                .unwrap(),
             take: 0.18,
             validator_permits: vec![1, 3],
             registrations: vec![1, 3, 5],
@@ -68,7 +71,7 @@ fn test_delegate_info_structure() {
         total_stake: total_stake.clone(),
         nominators: nominators.clone(),
     };
-    
+
     assert_eq!(delegate.base.take, 0.18);
     assert_eq!(delegate.base.registrations.len(), 3);
     assert_eq!(delegate.nominators.len(), 1);
@@ -79,8 +82,10 @@ fn test_delegate_info_structure() {
 fn test_delegated_info_structure() {
     let delegated = DelegatedInfo {
         base: DelegateInfoBase {
-            hotkey_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
-            owner_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
+            hotkey_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+                .unwrap(),
+            owner_ss58: AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+                .unwrap(),
             take: 0.18,
             validator_permits: vec![1],
             registrations: vec![1],
@@ -90,7 +95,7 @@ fn test_delegated_info_structure() {
         netuid: 1,
         stake: 500000,
     };
-    
+
     assert_eq!(delegated.netuid, 1);
     assert_eq!(delegated.stake, 500000);
     assert_eq!(delegated.base.take, 0.18);
@@ -102,11 +107,11 @@ fn test_hashmap_operations() {
     stake_map.insert(1, 100000);
     stake_map.insert(2, 200000);
     stake_map.insert(3, 300000);
-    
+
     assert_eq!(stake_map.get(&1), Some(&100000));
     assert_eq!(stake_map.get(&2), Some(&200000));
     assert_eq!(stake_map.len(), 3);
-    
+
     // Test total
     let total: u128 = stake_map.values().sum();
     assert_eq!(total, 600000);
@@ -115,16 +120,16 @@ fn test_hashmap_operations() {
 #[test]
 fn test_vector_operations() {
     let mut registrations = vec![1u16, 3, 5, 7];
-    
+
     // Test push
     registrations.push(9);
     assert_eq!(registrations.len(), 5);
     assert_eq!(registrations[4], 9);
-    
+
     // Test contains
     assert!(registrations.contains(&3));
     assert!(!registrations.contains(&4));
-    
+
     // Test iteration
     let sum: u16 = registrations.iter().sum();
     assert_eq!(sum, 25); // 1 + 3 + 5 + 7 + 9
@@ -132,19 +137,22 @@ fn test_vector_operations() {
 
 #[test]
 fn test_account_id_operations() {
-    let account1 = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
-    let account2 = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
-    let account3 = AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
-    
+    let account1 =
+        AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
+    let account2 =
+        AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
+    let account3 =
+        AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
+
     // Test equality
     assert_eq!(account1, account2);
     assert_ne!(account1, account3);
-    
+
     // Test as key in HashMap
     let mut map = HashMap::new();
     map.insert(account1.clone(), 100);
     map.insert(account3.clone(), 200);
-    
+
     assert_eq!(map.get(&account1), Some(&100));
     assert_eq!(map.get(&account3), Some(&200));
 }
