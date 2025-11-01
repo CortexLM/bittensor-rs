@@ -33,7 +33,7 @@ use bittensor_rs::chain::BittensorClient;
 use bittensor_rs::queries;
 
 // Connect to the network
-let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443").await?;
+let client = BittensorClient::with_default().await?;
 
 // Execute query
 let result = queries::module::function(&client, parameters).await?;

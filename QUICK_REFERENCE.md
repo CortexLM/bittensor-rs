@@ -12,7 +12,7 @@ bittensor-rs = { git = "https://github.com/CortexLM/bittensor-rs" }
 ```rust
 use bittensor_rs::chain::BittensorClient;
 
-let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443").await?;
+let client = BittensorClient::with_default().await?;
 ```
 
 ## Common Queries

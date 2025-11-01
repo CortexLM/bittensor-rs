@@ -76,7 +76,7 @@ use bittensor_rs::chain::BittensorClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443").await?;
+    let client = BittensorClient::with_default().await?;
     
     // Query chain information
     let block_number = client.get_block_number().await?;
