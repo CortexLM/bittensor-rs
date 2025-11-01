@@ -38,11 +38,19 @@ pub struct BittensorClient {
 
 impl BittensorClient {
     /// Create a new Bittensor client connected to the specified RPC endpoint
+    /// Uses BITTENSOR_RPC env var if provided, otherwise defaults to Finney endpoint
     pub async fn new(rpc_url: impl Into<String>) -> Result<Self, Error> {
         let url = rpc_url.into();
         let api = subxt::OnlineClient::<PolkadotConfig>::from_url(&url).await?;
 
         Ok(Self { api, rpc_url: url })
+    }
+    
+    /// Create a new Bittensor client using default endpoint or BITTENSOR_RPC env var
+    pub async fn with_default() -> Result<Self, Error> {
+        let url = std::env::var("BITTENSOR_RPC")
+            .unwrap_or_else(|_| DEFAULT_RPC_URL.to_string());
+        Self::new(url).await
     }
 
     /// Get the underlying subxt API client

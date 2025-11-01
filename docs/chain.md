@@ -14,7 +14,7 @@ The `BittensorClient` is the primary interface for connecting to and interacting
 use bittensor_rs::chain::BittensorClient;
 
 // Connect to default endpoint
-let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443").await?;
+let client = BittensorClient::with_default().await?;
 
 // Connect to local node
 let client = BittensorClient::new("ws://127.0.0.1:9944").await?;
@@ -23,18 +23,17 @@ let client = BittensorClient::new("ws://127.0.0.1:9944").await?;
 ### Connection Options
 
 ```rust
-// With timeout
-let client = BittensorClient::with_timeout(
-    "wss://entrypoint-finney.opentensor.ai:443",
-    Duration::from_secs(30)
-).await?;
+// Use default endpoint
+let client = BittensorClient::with_default().await?;
 
-// With custom configuration
-let client = BittensorClient::builder()
-    .url("wss://entrypoint-finney.opentensor.ai:443")
-    .timeout(Duration::from_secs(30))
-    .build()
-    .await?;
+// Use custom endpoint
+use bittensor_rs::chain::DEFAULT_RPC_URL;
+let client = BittensorClient::new("ws://127.0.0.1:9944").await?;
+
+// Use environment variable or default
+let endpoint = std::env::var("BITTENSOR_RPC")
+    .unwrap_or_else(|_| DEFAULT_RPC_URL.to_string());
+let client = BittensorClient::new(endpoint).await?;
 ```
 
 ## Core Methods

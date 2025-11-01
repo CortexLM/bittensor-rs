@@ -5,7 +5,7 @@ use std::str::FromStr;
 #[tokio::test]
 async fn test_client_connection() {
     // Test de connexion au client
-    let result = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443").await;
+    let result = BittensorClient::with_default().await;
     assert!(result.is_ok(), "Failed to connect to Bittensor network");
 }
 
@@ -20,7 +20,7 @@ async fn test_metagraph_creation() {
 
 #[tokio::test]
 async fn test_runtime_api() {
-    let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443")
+    let client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
 
@@ -30,7 +30,7 @@ async fn test_runtime_api() {
 
 #[tokio::test]
 async fn test_block_number() {
-    let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443")
+    let client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
 
@@ -43,7 +43,7 @@ async fn test_block_number() {
 
 #[tokio::test]
 async fn test_storage_query() {
-    let client = BittensorClient::new("wss://entrypoint-finney.opentensor.ai:443")
+    let client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
 

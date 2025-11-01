@@ -7,9 +7,6 @@ use bittensor_rs::queries::subnets;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let rpc = std::env::var("BITTENSOR_RPC")
-        .unwrap_or_else(|_| "wss://entrypoint-finney.opentensor.ai:443".to_string());
-    let client = BittensorClient::new(rpc).await?;
 
     let seed: u64 = std::env::var("SEED")
         .ok()
@@ -23,6 +20,7 @@ async fn main() -> Result<()> {
         });
     let mut rng = StdRng::seed_from_u64(seed);
     println!("seed={}", seed);
+    let client = BittensorClient::with_default().await?;
 
     let total = subnets::total_subnets(&client).await.unwrap_or(0);
     println!("total_subnets={}", total);
