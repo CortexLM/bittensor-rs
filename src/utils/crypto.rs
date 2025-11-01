@@ -3,8 +3,9 @@ use hex;
 use sp_core::blake2_256;
 
 /// Generate a commit hash for weights using Blake2b
-pub fn commit_weights_hash(uids: &[u64], weights: &[u64], salt: &[u8]) -> Vec<u8> {
-    // Serialize UIDs, weights, and salt
+/// Uses u16 format for weights to match Subtensor's expected format
+pub fn commit_weights_hash(uids: &[u64], weights: &[u16], salt: &[u8]) -> Vec<u8> {
+    // Serialize UIDs (as u64), weights (as u16), and salt
     let mut data = Vec::new();
     for uid in uids {
         data.extend_from_slice(&uid.to_le_bytes());

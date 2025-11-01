@@ -8,15 +8,21 @@ const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const ADD_STAKE_FUNCTION: &str = "add_stake";
 const UNSTAKE_FUNCTION: &str = "remove_stake";
 
-/// Add stake to a hotkey
+/// Add stake to a hotkey on a specific subnet
+/// Subtensor expects: (hotkey, netuid, amount_staked)
 pub async fn add_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
     hotkey: &AccountId32,
+    netuid: u16,
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from_bytes(&hotkey.encode()), Value::u128(amount)];
+    let args = vec![
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(netuid as u128),
+        Value::u128(amount),
+    ];
 
     let tx_hash = client
         .submit_extrinsic(SUBTENSOR_MODULE, ADD_STAKE_FUNCTION, args, signer, wait_for)
@@ -26,15 +32,21 @@ pub async fn add_stake(
     Ok(tx_hash)
 }
 
-/// Unstake from a hotkey
+/// Unstake from a hotkey on a specific subnet
+/// Subtensor expects: (hotkey, netuid, amount_unstaked)
 pub async fn unstake(
     client: &BittensorClient,
     signer: &BittensorSigner,
     hotkey: &AccountId32,
+    netuid: u16,
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from_bytes(&hotkey.encode()), Value::u128(amount)];
+    let args = vec![
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(netuid as u128),
+        Value::u128(amount),
+    ];
 
     let tx_hash = client
         .submit_extrinsic(SUBTENSOR_MODULE, UNSTAKE_FUNCTION, args, signer, wait_for)
@@ -151,18 +163,23 @@ pub async fn set_auto_stake(
         .map_err(|e| anyhow::anyhow!("Failed to set auto stake: {}", e))
 }
 
-/// Move stake from one hotkey to another (same coldkey)
+/// Move stake from one hotkey to another across subnets
+/// Subtensor expects: (origin_hotkey, destination_hotkey, origin_netuid, destination_netuid, alpha_amount)
 pub async fn move_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
     from_hotkey: &AccountId32,
     to_hotkey: &AccountId32,
+    origin_netuid: u16,
+    destination_netuid: u16,
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
         Value::from_bytes(&from_hotkey.encode()),
         Value::from_bytes(&to_hotkey.encode()),
+        Value::u128(origin_netuid as u128),
+        Value::u128(destination_netuid as u128),
         Value::u128(amount),
     ];
 
@@ -172,18 +189,21 @@ pub async fn move_stake(
         .map_err(|e| anyhow::anyhow!("Failed to move stake: {}", e))
 }
 
-/// Swap stake between hotkeys (different coldkeys)
+/// Swap stake from one subnet to another for a hotkey
+/// Subtensor expects: (hotkey, origin_netuid, destination_netuid, alpha_amount)
 pub async fn swap_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
-    from_hotkey: &AccountId32,
-    to_hotkey: &AccountId32,
+    hotkey: &AccountId32,
+    origin_netuid: u16,
+    destination_netuid: u16,
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&from_hotkey.encode()),
-        Value::from_bytes(&to_hotkey.encode()),
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(origin_netuid as u128),
+        Value::u128(destination_netuid as u128),
         Value::u128(amount),
     ];
 

@@ -5,11 +5,12 @@ use subxt::dynamic::Value;
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
 /// Commit mechanism weights
+/// Subtensor expects: (netuid, mecid: u8, commit_hash: H256)
 pub async fn commit_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u64,
+    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
     commit_hash: &str,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
@@ -35,23 +36,26 @@ pub async fn commit_mechanism_weights(
 }
 
 /// Reveal mechanism weights
+/// Subtensor expects: (netuid, mecid: u8, uids: Vec<u16>, values: Vec<u16>, salt: Vec<u16>, version_key: u64)
 pub async fn reveal_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u64,
+    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
     uids: &[u64],
-    weights: &[u64],
+    weights: &[u16],  // Changed from u64 to u16 to match Subtensor format
     salt: &[u8],
     version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
+    let uid_u16: Vec<u16> = uids.iter().map(|uid| *uid as u16).collect();
+    // Convert salt from u8 to u16 (Subtensor expects Vec<u16>)
+    let salt_u16: Vec<u16> = salt.iter().map(|b| *b as u16).collect();
+
+    let uid_values: Vec<Value> = uid_u16.iter().map(|uid| Value::u128(*uid as u128)).collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
-    let salt_values: Vec<Value> = salt
-        .iter()
-        .map(|s| Value::u128((*s as u64) as u128))
-        .collect();
+    let salt_values: Vec<Value> = salt_u16.iter().map(|s| Value::u128(*s as u128)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
@@ -75,17 +79,18 @@ pub async fn reveal_mechanism_weights(
 }
 
 /// Set mechanism weights directly
+/// Subtensor expects: (netuid, mecid: u8, dests: Vec<u16>, weights: Vec<u16>, version_key: u64)
 pub async fn set_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u64,
+    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
     uids: &[u64],
     weights: &[f32],
     version_key: Option<u64>,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    // Normalize weights first
+    // Normalize weights first (returns Vec<u16>)
     let (weight_uids, weight_vals) = crate::utils::normalize_weights(uids, weights)?;
 
     let uid_values: Vec<Value> = weight_uids
@@ -98,7 +103,7 @@ pub async fn set_mechanism_weights(
         .collect();
 
     let version = version_key
-        .ok_or_else(|| anyhow::anyhow!("Version key is required for commit_mechanism_weights"))?;
+        .ok_or_else(|| anyhow::anyhow!("Version key is required for set_mechanism_weights"))?;
 
     let args = vec![
         Value::u128(netuid as u128),
