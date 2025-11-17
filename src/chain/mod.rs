@@ -331,6 +331,22 @@ impl BittensorClient {
         }
     }
 
+    /// Subscribe to finalized blocks
+    /// Returns a stream of block numbers as they are finalized
+    pub async fn subscribe_finalized_blocks(
+        &self,
+    ) -> Result<impl futures::Stream<Item = Result<u64, Error>> + Send + '_, Error> {
+        use futures::StreamExt;
+        
+        let block_stream = self.api.blocks().subscribe_finalized().await?;
+
+        Ok(block_stream.map(|result| {
+            result
+                .map(|block| block.number() as u64)
+                .map_err(|e| Error::Subxt(e))
+        }))
+    }
+
     /// Get block hash for a given block number
     pub async fn block_hash(&self, block_number: u64) -> Result<Option<sp_core::H256>, Error> {
         // Get block hash via backend
