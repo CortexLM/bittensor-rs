@@ -216,3 +216,95 @@ pub async fn get_minimum_required_stake(client: &BittensorClient) -> Result<u128
     decode_u128(&min_stake_val)
         .map_err(|e| anyhow::anyhow!("Failed to decode NominatorMinRequiredStake: {}", e))
 }
+
+/// Get hotkey stake (alias for get_stake_for_hotkey)
+pub async fn get_hotkey_stake(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<u128> {
+    get_stake_for_hotkey(client, hotkey, netuid).await
+}
+
+/// Get stake add fee for a given amount
+pub async fn get_stake_add_fee(
+    client: &BittensorClient,
+    amount: u128,
+    netuid: u16,
+) -> Result<u128> {
+    get_stake_operations_fee(client, amount, netuid).await
+}
+
+/// Get unstake fee for a given amount
+pub async fn get_unstake_fee(
+    client: &BittensorClient,
+    amount: u128,
+    netuid: u16,
+) -> Result<u128> {
+    get_stake_operations_fee(client, amount, netuid).await
+}
+
+/// Get stake movement fee for a given amount
+pub async fn get_stake_movement_fee(
+    client: &BittensorClient,
+    amount: u128,
+    netuid: u16,
+) -> Result<u128> {
+    get_stake_operations_fee(client, amount, netuid).await
+}
+
+/// Get stake operations fee (base calculation for add/unstake/movement)
+pub async fn get_stake_operations_fee(
+    client: &BittensorClient,
+    amount: u128,
+    netuid: u16,
+) -> Result<u128> {
+    let keys = vec![Value::u128(netuid as u128)];
+    if let Some(val) = client
+        .storage_with_keys("Swap", "FeeRate", keys)
+        .await?
+    {
+        if let Ok(fee_rate) = decode_u64(&val) {
+            // fee = amount * fee_rate / U16_MAX
+            let fee = (amount as u128 * fee_rate as u128) / (u16::MAX as u128);
+            return Ok(fee);
+        }
+    }
+    Ok(0)
+}
+
+/// Get stake info for a coldkey (detailed stake information)
+pub async fn get_stake_info_for_coldkey(
+    client: &BittensorClient,
+    coldkey: &AccountId32,
+) -> Result<Vec<StakeInfo>> {
+    let stakes = get_stake_for_coldkey(client, coldkey).await?;
+    let owned_hotkeys = crate::queries::wallets::get_owned_hotkeys(client, coldkey).await?;
+
+    let mut result = Vec::new();
+    for (netuid, _total_stake) in stakes {
+        for hotkey in &owned_hotkeys {
+            if let Ok(stake) = get_stake(client, coldkey, hotkey, netuid).await {
+                if stake > 0 {
+                    result.push(StakeInfo {
+                        hotkey: hotkey.clone(),
+                        coldkey: coldkey.clone(),
+                        netuid,
+                        stake,
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(result)
+}
+
+/// Stake info structure
+#[derive(Debug, Clone)]
+pub struct StakeInfo {
+    pub hotkey: AccountId32,
+    pub coldkey: AccountId32,
+    pub netuid: u16,
+    pub stake: u128,
+}

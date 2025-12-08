@@ -4,14 +4,14 @@ use std::str::FromStr;
 
 #[tokio::test]
 async fn test_client_connection() {
-    // Test de connexion au client
+    // Test client connection
     let result = BittensorClient::with_default().await;
     assert!(result.is_ok(), "Failed to connect to Bittensor network");
 }
 
 #[tokio::test]
 async fn test_metagraph_creation() {
-    // Test de création du metagraph
+    // Test metagraph creation
     let metagraph = Metagraph::new(1); // Subnet 1
     assert_eq!(metagraph.netuid, 1);
     assert_eq!(metagraph.n, 0);
@@ -20,12 +20,12 @@ async fn test_metagraph_creation() {
 
 #[tokio::test]
 async fn test_runtime_api() {
-    let client = BittensorClient::with_default()
+    let _client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
 
-    // Test utilisation du client (API accessible depuis BittensorClient)
-    // Le client est déjà connecté, pas besoin de get_api()
+    // Test client usage (API accessible from BittensorClient)
+    // Client is already connected, no need to call get_api()
 }
 
 #[tokio::test]
@@ -34,7 +34,7 @@ async fn test_block_number() {
         .await
         .expect("Failed to connect");
 
-    // Test récupération du numéro de bloc
+    // Test block number retrieval
     let result = client.block_number().await;
     assert!(result.is_ok(), "Failed to get block number");
     let block = result.unwrap();
@@ -43,22 +43,22 @@ async fn test_block_number() {
 
 #[tokio::test]
 async fn test_storage_query() {
-    let client = BittensorClient::with_default()
+    let _client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
 
-    // Test simple : vérifier que le client est bien connecté
-    // (le block_number utilise déjà l'API interne)
+    // Simple test: verify client is connected
+    // (block_number already uses internal API)
 }
 
 #[tokio::test]
 async fn test_account_id_parsing() {
-    // Test avec adresse valide
+    // Test with valid address
     let valid_address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
     let account = AccountId32::from_str(valid_address);
     assert!(account.is_ok(), "Failed to parse valid address");
 
-    // Test avec adresse invalide
+    // Test with invalid address
     let invalid_address = "invalid_address";
     let account = AccountId32::from_str(invalid_address);
     assert!(account.is_err(), "Should fail with invalid address");
@@ -66,14 +66,14 @@ async fn test_account_id_parsing() {
 
 #[tokio::test]
 async fn test_error_handling() {
-    // Test avec une URL invalide
+    // Test with invalid URL
     let result = BittensorClient::new("invalid_url").await;
     assert!(result.is_err(), "Should fail with invalid URL");
 }
 
 #[tokio::test]
 async fn test_keypair_generation() {
-    // Test de génération de paire de clés
+    // Test keypair generation
     let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
     let public_key = pair.public();
 
@@ -82,7 +82,7 @@ async fn test_keypair_generation() {
 
 #[tokio::test]
 async fn test_chain_connection() {
-    // Test de connexion avec endpoint par défaut
+    // Test connection with default endpoint
     let result = BittensorClient::new(bittensor_rs::chain::DEFAULT_RPC_URL).await;
     assert!(result.is_ok(), "Failed to connect to default endpoint");
 }

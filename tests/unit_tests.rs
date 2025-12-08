@@ -1,5 +1,4 @@
 use bittensor_rs::{
-    delegate::DelegateInfoBase,
     metagraph::Metagraph,
     types::{AxonInfo, DelegateInfo, NeuronInfo, PrometheusInfo, SubnetInfo},
 };
@@ -132,9 +131,9 @@ fn test_account_id_from_string() {
     let account_str = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
     let account_id = AccountId32::from_str(account_str).unwrap();
 
-    // Vérifier que l'AccountId a été créé correctement
+    // Verify that AccountId was created correctly
     let bytes: &[u8] = account_id.as_ref();
-    assert_eq!(bytes.len(), 32); // AccountId32 doit avoir 32 bytes
+    assert_eq!(bytes.len(), 32); // AccountId32 must have 32 bytes
 }
 
 #[test]
