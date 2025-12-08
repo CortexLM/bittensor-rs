@@ -515,3 +515,207 @@ async fn fetch_u64_storage_opt(
         Ok(None)
     }
 }
+
+/// Neuron certificate information
+#[derive(Debug, Clone)]
+pub struct Certificate {
+    pub certificate: String,
+}
+
+/// Get neuron certificate for a hotkey on a subnet
+pub async fn get_neuron_certificate(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<Option<Certificate>> {
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(&hotkey.encode()),
+    ];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "NeuronCertificates", keys)
+        .await?
+    {
+        let cert_str = format!("{:?}", val);
+        return Ok(Some(Certificate {
+            certificate: cert_str,
+        }));
+    }
+    Ok(None)
+}
+
+/// Get all neuron certificates for a subnet
+pub async fn get_all_neuron_certificates(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<HashMap<AccountId32, Certificate>> {
+    let mut certs = HashMap::new();
+
+    let n_val = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?;
+    let n: u64 = n_val.and_then(|v| decode_u64(&v).ok()).unwrap_or(0);
+
+    for uid in 0..n {
+        let hotkey_keys = vec![Value::u128(netuid as u128), Value::u128(uid as u128)];
+        if let Some(hotkey_val) = client
+            .storage_with_keys(SUBTENSOR_MODULE, "Keys", hotkey_keys)
+            .await?
+        {
+            if let Ok(hotkey) = decode_account_id32(&hotkey_val) {
+                if let Some(cert) = get_neuron_certificate(client, &hotkey, netuid).await? {
+                    certs.insert(hotkey, cert);
+                }
+            }
+        }
+    }
+
+    Ok(certs)
+}
+
+/// Get neuron for a pubkey on a subnet
+pub async fn get_neuron_for_pubkey_and_subnet(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<Option<NeuronInfo>> {
+    let uid_keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(&hotkey.encode()),
+    ];
+
+    if let Some(uid_val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Uids", uid_keys)
+        .await?
+    {
+        if let Ok(uid) = decode_u64(&uid_val) {
+            return query_neuron_from_storage(client, netuid, uid, None).await;
+        }
+    }
+    Ok(None)
+}
+
+/// Get children hotkeys for a parent hotkey on a subnet
+/// Returns list of (proportion, child_hotkey)
+pub async fn get_children(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<Vec<(f64, AccountId32)>> {
+    let keys = vec![
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(netuid as u128),
+    ];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "ChildKeys", keys)
+        .await?
+    {
+        return parse_children_or_parents_from_value(&val);
+    }
+    Ok(Vec::new())
+}
+
+/// Get pending children for a hotkey on a subnet
+/// Returns (list of (proportion, child_hotkey), cooldown_block)
+pub async fn get_children_pending(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<(Vec<(f64, AccountId32)>, u64)> {
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(&hotkey.encode()),
+    ];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "PendingChildKeys", keys)
+        .await?
+    {
+        let s = format!("{:?}", val);
+        let children = parse_children_or_parents_from_value(&val).unwrap_or_default();
+        let cooldown = extract_last_u64_from_str(&s).unwrap_or(0);
+        return Ok((children, cooldown));
+    }
+    Ok((Vec::new(), 0))
+}
+
+/// Get parent hotkeys for a child hotkey on a subnet
+/// Returns list of (proportion, parent_hotkey)
+pub async fn get_parents(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+    netuid: u16,
+) -> Result<Vec<(f64, AccountId32)>> {
+    let keys = vec![
+        Value::from_bytes(&hotkey.encode()),
+        Value::u128(netuid as u128),
+    ];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "ParentKeys", keys)
+        .await?
+    {
+        return parse_children_or_parents_from_value(&val);
+    }
+    Ok(Vec::new())
+}
+
+/// Helper to parse children/parents from storage value
+fn parse_children_or_parents_from_value<T: std::fmt::Debug>(
+    val: &T,
+) -> Result<Vec<(f64, AccountId32)>> {
+    let mut result = Vec::new();
+    let s = format!("{:?}", val);
+
+    // Parse tuples of (u64, AccountId32) from the string representation
+    // Try multiple patterns for different formats
+    let patterns = [
+        r"(\d+),\s*\(?AccountId32\((\[[^\]]+\])",
+        r"(\d+),\s*\[([^\]]+)\]",
+    ];
+
+    for pattern in patterns {
+        if let Ok(re) = regex::Regex::new(pattern) {
+            for cap in re.captures_iter(&s) {
+                if let (Some(prop_match), Some(bytes_match)) = (cap.get(1), cap.get(2)) {
+                    if let Ok(proportion) = prop_match.as_str().parse::<u64>() {
+                        let normalized = proportion as f64 / u64::MAX as f64;
+                        let bytes_str = bytes_match.as_str();
+                        let bytes: Vec<u8> = bytes_str
+                            .trim_matches(|c| c == '[' || c == ']')
+                            .split(',')
+                            .filter_map(|s| s.trim().parse::<u8>().ok())
+                            .collect();
+                        if bytes.len() == 32 {
+                            let mut arr = [0u8; 32];
+                            arr.copy_from_slice(&bytes);
+                            result.push((normalized, AccountId32::from(arr)));
+                        }
+                    }
+                }
+            }
+            if !result.is_empty() {
+                break;
+            }
+        }
+    }
+
+    Ok(result)
+}
+
+/// Extract last u64 from a string (for cooldown parsing)
+fn extract_last_u64_from_str(s: &str) -> Option<u64> {
+    if let Ok(re) = regex::Regex::new(r"(\d+)") {
+        re.find_iter(s)
+            .last()
+            .and_then(|m| m.as_str().parse::<u64>().ok())
+    } else {
+        None
+    }
+}

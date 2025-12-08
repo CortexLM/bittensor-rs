@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
         println!("no subnets");
         return Ok(());
     }
-    let netuid: u16 = rng.gen_range(0..total);
+    let netuid: u16 = rng.random_range(0..total);
     let n_val = client
         .storage_with_keys(
             "SubtensorModule",
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
         println!("empty subnet");
         return Ok(());
     }
-    let uid: u64 = rng.gen_range(0..n);
+    let uid: u64 = rng.random_range(0..n);
 
     let hotkey_val = client
         .storage_with_keys(

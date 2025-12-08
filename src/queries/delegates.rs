@@ -3,12 +3,26 @@ use crate::types::delegate::DelegateInfoBase;
 use crate::types::{DelegateInfo, DelegatedInfo};
 use crate::utils::value_decode::{decode_account_id32, decode_u16};
 use anyhow::Result;
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Compact, Decode, Encode};
 use sp_core::crypto::AccountId32;
 use std::collections::{HashMap, HashSet};
 use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
+
+/// DelegateInfo structure matching the on-chain SCALE encoding
+/// This is the exact structure used in subtensor runtime
+#[derive(Decode, Clone, Debug)]
+struct DelegateInfoRaw {
+    delegate_ss58: AccountId32,
+    take: Compact<u16>,
+    nominators: Vec<(AccountId32, Vec<(Compact<u16>, Compact<u64>)>)>,
+    owner_ss58: AccountId32,
+    registrations: Vec<Compact<u16>>,
+    validator_permits: Vec<Compact<u16>>,
+    return_per_1000: Compact<u64>,
+    total_daily_return: Compact<u64>,
+}
 
 /// Get delegate by hotkey - built from storage
 pub async fn get_delegate_by_hotkey(
@@ -220,8 +234,67 @@ pub async fn get_delegated(
     Ok(out)
 }
 
-/// Get all delegates by building from storage
+/// Get all delegates using runtime API (single RPC call like Python SDK)
+/// Optimized version using direct SCALE decoding for maximum performance
 pub async fn get_delegates(client: &BittensorClient) -> Result<Vec<DelegateInfo>> {
+    // Use runtime_api_call which returns raw bytes for direct SCALE decoding
+    // This is much faster than going through Value parsing
+    let raw_bytes = client
+        .runtime_api_call("DelegateInfoRuntimeApi", "get_delegates", None)
+        .await?;
+
+    if raw_bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Decode Vec<DelegateInfoRaw> directly from SCALE bytes
+    let raw_delegates: Vec<DelegateInfoRaw> =
+        Vec::<DelegateInfoRaw>::decode(&mut &raw_bytes[..]).map_err(|e| {
+            anyhow::anyhow!("Failed to decode delegates from runtime API: {}", e)
+        })?;
+
+    // Convert to our DelegateInfo type
+    let delegates: Vec<DelegateInfo> = raw_delegates
+        .into_iter()
+        .map(|raw| {
+            // Convert nominators: Vec<(AccountId32, Vec<(netuid, stake)>)> to HashMap
+            let mut nominators: HashMap<AccountId32, HashMap<u16, u128>> = HashMap::new();
+            let mut total_stake: HashMap<u16, u128> = HashMap::new();
+
+            for (nominator, stakes) in raw.nominators {
+                let mut stake_map: HashMap<u16, u128> = HashMap::new();
+                for (netuid, stake) in stakes {
+                    let netuid_val = netuid.0;
+                    let stake_val = stake.0 as u128;
+                    stake_map.insert(netuid_val, stake_val);
+
+                    // Accumulate total stake per netuid
+                    *total_stake.entry(netuid_val).or_insert(0) += stake_val;
+                }
+                nominators.insert(nominator, stake_map);
+            }
+
+            DelegateInfo {
+                base: DelegateInfoBase {
+                    hotkey_ss58: raw.delegate_ss58,
+                    owner_ss58: raw.owner_ss58,
+                    take: raw.take.0 as f64 / u16::MAX as f64,
+                    validator_permits: raw.validator_permits.iter().map(|c| c.0).collect(),
+                    registrations: raw.registrations.iter().map(|c| c.0).collect(),
+                    return_per_1000: raw.return_per_1000.0 as u128,
+                    total_daily_return: raw.total_daily_return.0 as u128,
+                },
+                total_stake,
+                nominators,
+            }
+        })
+        .collect();
+
+    Ok(delegates)
+}
+
+/// Get all delegates by building from storage (fallback method, slower but complete)
+pub async fn get_delegates_from_storage(client: &BittensorClient) -> Result<Vec<DelegateInfo>> {
     let ids = get_delegate_identities(client).await?;
     let mut delegates = Vec::new();
     for hk in ids.iter() {

@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
         println!("no subnets");
         return Ok(());
     }
-    let netuid: u16 = rng.gen_range(0..total);
+    let netuid: u16 = rng.random_range(0..total);
     println!("netuid={}\n", netuid);
 
     let neurons_list = neurons::neurons(&client, netuid, None).await?;

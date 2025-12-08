@@ -9,6 +9,71 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
+/// Check if commit-reveal mechanism is enabled for a subnet
+pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Result<bool> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "CommitRevealWeightsEnabled",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_bool(&val).unwrap_or(false));
+    }
+    Ok(false)
+}
+
+/// Get the recycle/burn amount for a subnet
+pub async fn recycle(client: &BittensorClient, netuid: u16) -> Result<Option<u128>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "Burn",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u128(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Get the reveal period epochs for a subnet
+pub async fn get_subnet_reveal_period_epochs(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "RevealPeriodEpochs",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Check if a subnet is active (FirstEmissionBlockNumber > 0)
+pub async fn is_subnet_active(client: &BittensorClient, netuid: u16) -> Result<bool> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "FirstEmissionBlockNumber",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        if let Ok(block_num) = decode_u64(&val) {
+            return Ok(block_num > 0);
+        }
+    }
+    Ok(false)
+}
+
 /// Get all subnet infos using storage
 pub async fn all_subnets(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
     let total = total_subnets(client).await.unwrap_or(0);
@@ -97,6 +162,23 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
 /// Get all subnets information
 pub async fn all_subnets_info(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
     all_subnets(client).await
+}
+
+/// Get neuron count for a subnet
+pub async fn subnet_n(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    let result = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?;
+
+    if let Some(value) = result {
+        Ok(decode_u64(&value).ok())
+    } else {
+        Ok(None)
+    }
 }
 
 /// Extract if subnet exists

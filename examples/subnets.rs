@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let netuid: u16 = rng.gen_range(0..total);
+    let netuid: u16 = rng.random_range(0..total);
     println!("netuid={}", netuid);
 
     let n_value = client
