@@ -29,18 +29,32 @@ pub async fn neurons(
         return Ok(vec![]);
     }
 
-    // Step 1: Fetch all vector storages for the subnet (these are bulk already)
-    let rank_vec = fetch_vec_u16(client, "Rank", &n_key).await?;
-    let trust_vec = fetch_vec_u16(client, "Trust", &n_key).await?;
-    let consensus_vec = fetch_vec_u16(client, "Consensus", &n_key).await?;
-    let validator_trust_vec = fetch_vec_u16(client, "ValidatorTrust", &n_key).await?;
-    let incentive_vec = fetch_vec_u16(client, "Incentive", &n_key).await?;
-    let dividends_vec = fetch_vec_u16(client, "Dividends", &n_key).await?;
-    let active_vec = fetch_vec_bool(client, "Active", &n_key).await?;
-    let last_update_vec = fetch_vec_u64(client, "LastUpdate", &n_key).await?;
-    let emission_vec = fetch_vec_u128(client, "Emission", &n_key).await?;
-    let validator_permit_vec = fetch_vec_bool(client, "ValidatorPermit", &n_key).await?;
-    let pruning_scores_vec = fetch_vec_u16(client, "PruningScores", &n_key).await?;
+    // Step 1: Fetch all vector storages for the subnet in parallel
+    let (
+        rank_vec,
+        trust_vec,
+        consensus_vec,
+        validator_trust_vec,
+        incentive_vec,
+        dividends_vec,
+        active_vec,
+        last_update_vec,
+        emission_vec,
+        validator_permit_vec,
+        pruning_scores_vec,
+    ) = tokio::try_join!(
+        fetch_vec_u16(client, "Rank", &n_key),
+        fetch_vec_u16(client, "Trust", &n_key),
+        fetch_vec_u16(client, "Consensus", &n_key),
+        fetch_vec_u16(client, "ValidatorTrust", &n_key),
+        fetch_vec_u16(client, "Incentive", &n_key),
+        fetch_vec_u16(client, "Dividends", &n_key),
+        fetch_vec_bool(client, "Active", &n_key),
+        fetch_vec_u64(client, "LastUpdate", &n_key),
+        fetch_vec_u128(client, "Emission", &n_key),
+        fetch_vec_bool(client, "ValidatorPermit", &n_key),
+        fetch_vec_u16(client, "PruningScores", &n_key),
+    )?;
 
     // Step 2: Batch fetch all hotkeys
     let mut hotkeys = Vec::with_capacity(n as usize);
@@ -296,17 +310,32 @@ pub async fn query_neuron_from_storage(
     let netuid_key = vec![Value::u128(netuid as u128)];
     let idx = uid as usize;
 
-    let rank_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Rank", netuid_key.clone()).await?;
-    let trust_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Trust", netuid_key.clone()).await?;
-    let consensus_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Consensus", netuid_key.clone()).await?;
-    let validator_trust_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "ValidatorTrust", netuid_key.clone()).await?;
-    let incentive_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Incentive", netuid_key.clone()).await?;
-    let dividends_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Dividends", netuid_key.clone()).await?;
-    let active_vec = fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "Active", netuid_key.clone()).await?;
-    let last_update_vec = fetch_vec_u64_storage(client, SUBTENSOR_MODULE, "LastUpdate", netuid_key.clone()).await?;
-    let emission_vec = fetch_vec_u128_storage(client, SUBTENSOR_MODULE, "Emission", netuid_key.clone()).await?;
-    let validator_permit_vec = fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "ValidatorPermit", netuid_key.clone()).await?;
-    let pruning_scores_vec = fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "PruningScores", netuid_key.clone()).await?;
+    // Fetch all vector storages in parallel
+    let (
+        rank_vec,
+        trust_vec,
+        consensus_vec,
+        validator_trust_vec,
+        incentive_vec,
+        dividends_vec,
+        active_vec,
+        last_update_vec,
+        emission_vec,
+        validator_permit_vec,
+        pruning_scores_vec,
+    ) = tokio::try_join!(
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Rank", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Trust", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Consensus", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "ValidatorTrust", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Incentive", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Dividends", netuid_key.clone()),
+        fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "Active", netuid_key.clone()),
+        fetch_vec_u64_storage(client, SUBTENSOR_MODULE, "LastUpdate", netuid_key.clone()),
+        fetch_vec_u128_storage(client, SUBTENSOR_MODULE, "Emission", netuid_key.clone()),
+        fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "ValidatorPermit", netuid_key.clone()),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "PruningScores", netuid_key.clone()),
+    )?;
 
     let rank = rank_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
     let trust = trust_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;

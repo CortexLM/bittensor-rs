@@ -223,104 +223,29 @@ pub fn fixed_u128_to_f64(bits: u128, frac_bits: u32) -> f64 {
     (integer_part as f64) + frac_float
 }
 
-/// Decode AxonInfo from a Value (7-element tuple)
+/// Decode AxonInfo from a Value
+/// Subtensor AxonInfo: { block: u64, version: u32, ip: u128, port: u16, ip_type: u8, protocol: u8, placeholder1: u8, placeholder2: u8 }
 pub fn decode_axon_info(value: &Value) -> Result<crate::types::AxonInfo> {
     let s = format!("{:?}", value);
 
-    // AxonInfo is a tuple with 7 elements
-    // Parse the debug representation to extract values
-    let mut values = Vec::new();
-    let mut remaining = &s[..];
+    // Extract exactly: U64, U32, U128, U16, U8, U8, U8, U8
+    let block = extract_u64(&s, 0).ok_or_else(|| anyhow!("AxonInfo: missing block (u64)"))?;
+    let version = extract_u32(&s, block.1).ok_or_else(|| anyhow!("AxonInfo: missing version (u32)"))?;
+    let ip_u128 = extract_u128(&s, version.1).ok_or_else(|| anyhow!("AxonInfo: missing ip (u128)"))?;
+    let port = extract_u16(&s, ip_u128.1).ok_or_else(|| anyhow!("AxonInfo: missing port (u16)"))?;
+    let ip_type = extract_u8(&s, port.1).ok_or_else(|| anyhow!("AxonInfo: missing ip_type (u8)"))?;
+    let protocol = extract_u8(&s, ip_type.1).ok_or_else(|| anyhow!("AxonInfo: missing protocol (u8)"))?;
+    let placeholder1 = extract_u8(&s, protocol.1).ok_or_else(|| anyhow!("AxonInfo: missing placeholder1 (u8)"))?;
+    let placeholder2 = extract_u8(&s, placeholder1.1).ok_or_else(|| anyhow!("AxonInfo: missing placeholder2 (u8)"))?;
 
-    // Extract all numeric values in order
-    while values.len() < 7 {
-        // Try U128 first (most common)
-        if let Some(pos) = remaining.find("U128(") {
-            let start = pos + 5;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u128>() {
-                    values.push(num);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U64
-        if let Some(pos) = remaining.find("U64(") {
-            let start = pos + 4;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u64>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U16
-        if let Some(pos) = remaining.find("U16(") {
-            let start = pos + 4;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u16>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U8
-        if let Some(pos) = remaining.find("U8(") {
-            let start = pos + 3;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u8>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // If no more values found, break
-        break;
-    }
-
-    if values.len() != 7 {
-        return Err(anyhow!(
-            "AxonInfo requires 7 elements, got {}",
-            values.len()
-        ));
-    }
-
-    let version = values[0] as u64;
-    let ip_u128 = values[1];
-    let port = values[2] as u16;
-    let ip_type = values[3] as u8;
-    let protocol = values[4] as u8;
-    let placeholder1 = values[5] as u64;
-    let placeholder2 = values[6] as u64;
-
-    // Convert IP from u128
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-    let ip = if ip_type == 4 {
-        // IPv4: extract last 32 bits
-        let ip_bytes = (ip_u128 as u32).to_be_bytes();
-        IpAddr::V4(Ipv4Addr::new(
-            ip_bytes[0],
-            ip_bytes[1],
-            ip_bytes[2],
-            ip_bytes[3],
-        ))
+    let ip = if ip_type.0 == 4 {
+        let ip_bytes = (ip_u128.0 as u32).to_be_bytes();
+        IpAddr::V4(Ipv4Addr::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]))
     } else {
-        // IPv6: use full 128 bits
-        let ip_bytes = ip_u128.to_be_bytes();
-        let segments = [
+        let ip_bytes = ip_u128.0.to_be_bytes();
+        IpAddr::V6(Ipv6Addr::new(
             u16::from_be_bytes([ip_bytes[0], ip_bytes[1]]),
             u16::from_be_bytes([ip_bytes[2], ip_bytes[3]]),
             u16::from_be_bytes([ip_bytes[4], ip_bytes[5]]),
@@ -329,28 +254,60 @@ pub fn decode_axon_info(value: &Value) -> Result<crate::types::AxonInfo> {
             u16::from_be_bytes([ip_bytes[10], ip_bytes[11]]),
             u16::from_be_bytes([ip_bytes[12], ip_bytes[13]]),
             u16::from_be_bytes([ip_bytes[14], ip_bytes[15]]),
-        ];
-        IpAddr::V6(Ipv6Addr::new(
-            segments[0],
-            segments[1],
-            segments[2],
-            segments[3],
-            segments[4],
-            segments[5],
-            segments[6],
-            segments[7],
         ))
     };
 
     Ok(crate::types::AxonInfo::from_chain_data(
-        version,
+        block.0,
+        version.0,
         ip,
-        port,
-        ip_type,
-        protocol,
-        placeholder1,
-        placeholder2,
+        port.0,
+        ip_type.0,
+        protocol.0,
+        placeholder1.0,
+        placeholder2.0,
     ))
+}
+
+// Strict extraction helpers - return (value, end_position)
+pub fn extract_u64(s: &str, from: usize) -> Option<(u64, usize)> {
+    let pos = s[from..].find("U64(")? + from;
+    let start = pos + 4;
+    let end = s[start..].find(')')? + start;
+    let num = s[start..end].trim().parse::<u64>().ok()?;
+    Some((num, end))
+}
+
+pub fn extract_u32(s: &str, from: usize) -> Option<(u32, usize)> {
+    let pos = s[from..].find("U32(")? + from;
+    let start = pos + 4;
+    let end = s[start..].find(')')? + start;
+    let num = s[start..end].trim().parse::<u32>().ok()?;
+    Some((num, end))
+}
+
+pub fn extract_u128(s: &str, from: usize) -> Option<(u128, usize)> {
+    let pos = s[from..].find("U128(")? + from;
+    let start = pos + 5;
+    let end = s[start..].find(')')? + start;
+    let num = s[start..end].trim().parse::<u128>().ok()?;
+    Some((num, end))
+}
+
+pub fn extract_u16(s: &str, from: usize) -> Option<(u16, usize)> {
+    let pos = s[from..].find("U16(")? + from;
+    let start = pos + 4;
+    let end = s[start..].find(')')? + start;
+    let num = s[start..end].trim().parse::<u16>().ok()?;
+    Some((num, end))
+}
+
+pub fn extract_u8(s: &str, from: usize) -> Option<(u8, usize)> {
+    let pos = s[from..].find("U8(")? + from;
+    let start = pos + 3;
+    let end = s[start..].find(')')? + start;
+    let num = s[start..end].trim().parse::<u8>().ok()?;
+    Some((num, end))
 }
 
 /// Helper to decode identity data from a map structure

@@ -553,100 +553,26 @@ pub fn decode_vec_u64_u64_pairs(value: &Value) -> Result<Vec<(u64, u64)>> {
 }
 
 /// Decode PrometheusInfo from Value
+/// Subtensor PrometheusInfo: { block: u64, version: u32, ip: u128, port: u16, ip_type: u8 }
 pub fn decode_prometheus_info(value: &Value) -> Result<crate::types::PrometheusInfo> {
+    use crate::utils::scale_decode::{extract_u64, extract_u32, extract_u128, extract_u16, extract_u8};
     let s = format!("{:?}", value);
 
-    // PrometheusInfo is a tuple with 5 elements: (block, version, ip, port, ip_type)
-    let mut values: Vec<u128> = Vec::new();
-    let mut remaining = &s[..];
+    // Extract exactly: U64, U32, U128, U16, U8
+    let block = extract_u64(&s, 0).ok_or_else(|| anyhow!("PrometheusInfo: missing block (u64)"))?;
+    let version = extract_u32(&s, block.1).ok_or_else(|| anyhow!("PrometheusInfo: missing version (u32)"))?;
+    let ip_u128 = extract_u128(&s, version.1).ok_or_else(|| anyhow!("PrometheusInfo: missing ip (u128)"))?;
+    let port = extract_u16(&s, ip_u128.1).ok_or_else(|| anyhow!("PrometheusInfo: missing port (u16)"))?;
+    let ip_type = extract_u8(&s, port.1).ok_or_else(|| anyhow!("PrometheusInfo: missing ip_type (u8)"))?;
 
-    // Extract all numeric values in order
-    while values.len() < 5 {
-        // Try U64 first (block, version)
-        if let Some(pos) = remaining.find("U64(") {
-            let start = pos + 4;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u64>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U128
-        if let Some(pos) = remaining.find("U128(") {
-            let start = pos + 5;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u128>() {
-                    values.push(num);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U16 (port)
-        if let Some(pos) = remaining.find("U16(") {
-            let start = pos + 4;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u16>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // Try U8 (ip_type)
-        if let Some(pos) = remaining.find("U8(") {
-            let start = pos + 3;
-            if let Some(end) = remaining[start..].find(')') {
-                let num_str = &remaining[start..start + end];
-                if let Ok(num) = num_str.trim().parse::<u8>() {
-                    values.push(num as u128);
-                    remaining = &remaining[start + end..];
-                    continue;
-                }
-            }
-        }
-
-        // If no more values found, break
-        break;
-    }
-
-    if values.len() < 5 {
-        return Err(anyhow!(
-            "PrometheusInfo requires 5 elements, got {}",
-            values.len()
-        ));
-    }
-
-    let block = values[0] as u64;
-    let version = values[1] as u64;
-    let ip_u128 = values[2];
-    let port = values[3] as u16;
-    let ip_type = values[4] as u8;
-
-    // Convert IP from u128
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-    let ip = if ip_type == 4 {
-        // IPv4: extract last 32 bits
-        let ip_bytes = (ip_u128 as u32).to_be_bytes();
-        IpAddr::V4(Ipv4Addr::new(
-            ip_bytes[0],
-            ip_bytes[1],
-            ip_bytes[2],
-            ip_bytes[3],
-        ))
+    let ip = if ip_type.0 == 4 {
+        let ip_bytes = (ip_u128.0 as u32).to_be_bytes();
+        IpAddr::V4(Ipv4Addr::new(ip_bytes[0], ip_bytes[1], ip_bytes[2], ip_bytes[3]))
     } else {
-        // IPv6: use full 128 bits
-        let ip_bytes = ip_u128.to_be_bytes();
-        let segments = [
+        let ip_bytes = ip_u128.0.to_be_bytes();
+        IpAddr::V6(Ipv6Addr::new(
             u16::from_be_bytes([ip_bytes[0], ip_bytes[1]]),
             u16::from_be_bytes([ip_bytes[2], ip_bytes[3]]),
             u16::from_be_bytes([ip_bytes[4], ip_bytes[5]]),
@@ -655,24 +581,14 @@ pub fn decode_prometheus_info(value: &Value) -> Result<crate::types::PrometheusI
             u16::from_be_bytes([ip_bytes[10], ip_bytes[11]]),
             u16::from_be_bytes([ip_bytes[12], ip_bytes[13]]),
             u16::from_be_bytes([ip_bytes[14], ip_bytes[15]]),
-        ];
-        IpAddr::V6(Ipv6Addr::new(
-            segments[0],
-            segments[1],
-            segments[2],
-            segments[3],
-            segments[4],
-            segments[5],
-            segments[6],
-            segments[7],
         ))
     };
 
     Ok(crate::types::PrometheusInfo::from_chain_data(
-        block,
-        version,
+        block.0,
+        version.0,
         ip.to_string(),
-        port,
-        ip_type,
+        port.0,
+        ip_type.0,
     ))
 }
