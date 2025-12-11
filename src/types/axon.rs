@@ -1,37 +1,42 @@
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
-/// Complete axon information for a neuron endpoint
+/// Complete axon information stored on-chain for a neuron endpoint
+/// Matches the subtensor pallet AxonInfo struct exactly
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AxonInfo {
-    /// Version of the axon
-    pub version: u64,
+    /// Axon serving block
+    pub block: u64,
+    /// Axon version
+    pub version: u32,
     /// IP address (can be IPv4 or IPv6)
     pub ip: IpAddr,
     /// Port number
     pub port: u16,
-    /// IP protocol version (4 or 6)
+    /// IP type: 4 for IPv4, 6 for IPv6
     pub ip_type: u8,
-    /// Protocol identifier
+    /// Protocol: TCP, UDP, other
     pub protocol: u8,
     /// Reserved field for future use
-    pub placeholder1: u64,
+    pub placeholder1: u8,
     /// Reserved field for future use
-    pub placeholder2: u64,
+    pub placeholder2: u8,
 }
 
 impl AxonInfo {
     /// Create AxonInfo from chain data - all fields required
     pub fn from_chain_data(
-        version: u64,
+        block: u64,
+        version: u32,
         ip: IpAddr,
         port: u16,
         ip_type: u8,
         protocol: u8,
-        placeholder1: u64,
-        placeholder2: u64,
+        placeholder1: u8,
+        placeholder2: u8,
     ) -> Self {
         Self {
+            block,
             version,
             ip,
             port,

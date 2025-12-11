@@ -11,6 +11,7 @@ use std::str::FromStr;
 fn test_axon_info_creation() {
     let ip = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1));
     let axon = AxonInfo {
+        block: 12345,
         version: 1,
         ip,
         port: 8080,
