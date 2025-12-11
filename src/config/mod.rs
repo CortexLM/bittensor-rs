@@ -3,18 +3,19 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::core::constants;
 
 /// Default network configuration
 pub const DEFAULT_NETWORK: &str = "finney";
-pub const DEFAULT_CHAIN_ENDPOINT: &str = "wss://entrypoint-finney.opentensor.ai:443";
+pub const DEFAULT_CHAIN_ENDPOINT: &str = constants::FINNEY_ENDPOINT;
 
 /// Network endpoints mapping
 pub fn get_network_endpoint(network: &str) -> &'static str {
     match network {
-        "finney" => "wss://entrypoint-finney.opentensor.ai:443",
-        "test" | "testnet" => "wss://test.finney.opentensor.ai:443",
-        "archive" => "wss://archive.chain.opentensor.ai:443",
-        "local" => "ws://127.0.0.1:9944",
+        "finney" => constants::FINNEY_ENDPOINT,
+        "test" | "testnet" => constants::FINNEY_TEST_ENDPOINT,
+        "archive" => constants::ARCHIVE_ENDPOINT,
+        "local" => constants::LOCAL_ENDPOINT,
         _ => DEFAULT_CHAIN_ENDPOINT,
     }
 }
