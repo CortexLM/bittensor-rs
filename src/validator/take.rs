@@ -16,7 +16,7 @@ pub async fn increase_take(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(take as u128),
     ];
 
@@ -42,7 +42,7 @@ pub async fn decrease_take(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(take as u128),
     ];
 

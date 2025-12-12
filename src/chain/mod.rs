@@ -341,7 +341,7 @@ impl BittensorClient {
         Ok(block_stream.map(|result| {
             result
                 .map(|block| block.number() as u64)
-                .map_err(|e| Error::Subxt(e))
+                .map_err(Error::Subxt)
         }))
     }
 

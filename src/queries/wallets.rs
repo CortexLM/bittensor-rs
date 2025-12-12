@@ -12,7 +12,7 @@ pub async fn does_hotkey_exist(client: &BittensorClient, hotkey: &AccountId32) -
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Owner",
-            vec![Value::from_bytes(&hotkey.encode())],
+            vec![Value::from_bytes(hotkey.encode())],
         )
         .await?
     {
@@ -45,7 +45,7 @@ pub async fn is_hotkey_registered(
             "Uids",
             vec![
                 Value::u128(netuid as u128),
-                Value::from_bytes(&hotkey.encode()),
+                Value::from_bytes(hotkey.encode()),
             ],
         )
         .await?;
@@ -91,7 +91,7 @@ pub async fn get_owned_hotkeys(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "OwnedHotkeys",
-            vec![Value::from_bytes(&coldkey.encode())],
+            vec![Value::from_bytes(coldkey.encode())],
         )
         .await?
     {
@@ -109,7 +109,7 @@ pub async fn get_hotkey_owner(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Owner",
-            vec![Value::from_bytes(&hotkey.encode())],
+            vec![Value::from_bytes(hotkey.encode())],
         )
         .await?
     {

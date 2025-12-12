@@ -1,9 +1,9 @@
 //! Configuration module for Bittensor SDK
 //! Provides configuration management similar to Python's bittensor.core.config
 
+use crate::core::constants;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::core::constants;
 
 /// Default network configuration
 pub const DEFAULT_NETWORK: &str = "finney";
@@ -201,7 +201,7 @@ mod tests {
             .with_network("local")
             .with_axon_port(9000)
             .with_debug(true);
-        
+
         assert_eq!(config.subtensor.network, "local");
         assert_eq!(config.axon.port, 9000);
         assert!(config.logging.debug);

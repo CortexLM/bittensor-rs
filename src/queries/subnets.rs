@@ -133,7 +133,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
                     .storage_with_keys(
                         SUBTENSOR_MODULE,
                         "TotalHotkeyAlpha",
-                        vec![Value::from_bytes(&hk.encode()), Value::u128(netuid as u128)],
+                        vec![Value::from_bytes(hk.encode()), Value::u128(netuid as u128)],
                     )
                     .await?
                 {

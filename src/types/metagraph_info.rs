@@ -3,7 +3,6 @@
 
 use serde::{Deserialize, Serialize};
 
-
 /// Metagraph info parameters
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MetagraphInfoParams {
@@ -92,22 +91,22 @@ pub struct MetagraphInfo {
     pub mechid: u16,
     pub name: String,
     pub symbol: String,
-    
+
     // Network state
     pub network_registered_at: u64,
     pub num_uids: u64,
     pub max_uids: u64,
     pub block: u64,
-    
+
     // Ownership
     pub owner_coldkey: String,
     pub owner_hotkey: String,
-    
+
     // Timing
     pub last_step: u64,
     pub tempo: u64,
     pub blocks_since_last_step: u64,
-    
+
     // Neuron data arrays
     pub hotkeys: Vec<String>,
     pub coldkeys: Vec<String>,
@@ -116,12 +115,12 @@ pub struct MetagraphInfo {
     pub pruning_score: Vec<f64>,
     pub last_update: Vec<u64>,
     pub block_at_registration: Vec<u64>,
-    
+
     // Stake data
     pub alpha_stake: Vec<f64>,
     pub tao_stake: Vec<f64>,
     pub total_stake: Vec<f64>,
-    
+
     // Performance metrics
     pub emission: Vec<f64>,
     pub incentive: Vec<f64>,
@@ -130,24 +129,24 @@ pub struct MetagraphInfo {
     pub validator_trust: Vec<f64>,
     pub dividends: Vec<f64>,
     pub rank: Vec<f64>,
-    
+
     // Dividends per hotkey
     pub tao_dividends_per_hotkey: Vec<(String, f64)>,
     pub alpha_dividends_per_hotkey: Vec<(String, f64)>,
-    
+
     // Identities
     pub identities: Vec<Option<ChainIdentity>>,
     pub identity: Option<SubnetIdentityInfo>,
-    
+
     // Parameters, pool, emissions
     pub hparams: MetagraphInfoParams,
     pub pool: MetagraphInfoPool,
     pub emissions: MetagraphInfoEmissions,
-    
+
     // Mechanism data
     pub mechanism_count: u16,
     pub mechanisms_emissions_split: Vec<u64>,
-    
+
     // Weights and bonds (sparse representation)
     pub weights: Vec<Vec<(u16, u16)>>,
     pub bonds: Vec<Vec<(u16, u16)>>,
