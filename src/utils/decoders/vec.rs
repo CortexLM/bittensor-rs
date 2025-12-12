@@ -2,6 +2,15 @@ use anyhow::Result;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
 
+/// Helper to get the length of a numeric tag (U16, U32, U64, U128)
+fn get_tag_len(s: &str, pos: usize) -> usize {
+    if s[pos..].starts_with("U128(") {
+        5
+    } else {
+        4 // U16(, U32(, U64( are all 4 chars
+    }
+}
+
 /// Decode a Vec<T> from a Value
 /// Returns empty Vec if value cannot be decoded as a vector
 pub fn decode_vec<T, F>(value: &Value, _decoder: F) -> Result<Vec<T>>
@@ -210,15 +219,7 @@ pub fn decode_vec_u64_u64_pairs(value: &Value) -> Result<Vec<(u64, u64)>> {
             .or_else(|| s[i..].find("U128("))
             .map(|p| p + i);
         let Some(pos1) = pos1_opt else { break };
-        let tag1 = if s[pos1..].starts_with("U16(") {
-            4
-        } else if s[pos1..].starts_with("U32(") {
-            4
-        } else if s[pos1..].starts_with("U64(") {
-            4
-        } else {
-            5
-        };
+        let tag1 = get_tag_len(&s, pos1);
         let mut j = pos1 + tag1;
         let mut a: u128 = 0;
         while j < bytes.len() && bytes[j].is_ascii_digit() {
@@ -236,15 +237,7 @@ pub fn decode_vec_u64_u64_pairs(value: &Value) -> Result<Vec<(u64, u64)>> {
             i = j;
             continue;
         };
-        let tag2 = if s[pos2..].starts_with("U16(") {
-            4
-        } else if s[pos2..].starts_with("U32(") {
-            4
-        } else if s[pos2..].starts_with("U64(") {
-            4
-        } else {
-            5
-        };
+        let tag2 = get_tag_len(&s, pos2);
         let mut k = pos2 + tag2;
         let mut b: u128 = 0;
         while k < bytes.len() && bytes[k].is_ascii_digit() {
@@ -290,11 +283,7 @@ pub fn decode_vec_account_u128_pairs(value: &Value) -> Result<Vec<(AccountId32, 
                         if let Some(num_pos_rel) = rest.find("U64(").or_else(|| rest.find("U128("))
                         {
                             let num_pos = k + num_pos_rel;
-                            let tag_len = if &s[num_pos..num_pos + 4] == "U64(" {
-                                4
-                            } else {
-                                5
-                            };
+                            let tag_len = get_tag_len(&s, num_pos);
                             let mut j = num_pos + tag_len;
                             let mut num: u128 = 0;
                             while j < bytes.len() && bytes[j].is_ascii_digit() {
@@ -335,12 +324,8 @@ pub fn decode_vec_tuple_u64_account(value: &Value) -> Result<Vec<(u64, AccountId
         {
             // Move to position of found pattern
             // extract number
-            let tag = if s[pos..].starts_with("U64(") {
-                "U64("
-            } else {
-                "U128("
-            };
-            let mut j = pos + tag.len();
+            let tag_len = get_tag_len(&s, pos);
+            let mut j = pos + tag_len;
             let mut num: u128 = 0;
             while j < bytes.len() && bytes[j].is_ascii_digit() {
                 num = num * 10 + (bytes[j] - b'0') as u128;

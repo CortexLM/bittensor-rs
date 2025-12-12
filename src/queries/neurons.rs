@@ -189,13 +189,13 @@ pub async fn neurons(
         let total_stake = stakes.get(&uid).copied().unwrap_or(0);
         let root_stake = root_stakes.get(&uid).copied().unwrap_or(0);
 
-        neurons.push(NeuronInfo::create(
+        neurons.push(NeuronInfo {
             uid,
             netuid,
             hotkey,
             coldkey,
-            total_stake,
-            HashMap::new(), // stake_dict
+            stake: total_stake,
+            stake_dict: HashMap::new(),
             total_stake,
             root_stake,
             rank,
@@ -208,13 +208,14 @@ pub async fn neurons(
             active,
             last_update,
             validator_permit,
-            0,          // version
-            Vec::new(), // weights
-            Vec::new(), // bonds
+            version: 0,
+            weights: Vec::new(),
+            bonds: Vec::new(),
             pruning_score,
-            None, // prometheus_info
-            None, // axon_info
-        ));
+            prometheus_info: None,
+            axon_info: None,
+            is_null: false,
+        });
     }
 
     neurons.sort_by_key(|n| n.uid);
@@ -435,12 +436,12 @@ pub async fn query_neuron_from_storage(
     };
     let bonds: Vec<Vec<u64>> = bonds_pairs.into_iter().map(|(a, b)| vec![a, b]).collect();
 
-    Ok(Some(NeuronInfo::create(
+    Ok(Some(NeuronInfo {
         uid,
         netuid,
         hotkey,
         coldkey,
-        total_stake,
+        stake: total_stake,
         stake_dict,
         total_stake,
         root_stake,
@@ -460,7 +461,8 @@ pub async fn query_neuron_from_storage(
         pruning_score,
         prometheus_info,
         axon_info,
-    )))
+        is_null: false,
+    }))
 }
 
 /// Fetch AxonInfo from storage

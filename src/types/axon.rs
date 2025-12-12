@@ -25,6 +25,7 @@ pub struct AxonInfo {
 
 impl AxonInfo {
     /// Create AxonInfo from chain data - all fields required
+    #[allow(clippy::too_many_arguments)]
     pub fn from_chain_data(
         block: u64,
         version: u32,
