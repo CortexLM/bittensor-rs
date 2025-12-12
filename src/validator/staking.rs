@@ -165,6 +165,7 @@ pub async fn set_auto_stake(
 
 /// Move stake from one hotkey to another across subnets
 /// Subtensor expects: (origin_hotkey, destination_hotkey, origin_netuid, destination_netuid, alpha_amount)
+#[allow(clippy::too_many_arguments)]
 pub async fn move_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,

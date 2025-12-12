@@ -37,6 +37,7 @@ pub async fn commit_mechanism_weights(
 
 /// Reveal mechanism weights
 /// Subtensor expects: (netuid, mecid: u8, uids: Vec<u16>, values: Vec<u16>, salt: Vec<u16>, version_key: u64)
+#[allow(clippy::too_many_arguments)]
 pub async fn reveal_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -83,6 +84,7 @@ pub async fn reveal_mechanism_weights(
 
 /// Set mechanism weights directly
 /// Subtensor expects: (netuid, mecid: u8, dests: Vec<u16>, weights: Vec<u16>, version_key: u64)
+#[allow(clippy::too_many_arguments)]
 pub async fn set_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,

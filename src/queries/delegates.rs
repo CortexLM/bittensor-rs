@@ -10,13 +10,16 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
+// Type alias to simplify complex nominator stakes type
+type NominatorStakes = Vec<(Compact<u16>, Compact<u64>)>;
+
 /// DelegateInfo structure matching the on-chain SCALE encoding
 /// This is the exact structure used in subtensor runtime
 #[derive(Decode, Clone, Debug)]
 struct DelegateInfoRaw {
     delegate_ss58: AccountId32,
     take: Compact<u16>,
-    nominators: Vec<(AccountId32, Vec<(Compact<u16>, Compact<u64>)>)>,
+    nominators: Vec<(AccountId32, NominatorStakes)>,
     owner_ss58: AccountId32,
     registrations: Vec<Compact<u16>>,
     validator_permits: Vec<Compact<u16>>,

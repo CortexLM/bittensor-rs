@@ -36,6 +36,7 @@ pub async fn transfer(
 
 /// Transfer stake from one coldkey to another, optionally across subnets
 /// Subtensor expects: (destination_coldkey, hotkey, origin_netuid, destination_netuid, alpha_amount)
+#[allow(clippy::too_many_arguments)]
 pub async fn transfer_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
