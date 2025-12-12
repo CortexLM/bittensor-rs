@@ -90,6 +90,7 @@ pub async fn commit_weights(
 
 /// Reveal committed weights
 /// Subtensor expects: uids: Vec<u16>, values: Vec<u16>, salt: Vec<u16>
+#[allow(clippy::too_many_arguments)]
 pub async fn reveal_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
