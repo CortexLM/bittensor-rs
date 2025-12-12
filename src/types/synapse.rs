@@ -175,13 +175,14 @@ pub struct SynapseHeaders {
 impl Synapse {
     /// Convert synapse to headers for HTTP transmission
     pub fn to_headers(&self) -> SynapseHeaders {
-        let mut headers: SynapseHeaders = Default::default();
-
-        headers.name = self.name.clone();
-        headers.timeout = self.timeout.map(|t| t.to_string());
-        headers.total_size = self.total_size.map(|s| s.to_string());
-        headers.header_size = self.header_size.map(|s| s.to_string());
-        headers.computed_body_hash = self.computed_body_hash.clone();
+        let mut headers: SynapseHeaders = SynapseHeaders {
+            name: self.name.clone(),
+            timeout: self.timeout.map(|t| t.to_string()),
+            total_size: self.total_size.map(|s| s.to_string()),
+            header_size: self.header_size.map(|s| s.to_string()),
+            computed_body_hash: self.computed_body_hash.clone(),
+            ..Default::default()
+        };
 
         if let Some(ref d) = self.dendrite {
             headers.dendrite_status_code = d.status_code.map(|c| c.to_string());
