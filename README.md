@@ -14,6 +14,7 @@
 **Bittensor SDK for Rust.**
 
 [![GitHub Stars](https://img.shields.io/github/stars/CortexLM/bittensor-rs?style=flat-square&logo=github)](https://github.com/CortexLM/bittensor-rs/stargazers) [![License](https://img.shields.io/github/license/CortexLM/bittensor-rs?style=flat-square)](https://github.com/CortexLM/bittensor-rs/blob/master/LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](https://github.com/CortexLM/bittensor-rs/releases) ![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
+[![CI](https://github.com/CortexLM/bittensor-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/CortexLM/bittensor-rs/actions/workflows/ci.yml)
 
 ![Alt](https://repobeats.axiom.co/api/embed/233c07ffcbc977111ef312ccfaeeeee736e29a5b.svg "Repobeats analytics image")
 
@@ -28,28 +29,28 @@ The Rust SDK significantly outperforms the Python SDK for both local and network
 
 ### Local Operations (CPU-bound)
 
-| Operation | Python SDK | Rust SDK | Speedup |
-|-----------|------------|----------|---------|
-| rao_to_tao (1000 ops) | 0.341 ms | 0.003 ms | **113x** |
-| tao_to_rao (1000 ops) | 0.402 ms | 0.002 ms | **201x** |
-| normalize_max_weight (256 neurons) | 0.006 ms | 0.001 ms | **6x** |
-| convert_weights_and_uids (256 neurons) | 0.046 ms | 0.001 ms | **46x** |
-| normalize_max_weight (1000 neurons) | 0.008 ms | 0.001 ms | **8x** |
-| u16_normalized_float (10000 ops) | 0.203 ms | 0.008 ms | **25x** |
-| convert_to_tensor (128 uids) | 0.010 ms | 0.000 ms | **>100x** |
-| **Total** | **1.016 ms** | **0.015 ms** | **~68x** |
+| Operation                              | Python SDK   | Rust SDK     | Speedup   |
+| -------------------------------------- | ------------ | ------------ | --------- |
+| rao_to_tao (1000 ops)                  | 0.341 ms     | 0.003 ms     | **113x**  |
+| tao_to_rao (1000 ops)                  | 0.402 ms     | 0.002 ms     | **201x**  |
+| normalize_max_weight (256 neurons)     | 0.006 ms     | 0.001 ms     | **6x**    |
+| convert_weights_and_uids (256 neurons) | 0.046 ms     | 0.001 ms     | **46x**   |
+| normalize_max_weight (1000 neurons)    | 0.008 ms     | 0.001 ms     | **8x**    |
+| u16_normalized_float (10000 ops)       | 0.203 ms     | 0.008 ms     | **25x**   |
+| convert_to_tensor (128 uids)           | 0.010 ms     | 0.000 ms     | **>100x** |
+| **Total**                              | **1.016 ms** | **0.015 ms** | **~68x**  |
 
 ### Network Operations (I/O-bound)
 
-| Operation | Python SDK | Rust SDK | Speedup |
-|-----------|------------|----------|---------|
-| Connection time | 2642 ms | 1017 ms | **2.6x** |
-| get_current_block | 107 ms | 183 ms | 0.6x |
-| get_total_subnets | 214 ms | 182 ms | **1.2x** |
-| subnet_exists | 217 ms | 183 ms | **1.2x** |
-| tempo | 448 ms | 188 ms | **2.4x** |
-| subnetwork_n | 461 ms | 212 ms | **2.2x** |
-| get_delegates | 10289 ms | 7403 ms | **1.4x** |
+| Operation         | Python SDK | Rust SDK | Speedup  |
+| ----------------- | ---------- | -------- | -------- |
+| Connection time   | 2642 ms    | 1017 ms  | **2.6x** |
+| get_current_block | 107 ms     | 183 ms   | 0.6x     |
+| get_total_subnets | 214 ms     | 182 ms   | **1.2x** |
+| subnet_exists     | 217 ms     | 183 ms   | **1.2x** |
+| tempo             | 448 ms     | 188 ms   | **2.4x** |
+| subnetwork_n      | 461 ms     | 212 ms   | **2.2x** |
+| get_delegates     | 10289 ms   | 7403 ms  | **1.4x** |
 
 > **Note**: Network operations are dominated by RPC latency (~180ms per call). The Rust SDK uses optimized connection pooling, async I/O, and direct SCALE decoding for maximum performance. Module loading time is excluded from benchmarks (Python: ~800ms, Rust: ~0ms).
 
@@ -110,11 +111,11 @@ use bittensor_rs::chain::BittensorClient;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = BittensorClient::with_default().await?;
-    
+
     // Query chain information
     let block_number = client.block_number().await?;
     println!("Current block: {}", block_number);
-    
+
     Ok(())
 }
 ```
@@ -199,6 +200,17 @@ This SDK is designed to be compatible with the Python Bittensor SDK. Key feature
 - Rust 1.70 or higher
 - Cargo
 
+## CI/CD
+
+Automated GitHub Actions run on push and pull requests:
+
+- Build on `stable` and `nightly` toolchains
+- Run unit and doc tests with `--all-features`
+- Enforce formatting with `cargo fmt --check`
+- Enforce lints with `cargo clippy -D warnings`
+
+Workflow file: `.github/workflows/ci.yml`. Check the latest status via the CI badge above.
+
 ### Build Commands
 
 ```bash
@@ -247,4 +259,3 @@ For issues and feature requests, please use the GitHub issue tracker.
 ---
 
 Developed by [Cortex Foundation](https://github.com/CortexLM)
-
