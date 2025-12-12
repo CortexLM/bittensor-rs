@@ -1,7 +1,7 @@
 use crate::chain::BittensorClient;
 use crate::core::constants::{MAX_TICK, MIN_TICK, TICK_STEP};
 use crate::types::LiquidityPosition;
-use crate::utils::scale_decode::{
+use crate::utils::decoders::{
     decode_fixed_u64f64, decode_i32, decode_named_composite, decode_u128, decode_u64, decode_vec,
 };
 use anyhow::Result;

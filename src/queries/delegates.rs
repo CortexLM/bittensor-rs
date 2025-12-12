@@ -1,7 +1,7 @@
 use crate::chain::BittensorClient;
 use crate::types::delegate::DelegateInfoBase;
 use crate::types::{DelegateInfo, DelegatedInfo};
-use crate::utils::value_decode::{decode_account_id32, decode_u16};
+use crate::utils::decoders::{decode_account_id32, decode_u16};
 use anyhow::Result;
 use parity_scale_codec::{Compact, Decode, Encode};
 use sp_core::crypto::AccountId32;
@@ -66,7 +66,7 @@ pub async fn get_delegate_by_hotkey(
         .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
         .await?;
     let total_networks: u16 = total_networks_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0);
 
@@ -89,7 +89,7 @@ pub async fn get_delegate_by_hotkey(
             .await?;
 
         if let Some(uid_val) = uid_val {
-            if let Ok(uid) = crate::utils::value_decode::decode_u64(&uid_val) {
+            if let Ok(uid) = crate::utils::decoders::decode_u64(&uid_val) {
                 registrations.push(netuid);
 
                 // ValidatorPermit[(netuid, uid)] -> bool
@@ -101,7 +101,7 @@ pub async fn get_delegate_by_hotkey(
                     )
                     .await?
                 {
-                    if crate::utils::value_decode::decode_bool(&vp_val).unwrap_or(false) {
+                    if crate::utils::decoders::decode_bool(&vp_val).unwrap_or(false) {
                         validator_permits.push(netuid);
                     }
                 }
@@ -116,7 +116,7 @@ pub async fn get_delegate_by_hotkey(
                     .await?
                 {
                     let entries =
-                        crate::utils::value_decode::decode_vec_account_u128_pairs(&stake_dict_val)
+                        crate::utils::decoders::decode_vec_account_u128_pairs(&stake_dict_val)
                             .unwrap_or_default();
                     for (ck, amt) in entries {
                         let e = nominators.entry(ck).or_insert_with(HashMap::new);
@@ -136,7 +136,7 @@ pub async fn get_delegate_by_hotkey(
                     )
                     .await?
                 {
-                    if let Ok(ts) = crate::utils::value_decode::decode_u128(&alpha_val) {
+                    if let Ok(ts) = crate::utils::decoders::decode_u128(&alpha_val) {
                         total_stake.insert(netuid, ts);
                     }
                 }
@@ -169,7 +169,7 @@ pub async fn get_delegate_identities(client: &BittensorClient) -> Result<Vec<Acc
         .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
         .await?;
     let total_networks: u16 = total_networks_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0);
 
@@ -183,7 +183,7 @@ pub async fn get_delegate_identities(client: &BittensorClient) -> Result<Vec<Acc
             )
             .await?;
         let n: u64 = n_val
-            .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+            .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
             .unwrap_or(0);
         for uid in 0..n {
             if let Some(hk_val) = client
@@ -249,9 +249,8 @@ pub async fn get_delegates(client: &BittensorClient) -> Result<Vec<DelegateInfo>
 
     // Decode Vec<DelegateInfoRaw> directly from SCALE bytes
     let raw_delegates: Vec<DelegateInfoRaw> =
-        Vec::<DelegateInfoRaw>::decode(&mut &raw_bytes[..]).map_err(|e| {
-            anyhow::anyhow!("Failed to decode delegates from runtime API: {}", e)
-        })?;
+        Vec::<DelegateInfoRaw>::decode(&mut &raw_bytes[..])
+            .map_err(|e| anyhow::anyhow!("Failed to decode delegates from runtime API: {}", e))?;
 
     // Convert to our DelegateInfo type
     let delegates: Vec<DelegateInfo> = raw_delegates

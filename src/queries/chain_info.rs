@@ -9,13 +9,13 @@ pub async fn get_timestamp(client: &BittensorClient) -> Result<u64> {
         .storage("Timestamp", "Now", None)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Timestamp.Now not found"))?;
-    crate::utils::value_decode::decode_u64(&val).map_err(|e| anyhow::anyhow!("{}", e))
+    crate::utils::decoders::decode_u64(&val).map_err(|e| anyhow::anyhow!("{}", e))
 }
 
 /// Get last drand round from Drand pallet
 pub async fn last_drand_round(client: &BittensorClient) -> Result<Option<u64>> {
     if let Some(val) = client.storage("Drand", "LastStoredRound", None).await? {
-        return Ok(crate::utils::value_decode::decode_u64(&val).ok());
+        return Ok(crate::utils::decoders::decode_u64(&val).ok());
     }
     Ok(None)
 }
@@ -26,7 +26,7 @@ pub async fn tx_rate_limit(client: &BittensorClient) -> Result<Option<u64>> {
         .storage(SUBTENSOR_MODULE, "TxRateLimit", None)
         .await?
     {
-        return Ok(crate::utils::value_decode::decode_u64(&val).ok());
+        return Ok(crate::utils::decoders::decode_u64(&val).ok());
     }
     Ok(None)
 }
@@ -37,7 +37,7 @@ pub async fn get_admin_freeze_window(client: &BittensorClient) -> Result<u64> {
         .storage(SUBTENSOR_MODULE, "AdminFreezeWindow", None)
         .await?
         .ok_or_else(|| anyhow::anyhow!("AdminFreezeWindow not found"))?;
-    crate::utils::value_decode::decode_u64(&val).map_err(|e| anyhow::anyhow!("{}", e))
+    crate::utils::decoders::decode_u64(&val).map_err(|e| anyhow::anyhow!("{}", e))
 }
 
 /// Check if current block is within admin freeze window for a subnet
@@ -51,7 +51,10 @@ pub async fn is_in_admin_freeze_window(client: &BittensorClient, netuid: u16) ->
         .await?
         .unwrap_or(0);
     let window = get_admin_freeze_window(client).await.unwrap_or(0);
-    let current_block = client.block_number().await.map_err(|e| anyhow::anyhow!("{}", e))?;
+    let current_block = client
+        .block_number()
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     if next_epoch > 0 {
         let remaining = next_epoch.saturating_sub(current_block);
@@ -66,7 +69,7 @@ pub async fn is_fast_blocks(client: &BittensorClient) -> Result<bool> {
         .storage(SUBTENSOR_MODULE, "DurationOfStartCall", None)
         .await?
     {
-        if let Ok(duration) = crate::utils::value_decode::decode_u64(&val) {
+        if let Ok(duration) = crate::utils::decoders::decode_u64(&val) {
             return Ok(duration == 10);
         }
     }

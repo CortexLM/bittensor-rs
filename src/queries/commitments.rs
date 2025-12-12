@@ -119,7 +119,7 @@ pub async fn get_all_commitments(
         )
         .await?;
     let n = n_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
@@ -131,7 +131,7 @@ pub async fn get_all_commitments(
             )
             .await?
         {
-            if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
+            if let Ok(hk) = crate::utils::decoders::decode_account_id32(&hk_val) {
                 if let Some(val) = client
                     .storage_with_keys(
                         COMMITMENTS_PALLET,
@@ -164,7 +164,7 @@ pub async fn get_all_revealed_commitments(
         )
         .await?;
     let n = n_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
@@ -176,7 +176,7 @@ pub async fn get_all_revealed_commitments(
             )
             .await?
         {
-            if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
+            if let Ok(hk) = crate::utils::decoders::decode_account_id32(&hk_val) {
                 if let Some(val) = client
                     .storage_with_keys(
                         COMMITMENTS_PALLET,

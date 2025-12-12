@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let n = n_val
-        .and_then(|v| bittensor_rs::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| bittensor_rs::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     if n == 0 {
         println!("empty subnet");
@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let Some(hotkey) =
-        hotkey_val.and_then(|v| bittensor_rs::utils::value_decode::decode_account_id32(&v).ok())
+        hotkey_val.and_then(|v| bittensor_rs::utils::decoders::decode_account_id32(&v).ok())
     else {
         println!("no hotkey");
         return Ok(());

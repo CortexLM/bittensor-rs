@@ -1,5 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
-use crate::utils::value_decode::{decode_vec_account_id32, decode_vec_tuple_u64_account};
+use crate::utils::decoders::{decode_vec_account_id32, decode_vec_tuple_u64_account};
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;

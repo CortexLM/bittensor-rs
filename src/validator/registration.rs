@@ -68,7 +68,7 @@ pub async fn is_registered(
     match uid_data {
         Some(data) => {
             // Decode UID from Value - if we get a UID back, the hotkey is registered
-            use crate::utils::value_decode::decode_u64;
+            use crate::utils::decoders::decode_u64;
             match decode_u64(&data) {
                 Ok(_uid) => Ok(true),
                 Err(_) => Ok(false),

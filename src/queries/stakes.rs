@@ -1,5 +1,5 @@
 use crate::chain::BittensorClient;
-use crate::utils::value_decode::{decode_u128, decode_u64, decode_vec_account_id32};
+use crate::utils::decoders::{decode_u128, decode_u64, decode_vec_account_id32};
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -174,7 +174,7 @@ pub async fn get_auto_stakes(
             .storage_with_keys(SUBTENSOR_MODULE, "AutoStakeDestination", keys)
             .await?
         {
-            if let Ok(hotkey) = crate::utils::value_decode::decode_account_id32(&dest_val) {
+            if let Ok(hotkey) = crate::utils::decoders::decode_account_id32(&dest_val) {
                 map.insert(netuid, hotkey);
             }
         }
@@ -236,11 +236,7 @@ pub async fn get_stake_add_fee(
 }
 
 /// Get unstake fee for a given amount
-pub async fn get_unstake_fee(
-    client: &BittensorClient,
-    amount: u128,
-    netuid: u16,
-) -> Result<u128> {
+pub async fn get_unstake_fee(client: &BittensorClient, amount: u128, netuid: u16) -> Result<u128> {
     get_stake_operations_fee(client, amount, netuid).await
 }
 
@@ -260,10 +256,7 @@ pub async fn get_stake_operations_fee(
     netuid: u16,
 ) -> Result<u128> {
     let keys = vec![Value::u128(netuid as u128)];
-    if let Some(val) = client
-        .storage_with_keys("Swap", "FeeRate", keys)
-        .await?
-    {
+    if let Some(val) = client.storage_with_keys("Swap", "FeeRate", keys).await? {
         if let Ok(fee_rate) = decode_u64(&val) {
             // fee = amount * fee_rate / U16_MAX
             let fee = (amount as u128 * fee_rate as u128) / (u16::MAX as u128);
