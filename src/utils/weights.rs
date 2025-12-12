@@ -38,13 +38,7 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u16>, Vec
     // Convert to fixed point (u16) - using u16::MAX (65535) as the scale factor
     // This matches Subtensor's expected format where u16::MAX represents 1.0
     let scale = U16_MAX as f32;
-    let weight_vals: Vec<u16> = normalized
-        .iter()
-        .map(|w| {
-            
-            (w * scale) as u16
-        })
-        .collect();
+    let weight_vals: Vec<u16> = normalized.iter().map(|w| (w * scale) as u16).collect();
 
     // Filter out zero weights and convert uids to u16
     let mut filtered_uids = Vec::new();

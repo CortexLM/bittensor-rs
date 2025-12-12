@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Dynamic information about a subnet
 /// Contains runtime state and pool information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DynamicInfo {
     /// Subnet unique identifier
     pub netuid: u16,
@@ -57,7 +56,6 @@ pub struct DynamicInfo {
     /// Current alpha price
     pub price: u128,
 }
-
 
 impl DynamicInfo {
     /// Create new DynamicInfo for a subnet
