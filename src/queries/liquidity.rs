@@ -440,13 +440,7 @@ fn price_to_tick(price: f64) -> i32 {
         return 0;
     }
     let tick = (price.ln() / TICK_STEP.ln()) as i32;
-    if tick < MIN_TICK {
-        MIN_TICK
-    } else if tick > MAX_TICK {
-        MAX_TICK
-    } else {
-        tick
-    }
+    tick.clamp(MIN_TICK, MAX_TICK)
 }
 
 fn tick_to_price(tick: i32) -> f64 {

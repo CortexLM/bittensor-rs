@@ -33,7 +33,7 @@ pub fn decode_scale_option<T: Decode>(bytes: &[u8]) -> Result<Option<T>> {
 /// Decode Vec<T> from SCALE bytes
 pub fn decode_scale_vec<T: Decode>(bytes: &[u8]) -> Result<Vec<T>> {
     // Vec encoding: compact length + items
-    let mut input = &bytes[..];
+    let mut input = bytes;
     let len_compact = Compact::<u32>::decode(&mut input)
         .map_err(|e| anyhow::anyhow!("Failed to decode Vec length: {:?}", e))?;
 

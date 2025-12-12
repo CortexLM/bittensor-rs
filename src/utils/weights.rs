@@ -41,8 +41,8 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u16>, Vec
     let weight_vals: Vec<u16> = normalized
         .iter()
         .map(|w| {
-            let val = (w * scale) as u16;
-            val
+            
+            (w * scale) as u16
         })
         .collect();
 
