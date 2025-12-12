@@ -7,6 +7,7 @@ const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
 /// Serve axon endpoint on the network
 /// Subtensor expects: (netuid, version: u32, ip: u128, port: u16, ip_type: u8, protocol: u8, placeholder1: u8, placeholder2: u8)
+#[allow(clippy::too_many_arguments)]
 pub async fn serve_axon(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -58,6 +59,7 @@ pub async fn serve_axon(
 
 /// Serve axon with TLS certificate
 /// Subtensor expects: (netuid, version: u32, ip: u128, port: u16, ip_type: u8, protocol: u8, placeholder1: u8, placeholder2: u8, certificate: Vec<u8>)
+#[allow(clippy::too_many_arguments)]
 pub async fn serve_axon_tls(
     client: &BittensorClient,
     signer: &BittensorSigner,
