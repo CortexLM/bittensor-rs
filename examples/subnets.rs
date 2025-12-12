@@ -7,7 +7,6 @@ use bittensor_rs::queries::subnets;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     let seed: u64 = std::env::var("SEED")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -39,7 +38,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let n = n_value
-        .and_then(|v| bittensor_rs::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| bittensor_rs::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     println!("neurons_count={} (netuid={})", n, netuid);
 

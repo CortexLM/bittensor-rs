@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 /// Dynamic information about a subnet
 /// Contains runtime state and pool information
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct DynamicInfo {
     /// Subnet unique identifier
     pub netuid: u16,
@@ -57,36 +58,6 @@ pub struct DynamicInfo {
     pub price: u128,
 }
 
-impl Default for DynamicInfo {
-    fn default() -> Self {
-        Self {
-            netuid: 0,
-            owner_coldkey: String::new(),
-            owner_hotkey: String::new(),
-            symbol: String::new(),
-            tempo: 0,
-            last_step: 0,
-            blocks_since_last_step: 0,
-            is_active: false,
-            network_registered_at: 0,
-            subnet_n: 0,
-            max_n: 0,
-            emission_value: 0,
-            burn: 0,
-            pending_emission: 0,
-            alpha_in: 0,
-            alpha_out: 0,
-            tao_in: 0,
-            alpha_out_emission: 0,
-            tao_in_emission: 0,
-            pending_root_emission: 0,
-            network_connect: Vec::new(),
-            subnet_volume: 0,
-            moving_price: 0,
-            price: 0,
-        }
-    }
-}
 
 impl DynamicInfo {
     /// Create new DynamicInfo for a subnet

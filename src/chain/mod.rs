@@ -45,11 +45,10 @@ impl BittensorClient {
 
         Ok(Self { api, rpc_url: url })
     }
-    
+
     /// Create a new Bittensor client using default endpoint or BITTENSOR_RPC env var
     pub async fn with_default() -> Result<Self, Error> {
-        let url = std::env::var("BITTENSOR_RPC")
-            .unwrap_or_else(|_| DEFAULT_RPC_URL.to_string());
+        let url = std::env::var("BITTENSOR_RPC").unwrap_or_else(|_| DEFAULT_RPC_URL.to_string());
         Self::new(url).await
     }
 
@@ -211,16 +210,15 @@ impl BittensorClient {
 
                 // Use proper SCALE decoding to extract balance
                 // The account structure contains a 'data' field with balance information
-                if let Ok(named) = crate::utils::scale_decode::decode_named_composite(&value) {
+                if let Ok(named) = crate::utils::decoders::decode_named_composite(&value) {
                     // Look for 'data' field which contains balance info
                     if let Some(data_value) = named.get("data") {
                         if let Ok(data_fields) =
-                            crate::utils::scale_decode::decode_named_composite(data_value)
+                            crate::utils::decoders::decode_named_composite(data_value)
                         {
                             // Extract 'free' balance
                             if let Some(free_value) = data_fields.get("free") {
-                                if let Ok(balance) =
-                                    crate::utils::scale_decode::decode_u128(free_value)
+                                if let Ok(balance) = crate::utils::decoders::decode_u128(free_value)
                                 {
                                     return Ok(balance);
                                 }
@@ -337,13 +335,13 @@ impl BittensorClient {
         &self,
     ) -> Result<impl futures::Stream<Item = Result<u64, Error>> + Send + '_, Error> {
         use futures::StreamExt;
-        
+
         let block_stream = self.api.blocks().subscribe_finalized().await?;
 
         Ok(block_stream.map(|result| {
             result
                 .map(|block| block.number() as u64)
-                .map_err(|e| Error::Subxt(e))
+                .map_err(Error::Subxt)
         }))
     }
 

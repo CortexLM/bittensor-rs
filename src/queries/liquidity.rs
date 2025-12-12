@@ -1,7 +1,7 @@
 use crate::chain::BittensorClient;
 use crate::core::constants::{MAX_TICK, MIN_TICK, TICK_STEP};
 use crate::types::LiquidityPosition;
-use crate::utils::scale_decode::{
+use crate::utils::decoders::{
     decode_fixed_u64f64, decode_i32, decode_named_composite, decode_u128, decode_u64, decode_vec,
 };
 use anyhow::Result;
@@ -21,7 +21,7 @@ async fn fetch_positions_value(
         .storage_with_keys(
             SWAP_PALLET,
             "Positions",
-            vec![Value::from_bytes(&coldkey.encode())],
+            vec![Value::from_bytes(coldkey.encode())],
         )
         .await
     {
@@ -36,7 +36,7 @@ async fn fetch_positions_value(
             "Positions",
             vec![
                 Value::u128(netuid as u128),
-                Value::from_bytes(&coldkey.encode()),
+                Value::from_bytes(coldkey.encode()),
             ],
         )
         .await
@@ -51,7 +51,7 @@ async fn fetch_positions_value(
             SWAP_PALLET,
             "Positions",
             vec![
-                Value::from_bytes(&coldkey.encode()),
+                Value::from_bytes(coldkey.encode()),
                 Value::u128(netuid as u128),
             ],
         )
@@ -322,12 +322,10 @@ fn get_fees(
         } else {
             tick_fee_value
         }
+    } else if tick_index <= current_tick {
+        tick_fee_value
     } else {
-        if tick_index <= current_tick {
-            tick_fee_value
-        } else {
-            global_fee_value - tick_fee_value
-        }
+        global_fee_value - tick_fee_value
     }
 }
 
@@ -442,17 +440,11 @@ fn price_to_tick(price: f64) -> i32 {
         return 0;
     }
     let tick = (price.ln() / TICK_STEP.ln()) as i32;
-    if tick < MIN_TICK {
-        MIN_TICK
-    } else if tick > MAX_TICK {
-        MAX_TICK
-    } else {
-        tick
-    }
+    tick.clamp(MIN_TICK, MAX_TICK)
 }
 
 fn tick_to_price(tick: i32) -> f64 {
-    if tick < MIN_TICK || tick > MAX_TICK {
+    if !(MIN_TICK..=MAX_TICK).contains(&tick) {
         return 0.0;
     }
     TICK_STEP.powi(tick)

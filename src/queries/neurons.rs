@@ -1,7 +1,7 @@
 /// Neuron queries for fetching neuron information from the Bittensor network
 use crate::chain::BittensorClient;
 use crate::types::{AxonInfo, NeuronInfo, PrometheusInfo};
-use crate::utils::value_decode::*;
+use crate::utils::decoders::*;
 use anyhow::{Context, Result};
 use futures::stream::{FuturesUnordered, StreamExt};
 use parity_scale_codec::Encode;
@@ -86,7 +86,7 @@ pub async fn neurons(
     let mut futures = FuturesUnordered::new();
 
     for (uid, hotkey) in &hotkeys {
-        let owner_key = vec![Value::from_bytes(&hotkey.encode())];
+        let owner_key = vec![Value::from_bytes(hotkey.encode())];
         let client_ref = client;
         let hk = hotkey.clone();
         let u = *uid;
@@ -114,7 +114,7 @@ pub async fn neurons(
 
     for (uid, (hotkey, _)) in &coldkeys {
         let stake_key = vec![
-            Value::from_bytes(&hotkey.encode()),
+            Value::from_bytes(hotkey.encode()),
             Value::u128(netuid as u128),
         ];
         let client_ref = client;
@@ -143,7 +143,7 @@ pub async fn neurons(
 
     for (uid, (hotkey, _)) in &coldkeys {
         let root_stake_key = vec![
-            Value::from_bytes(&hotkey.encode()),
+            Value::from_bytes(hotkey.encode()),
             Value::u128(0u128), // NetUid::ROOT
         ];
         let client_ref = client;
@@ -298,7 +298,7 @@ pub async fn query_neuron_from_storage(
         None => return Ok(None),
     };
 
-    let owner_key = vec![Value::from_bytes(&hotkey.encode())];
+    let owner_key = vec![Value::from_bytes(hotkey.encode())];
     let coldkey_val = client
         .storage_with_keys(SUBTENSOR_MODULE, "Owner", owner_key)
         .await?
@@ -327,14 +327,29 @@ pub async fn query_neuron_from_storage(
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Rank", netuid_key.clone()),
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Trust", netuid_key.clone()),
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Consensus", netuid_key.clone()),
-        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "ValidatorTrust", netuid_key.clone()),
+        fetch_vec_u16_storage(
+            client,
+            SUBTENSOR_MODULE,
+            "ValidatorTrust",
+            netuid_key.clone()
+        ),
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Incentive", netuid_key.clone()),
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Dividends", netuid_key.clone()),
         fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "Active", netuid_key.clone()),
         fetch_vec_u64_storage(client, SUBTENSOR_MODULE, "LastUpdate", netuid_key.clone()),
         fetch_vec_u128_storage(client, SUBTENSOR_MODULE, "Emission", netuid_key.clone()),
-        fetch_vec_bool_storage(client, SUBTENSOR_MODULE, "ValidatorPermit", netuid_key.clone()),
-        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "PruningScores", netuid_key.clone()),
+        fetch_vec_bool_storage(
+            client,
+            SUBTENSOR_MODULE,
+            "ValidatorPermit",
+            netuid_key.clone()
+        ),
+        fetch_vec_u16_storage(
+            client,
+            SUBTENSOR_MODULE,
+            "PruningScores",
+            netuid_key.clone()
+        ),
     )?;
 
     let rank = rank_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
@@ -356,7 +371,7 @@ pub async fn query_neuron_from_storage(
         .unwrap_or(0);
 
     let stake_key = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
     ];
     let total_stake = if let Some(total_stake_val) = client
@@ -369,10 +384,7 @@ pub async fn query_neuron_from_storage(
         0u128
     };
 
-    let root_stake_key = vec![
-        Value::from_bytes(&hotkey.encode()),
-        Value::u128(0u128),
-    ];
+    let root_stake_key = vec![Value::from_bytes(hotkey.encode()), Value::u128(0u128)];
     let root_stake = if let Some(root_stake_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", root_stake_key)
         .await?
@@ -403,7 +415,7 @@ pub async fn query_neuron_from_storage(
     let prometheus_info =
         fetch_prometheus_info(client, SUBTENSOR_MODULE, "Prometheus", axon_keys).await;
 
-    let storage_index: u64 = ((netuid as u64) << 16) | 0u64;
+    let storage_index: u64 = (netuid as u64) << 16;
     let weights_keys = vec![Value::u128(storage_index as u128), Value::u128(uid as u128)];
     let weights = match client
         .storage_with_keys(SUBTENSOR_MODULE, "Weights", weights_keys)
@@ -459,7 +471,7 @@ pub async fn fetch_axon_info(
     keys: Vec<Value>,
 ) -> Option<AxonInfo> {
     if let Some(value) = client.storage_with_keys(module, entry, keys).await.ok()? {
-        crate::utils::scale_decode::decode_axon_info(&value).ok()
+        crate::utils::decoders::decode_axon_info(&value).ok()
     } else {
         None
     }
@@ -473,7 +485,7 @@ pub async fn fetch_prometheus_info(
     keys: Vec<Value>,
 ) -> Option<PrometheusInfo> {
     if let Some(value) = client.storage_with_keys(module, entry, keys).await.ok()? {
-        crate::utils::value_decode::decode_prometheus_info(&value).ok()
+        crate::utils::decoders::decode_prometheus_info(&value).ok()
     } else {
         None
     }
@@ -559,7 +571,7 @@ pub async fn get_neuron_certificate(
 ) -> Result<Option<Certificate>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(val) = client
@@ -615,7 +627,7 @@ pub async fn get_neuron_for_pubkey_and_subnet(
 ) -> Result<Option<NeuronInfo>> {
     let uid_keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(uid_val) = client
@@ -637,7 +649,7 @@ pub async fn get_children(
     netuid: u16,
 ) -> Result<Vec<(f64, AccountId32)>> {
     let keys = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
     ];
 
@@ -659,7 +671,7 @@ pub async fn get_children_pending(
 ) -> Result<(Vec<(f64, AccountId32)>, u64)> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(val) = client
@@ -682,7 +694,7 @@ pub async fn get_parents(
     netuid: u16,
 ) -> Result<Vec<(f64, AccountId32)>> {
     let keys = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
     ];
 

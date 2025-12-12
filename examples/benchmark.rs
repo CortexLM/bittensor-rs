@@ -46,7 +46,12 @@ where
     }
 }
 
-async fn benchmark_async<F, Fut>(name: &str, iterations: usize, warmup: usize, mut f: F) -> BenchResult
+async fn benchmark_async<F, Fut>(
+    name: &str,
+    iterations: usize,
+    warmup: usize,
+    mut f: F,
+) -> BenchResult
 where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = ()>,
@@ -159,7 +164,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let uids_sparse: Vec<u16> = (0..256).step_by(2).map(|i| i as u16).collect();
     let vals_sparse: Vec<u16> = vec![100; 128];
     let r = benchmark("convert_to_tensor (128 sparse uids)", iterations, 5, || {
-        std::hint::black_box(convert_weight_uids_and_vals_to_tensor(256, &uids_sparse, &vals_sparse));
+        std::hint::black_box(convert_weight_uids_and_vals_to_tensor(
+            256,
+            &uids_sparse,
+            &vals_sparse,
+        ));
     });
     print_result(&r);
     local_results.push(r);
@@ -177,14 +186,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\nConnecting to Bittensor network...");
         let connect_start = Instant::now();
         let client = BittensorClient::with_default().await?;
-        println!("Connected in {:.2}ms\n", connect_start.elapsed().as_secs_f64() * 1000.0);
+        println!(
+            "Connected in {:.2}ms\n",
+            connect_start.elapsed().as_secs_f64() * 1000.0
+        );
 
         // Block operations
         println!("--- Block Operations ---");
 
         let r = benchmark_async("block_number", 10, 2, || async {
             std::hint::black_box(client.block_number().await.ok());
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
@@ -193,41 +206,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let r = benchmark_async("total_subnets", 10, 2, || async {
             std::hint::black_box(
-                bittensor_rs::queries::subnets::total_subnets(&client).await.ok()
+                bittensor_rs::queries::subnets::total_subnets(&client)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
         let r = benchmark_async("subnet_exists (netuid=1)", 10, 2, || async {
             std::hint::black_box(
-                bittensor_rs::queries::subnets::subnet_exists(&client, 1).await.ok()
+                bittensor_rs::queries::subnets::subnet_exists(&client, 1)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
         let r = benchmark_async("tempo (netuid=1)", 10, 2, || async {
-            std::hint::black_box(
-                bittensor_rs::queries::subnets::tempo(&client, 1).await.ok()
-            );
-        }).await;
+            std::hint::black_box(bittensor_rs::queries::subnets::tempo(&client, 1).await.ok());
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
         let r = benchmark_async("difficulty (netuid=1)", 10, 2, || async {
             std::hint::black_box(
-                bittensor_rs::queries::subnets::difficulty(&client, 1).await.ok()
+                bittensor_rs::queries::subnets::difficulty(&client, 1)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
         let r = benchmark_async("subnet_n (netuid=1)", 10, 2, || async {
             std::hint::black_box(
-                bittensor_rs::queries::subnets::subnet_n(&client, 1).await.ok()
+                bittensor_rs::queries::subnets::subnet_n(&client, 1)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
@@ -237,9 +261,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let test_account = sp_core::crypto::AccountId32::from([0u8; 32]);
         let r = benchmark_async("get_balance", 10, 2, || async {
             std::hint::black_box(
-                bittensor_rs::queries::balances::get_balance(&client, &test_account).await.ok()
+                bittensor_rs::queries::balances::get_balance(&client, &test_account)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
 
@@ -248,9 +275,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let r = benchmark_async("get_delegates", 3, 1, || async {
             std::hint::black_box(
-                bittensor_rs::queries::delegates::get_delegates(&client).await.ok()
+                bittensor_rs::queries::delegates::get_delegates(&client)
+                    .await
+                    .ok(),
             );
-        }).await;
+        })
+        .await;
         print_result(&r);
         network_results.push(r);
     } else {
@@ -276,33 +306,42 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "-".repeat(65));
 
     // Group by category
-    let balance_ops: f64 = local_results.iter()
+    let balance_ops: f64 = local_results
+        .iter()
         .filter(|r| r.name.contains("rao") || r.name.contains("tao"))
         .map(|r| r.mean_ms)
         .sum();
     println!("{:<50} {:>12.3}", "Balance conversions", balance_ops);
 
-    let weight_ops: f64 = local_results.iter()
+    let weight_ops: f64 = local_results
+        .iter()
         .filter(|r| r.name.contains("normalize") || r.name.contains("weights"))
         .map(|r| r.mean_ms)
         .sum();
     println!("{:<50} {:>12.3}", "Weight operations", weight_ops);
 
-    let tensor_ops: f64 = local_results.iter()
+    let tensor_ops: f64 = local_results
+        .iter()
         .filter(|r| r.name.contains("u16") || r.name.contains("tensor"))
         .map(|r| r.mean_ms)
         .sum();
     println!("{:<50} {:>12.3}", "Tensor conversions", tensor_ops);
 
     if !network_results.is_empty() {
-        let block_ops: f64 = network_results.iter()
+        let block_ops: f64 = network_results
+            .iter()
             .filter(|r| r.name.contains("block"))
             .map(|r| r.mean_ms)
             .sum();
         println!("{:<50} {:>12.3}", "Block queries", block_ops);
 
-        let subnet_ops: f64 = network_results.iter()
-            .filter(|r| r.name.contains("subnet") || r.name.contains("tempo") || r.name.contains("difficulty"))
+        let subnet_ops: f64 = network_results
+            .iter()
+            .filter(|r| {
+                r.name.contains("subnet")
+                    || r.name.contains("tempo")
+                    || r.name.contains("difficulty")
+            })
             .map(|r| r.mean_ms)
             .sum();
         println!("{:<50} {:>12.3}", "Subnet queries", subnet_ops);

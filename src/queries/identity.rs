@@ -14,7 +14,7 @@ pub async fn query_identity(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "IdentitiesV2",
-            vec![Value::from_bytes(&coldkey.encode())],
+            vec![Value::from_bytes(coldkey.encode())],
         )
         .await?
     {
@@ -26,5 +26,5 @@ pub async fn query_identity(
 
 fn decode_identity_map(value: &Value) -> std::collections::HashMap<String, String> {
     // Use proper SCALE decoding for identity data
-    crate::utils::scale_decode::decode_identity_map(value).unwrap_or_default()
+    crate::utils::decoders::decode_identity_map(value).unwrap_or_default()
 }
