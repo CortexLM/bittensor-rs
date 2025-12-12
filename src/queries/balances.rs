@@ -67,6 +67,6 @@ pub async fn get_existential_deposit(client: &BittensorClient) -> Result<u128> {
         .ok_or_else(|| anyhow::anyhow!("Unable to retrieve existential deposit amount."))?;
 
     // Decode the constant value as u128
-    crate::utils::value_decode::decode_u128(&value)
+    crate::utils::decoders::decode_u128(&value)
         .map_err(|e| anyhow::anyhow!("Failed to decode existential deposit: {}", e))
 }

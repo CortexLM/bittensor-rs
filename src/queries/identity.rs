@@ -26,5 +26,5 @@ pub async fn query_identity(
 
 fn decode_identity_map(value: &Value) -> std::collections::HashMap<String, String> {
     // Use proper SCALE decoding for identity data
-    crate::utils::scale_decode::decode_identity_map(value).unwrap_or_default()
+    crate::utils::decoders::decode_identity_map(value).unwrap_or_default()
 }

@@ -19,6 +19,7 @@ The SDK is organized into modular components:
 #### chain
 
 The `chain` module provides the main `BittensorClient` that manages connections to Bittensor nodes via WebSocket RPC. It handles:
+
 - Connection management
 - Storage queries
 - Transaction submission
@@ -26,6 +27,7 @@ The `chain` module provides the main `BittensorClient` that manages connections 
 - Runtime API calls
 
 **Key Components:**
+
 - `BittensorClient` - Main client struct
 - `with_default()` - Initialize with default or environment-specified RPC endpoint
 - Storage query helpers
@@ -68,7 +70,7 @@ The `utils` module provides helper functions:
 - **ss58.rs** - SS58 address encoding/decoding
 - **encode.rs** - SCALE encoding utilities
 - **scale_decode.rs** - SCALE decoding utilities
-- **value_decode.rs** - Value type decoding from subxt
+- **decoders.rs** - Value type decoding from subxt
 - **crypto.rs** - Cryptographic utilities (commitment hashing)
 - **balance.rs** - RAO/TAO conversion
 
@@ -128,6 +130,7 @@ The `validator` module provides operations for validators:
 ## Error Handling
 
 All operations use Rust's `Result<T, E>` type for error handling:
+
 - **anyhow::Result** - Used for general error propagation
 - **Custom Errors** - Domain-specific error types where appropriate
 - **Error Context** - Errors include context about the operation
@@ -168,6 +171,7 @@ let client = BittensorClient::new(Some("wss://custom.endpoint:443")).await?;
 ## Testing
 
 The SDK includes:
+
 - **Unit Tests** - Test individual functions and types
 - **Integration Tests** - Test against live or mock networks
 - **Example Programs** - Working examples in `examples/` directory
@@ -175,6 +179,7 @@ The SDK includes:
 ## Extension Points
 
 The architecture supports extension through:
+
 - **Custom Query Functions** - Add new query functions following existing patterns
 - **Custom Types** - Add new types in the `types` module
 - **Custom Validator Operations** - Add new validator operations in the `validator` module
@@ -185,12 +190,14 @@ The architecture supports extension through:
 ### Bulk Queries
 
 Use bulk query functions when fetching multiple items:
+
 - `neurons()` - Fetch all neurons in a subnet
 - `get_all_subnets()` - Fetch all subnet information
 
 ### Concurrent Requests
 
 The SDK uses `FuturesUnordered` for concurrent requests where safe:
+
 - Fetching per-neuron data (axon info, Prometheus info)
 - Fetching stake distributions
 - Fetching delegate information
@@ -198,6 +205,7 @@ The SDK uses `FuturesUnordered` for concurrent requests where safe:
 ### Caching
 
 Consider caching frequently accessed data:
+
 - Subnet information
 - Delegate information
 - Neuron metadata
@@ -209,4 +217,3 @@ Consider caching frequently accessed data:
 3. **Error Handling**: Always handle `Result` types appropriately
 4. **Type Safety**: Use strongly-typed structs instead of raw values
 5. **Documentation**: Follow existing patterns when adding new functionality
-

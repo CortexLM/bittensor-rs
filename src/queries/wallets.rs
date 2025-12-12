@@ -70,7 +70,7 @@ pub async fn get_netuids_for_hotkey(
         .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
         .await?;
     let total: u16 = total_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0);
     let mut nets = Vec::new();
@@ -95,7 +95,7 @@ pub async fn get_owned_hotkeys(
         )
         .await?
     {
-        return Ok(crate::utils::value_decode::decode_vec_account_id32(&val).unwrap_or_default());
+        return Ok(crate::utils::decoders::decode_vec_account_id32(&val).unwrap_or_default());
     }
     Ok(Vec::new())
 }
@@ -113,7 +113,7 @@ pub async fn get_hotkey_owner(
         )
         .await?
     {
-        return Ok(crate::utils::value_decode::decode_account_id32(&val).ok());
+        return Ok(crate::utils::decoders::decode_account_id32(&val).ok());
     }
     Ok(None)
 }
@@ -127,7 +127,7 @@ pub async fn filter_netuids_by_registered_hotkeys(
         .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
         .await?;
     let total: u16 = total_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0);
     let mut nets = Vec::new();
@@ -145,7 +145,7 @@ pub async fn filter_netuids_by_registered_hotkeys(
 /// Estimate transfer fee by reading fee-related storage (FeeRate). Returns raw fee rate (u128)
 pub async fn get_transfer_fee(client: &BittensorClient) -> Result<u128> {
     if let Some(val) = client.storage(SUBTENSOR_MODULE, "FeeRate", None).await? {
-        return crate::utils::value_decode::decode_u128(&val).map_err(|e| anyhow::anyhow!("{}", e));
+        return crate::utils::decoders::decode_u128(&val).map_err(|e| anyhow::anyhow!("{}", e));
     }
     Ok(0)
 }

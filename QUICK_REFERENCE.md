@@ -18,6 +18,7 @@ let client = BittensorClient::with_default().await?;
 ## Common Queries
 
 ### Network Information
+
 ```rust
 use bittensor_rs::queries::{chain_info, subnets};
 
@@ -30,6 +31,7 @@ let total = subnets::total_subnets(&client).await?;
 ```
 
 ### Neuron Queries
+
 ```rust
 use bittensor_rs::queries::neurons;
 
@@ -45,6 +47,7 @@ let all_neurons = neurons_bulk::neurons_bulk(&client, netuid, None).await?;
 ```
 
 ### Wallet Balance
+
 ```rust
 use bittensor_rs::queries::wallets;
 
@@ -53,6 +56,7 @@ println!("Balance: {} TAO", balance as f64 / 1e9);
 ```
 
 ### Delegate Information
+
 ```rust
 use bittensor_rs::queries::delegates;
 
@@ -114,6 +118,7 @@ match query_result {
 ## Common Patterns
 
 ### Optional Block Parameter
+
 ```rust
 // Latest block
 let data = query(&client, None).await?;
@@ -123,6 +128,7 @@ let data = query(&client, Some(block_number)).await?;
 ```
 
 ### Bulk Operations
+
 ```rust
 use futures::stream::{FuturesUnordered, StreamExt};
 
@@ -137,12 +143,13 @@ while let Some(result) = futures.next().await {
 ```
 
 ### Value Decoding
-```rust
-use bittensor_rs::utils::value_decode;
 
-let u64_val = value_decode::decode_u64(&value)?;
-let account = value_decode::decode_account_id32(&value)?;
-let vec_u16 = value_decode::decode_vec_u16(&value)?;
+```rust
+use bittensor_rs::utils::decoders;
+
+let u64_val = decoders::decode_u64(&value)?;
+let account = decoders::decode_account_id32(&value)?;
+let vec_u16 = decoders::decode_vec_u16(&value)?;
 ```
 
 ## Environment Variables

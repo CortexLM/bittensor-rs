@@ -1,6 +1,6 @@
 use crate::chain::BittensorClient;
 use crate::types::SubnetInfo;
-use crate::utils::value_decode::{
+use crate::utils::decoders::{
     decode_account_id32, decode_bool, decode_u128, decode_u16, decode_u64,
 };
 use anyhow::Result;
@@ -27,11 +27,7 @@ pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Res
 /// Get the recycle/burn amount for a subnet
 pub async fn recycle(client: &BittensorClient, netuid: u16) -> Result<Option<u128>> {
     if let Some(val) = client
-        .storage_with_keys(
-            SUBTENSOR_MODULE,
-            "Burn",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys(SUBTENSOR_MODULE, "Burn", vec![Value::u128(netuid as u128)])
         .await?
     {
         return Ok(decode_u128(&val).ok());
@@ -428,7 +424,7 @@ pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<u
         )
         .await?
     {
-        return crate::utils::value_decode::decode_u128(&val)
+        return crate::utils::decoders::decode_u128(&val)
             .map_err(|e| anyhow::anyhow!("Failed to decode price: {}", e));
     }
     // Fallback: use storage sqrt price squared

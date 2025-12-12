@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let n = n_value
-        .and_then(|v| bittensor_rs::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| bittensor_rs::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     if n == 0 {
         println!("empty subnet");
@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let hotkey =
-        hotkey_val.and_then(|v| bittensor_rs::utils::value_decode::decode_account_id32(&v).ok());
+        hotkey_val.and_then(|v| bittensor_rs::utils::decoders::decode_account_id32(&v).ok());
     let owner_val = hotkey.as_ref().map(|h| {
         client.storage_with_keys(
             "SubtensorModule",
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
     let coldkey = match owner_val {
         Some(res) => res
             .await?
-            .and_then(|v| bittensor_rs::utils::value_decode::decode_account_id32(&v).ok()),
+            .and_then(|v| bittensor_rs::utils::decoders::decode_account_id32(&v).ok()),
         None => None,
     };
 
@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
                 ],
             )
             .await?
-            .and_then(|v| bittensor_rs::utils::value_decode::decode_u128(&v).ok())
+            .and_then(|v| bittensor_rs::utils::decoders::decode_u128(&v).ok())
             .unwrap_or(0),
         _ => 0,
     };
@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
             vec![Value::u128(netuid as u128)],
         )
         .await?
-        .and_then(|v| bittensor_rs::utils::value_decode::decode_vec_u128(&v).ok());
+        .and_then(|v| bittensor_rs::utils::decoders::decode_vec_u128(&v).ok());
     let emission_uid = emis_vec.as_ref().and_then(|v| v.get(uid as usize).copied());
 
     println!(
