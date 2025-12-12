@@ -57,7 +57,7 @@ pub async fn is_registered(
     // Query the Uids storage to check if hotkey is registered
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     let uid_data = client
@@ -68,7 +68,7 @@ pub async fn is_registered(
     match uid_data {
         Some(data) => {
             // Decode UID from Value - if we get a UID back, the hotkey is registered
-            use crate::utils::value_decode::decode_u64;
+            use crate::utils::decoders::decode_u64;
             match decode_u64(&data) {
                 Ok(_uid) => Ok(true),
                 Err(_) => Ok(false),

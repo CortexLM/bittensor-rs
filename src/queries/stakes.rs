@@ -1,5 +1,5 @@
 use crate::chain::BittensorClient;
-use crate::utils::value_decode::{decode_u128, decode_u64, decode_vec_account_id32};
+use crate::utils::decoders::{decode_u128, decode_u64, decode_vec_account_id32};
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -18,8 +18,8 @@ pub async fn get_stake(
     // Use query_module for Alpha storage (same as Bittensor Python: query_module("SubtensorModule", "Alpha", ...))
     // Alpha storage: (hotkey, coldkey, netuid) -> stake amount
     let keys = vec![
-        Value::from_bytes(&hotkey.encode()),
-        Value::from_bytes(&coldkey.encode()),
+        Value::from_bytes(hotkey.encode()),
+        Value::from_bytes(coldkey.encode()),
         Value::u128(netuid as u128),
     ];
 
@@ -46,7 +46,7 @@ pub async fn get_stake_for_coldkey(
         .storage_with_keys(
             "SubtensorModule",
             "OwnedHotkeys",
-            vec![Value::from_bytes(&coldkey.encode())],
+            vec![Value::from_bytes(coldkey.encode())],
         )
         .await?;
     let owned_hotkeys: Vec<AccountId32> = match owned_hotkeys_val {
@@ -68,8 +68,8 @@ pub async fn get_stake_for_coldkey(
         let mut total: u128 = 0;
         for hotkey in &owned_hotkeys {
             let alpha_keys = vec![
-                Value::from_bytes(&hotkey.encode()),
-                Value::from_bytes(&coldkey.encode()),
+                Value::from_bytes(hotkey.encode()),
+                Value::from_bytes(coldkey.encode()),
                 Value::u128(netuid as u128),
             ];
             if let Some(alpha_val) = client
@@ -97,7 +97,7 @@ pub async fn get_stake_for_hotkey(
 ) -> Result<u128> {
     // Use query_subtensor for TotalHotkeyAlpha (same as Bittensor Python)
     let keys = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
     ];
 
@@ -167,14 +167,14 @@ pub async fn get_auto_stakes(
 
     for netuid in 0u16..total_networks {
         let keys = vec![
-            Value::from_bytes(&coldkey.encode()),
+            Value::from_bytes(coldkey.encode()),
             Value::u128(netuid as u128),
         ];
         if let Some(dest_val) = client
             .storage_with_keys(SUBTENSOR_MODULE, "AutoStakeDestination", keys)
             .await?
         {
-            if let Ok(hotkey) = crate::utils::value_decode::decode_account_id32(&dest_val) {
+            if let Ok(hotkey) = crate::utils::decoders::decode_account_id32(&dest_val) {
                 map.insert(netuid, hotkey);
             }
         }
@@ -191,7 +191,7 @@ pub async fn get_stake_weight(
     // Query stake weights from storage
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     let weight_val = client
@@ -236,11 +236,7 @@ pub async fn get_stake_add_fee(
 }
 
 /// Get unstake fee for a given amount
-pub async fn get_unstake_fee(
-    client: &BittensorClient,
-    amount: u128,
-    netuid: u16,
-) -> Result<u128> {
+pub async fn get_unstake_fee(client: &BittensorClient, amount: u128, netuid: u16) -> Result<u128> {
     get_stake_operations_fee(client, amount, netuid).await
 }
 
@@ -260,13 +256,10 @@ pub async fn get_stake_operations_fee(
     netuid: u16,
 ) -> Result<u128> {
     let keys = vec![Value::u128(netuid as u128)];
-    if let Some(val) = client
-        .storage_with_keys("Swap", "FeeRate", keys)
-        .await?
-    {
+    if let Some(val) = client.storage_with_keys("Swap", "FeeRate", keys).await? {
         if let Ok(fee_rate) = decode_u64(&val) {
             // fee = amount * fee_rate / U16_MAX
-            let fee = (amount as u128 * fee_rate as u128) / (u16::MAX as u128);
+            let fee = (amount * fee_rate as u128) / (u16::MAX as u128);
             return Ok(fee);
         }
     }

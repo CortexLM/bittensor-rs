@@ -36,7 +36,7 @@ pub async fn get_revealed_commitment_by_hotkey(
 ) -> Result<Vec<(u64, String)>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
@@ -55,7 +55,7 @@ pub async fn get_revealed_commitment(
 ) -> Result<Option<(u64, String)>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
@@ -119,7 +119,7 @@ pub async fn get_all_commitments(
         )
         .await?;
     let n = n_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
@@ -131,12 +131,12 @@ pub async fn get_all_commitments(
             )
             .await?
         {
-            if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
+            if let Ok(hk) = crate::utils::decoders::decode_account_id32(&hk_val) {
                 if let Some(val) = client
                     .storage_with_keys(
                         COMMITMENTS_PALLET,
                         "CommitmentOf",
-                        vec![Value::u128(netuid as u128), Value::from_bytes(&hk.encode())],
+                        vec![Value::u128(netuid as u128), Value::from_bytes(hk.encode())],
                     )
                     .await?
                 {
@@ -164,7 +164,7 @@ pub async fn get_all_revealed_commitments(
         )
         .await?;
     let n = n_val
-        .and_then(|v| crate::utils::value_decode::decode_u64(&v).ok())
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
         .unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for uid in 0..n {
@@ -176,12 +176,12 @@ pub async fn get_all_revealed_commitments(
             )
             .await?
         {
-            if let Ok(hk) = crate::utils::value_decode::decode_account_id32(&hk_val) {
+            if let Ok(hk) = crate::utils::decoders::decode_account_id32(&hk_val) {
                 if let Some(val) = client
                     .storage_with_keys(
                         COMMITMENTS_PALLET,
                         "RevealedCommitments",
-                        vec![Value::u128(netuid as u128), Value::from_bytes(&hk.encode())],
+                        vec![Value::u128(netuid as u128), Value::from_bytes(hk.encode())],
                     )
                     .await?
                 {
@@ -208,7 +208,7 @@ pub async fn get_last_commitment_bonds_reset_block(
             "LastBondsReset",
             vec![
                 Value::u128(netuid as u128),
-                Value::from_bytes(&hotkey.encode()),
+                Value::from_bytes(hotkey.encode()),
             ],
         )
         .await?

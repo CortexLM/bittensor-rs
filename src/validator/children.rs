@@ -1,5 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
-use crate::utils::value_decode::{decode_vec_account_id32, decode_vec_tuple_u64_account};
+use crate::utils::decoders::{decode_vec_account_id32, decode_vec_tuple_u64_account};
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -22,13 +22,13 @@ pub async fn set_children(
         .map(|(proportion, child_key)| {
             Value::unnamed_composite(vec![
                 Value::u128(*proportion as u128),
-                Value::from_bytes(&child_key.encode()),
+                Value::from_bytes(child_key.encode()),
             ])
         })
         .collect();
 
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
         Value::unnamed_composite(children_values),
     ];
@@ -47,7 +47,7 @@ pub async fn get_parents(
 ) -> Result<Vec<AccountId32>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(parents_val) = client
@@ -69,7 +69,7 @@ pub async fn get_children(
 ) -> Result<Vec<(AccountId32, u64)>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(children_val) = client
@@ -99,7 +99,7 @@ pub async fn get_children_pending(
 ) -> Result<Vec<AccountId32>> {
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     if let Some(pending_val) = client

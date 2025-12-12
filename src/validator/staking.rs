@@ -19,7 +19,7 @@ pub async fn add_stake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
         Value::u128(amount),
     ];
@@ -43,7 +43,7 @@ pub async fn unstake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
         Value::u128(amount),
     ];
@@ -63,7 +63,7 @@ pub async fn unstake_all(
     hotkey: &AccountId32,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from_bytes(&hotkey.encode())];
+    let args = vec![Value::from_bytes(hotkey.encode())];
 
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "remove_stake_all", args, signer, wait_for)
@@ -87,7 +87,7 @@ pub async fn add_stake_multiple(
 
     let hotkey_values: Vec<Value> = hotkeys
         .iter()
-        .map(|hk| Value::from_bytes(&hk.encode()))
+        .map(|hk| Value::from_bytes(hk.encode()))
         .collect();
 
     let amount_values: Vec<Value> = amounts.iter().map(|amt| Value::u128(*amt)).collect();
@@ -125,7 +125,7 @@ pub async fn unstake_multiple(
 
     let hotkey_values: Vec<Value> = hotkeys
         .iter()
-        .map(|hk| Value::from_bytes(&hk.encode()))
+        .map(|hk| Value::from_bytes(hk.encode()))
         .collect();
 
     let amount_values: Vec<Value> = amounts.iter().map(|amt| Value::u128(*amt)).collect();
@@ -155,7 +155,7 @@ pub async fn set_auto_stake(
     auto_stake: bool,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from_bytes(&hotkey.encode()), Value::bool(auto_stake)];
+    let args = vec![Value::from_bytes(hotkey.encode()), Value::bool(auto_stake)];
 
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "set_auto_stake", args, signer, wait_for)
@@ -176,8 +176,8 @@ pub async fn move_stake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&from_hotkey.encode()),
-        Value::from_bytes(&to_hotkey.encode()),
+        Value::from_bytes(from_hotkey.encode()),
+        Value::from_bytes(to_hotkey.encode()),
         Value::u128(origin_netuid as u128),
         Value::u128(destination_netuid as u128),
         Value::u128(amount),
@@ -201,7 +201,7 @@ pub async fn swap_stake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(origin_netuid as u128),
         Value::u128(destination_netuid as u128),
         Value::u128(amount),

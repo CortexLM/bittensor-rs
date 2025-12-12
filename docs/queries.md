@@ -121,12 +121,12 @@ let value = client.storage_with_keys("SubtensorModule", "SubnetworkN", key).awai
 The SDK provides utilities for decoding storage values:
 
 ```rust
-use bittensor_rs::utils::value_decode;
+use bittensor_rs::utils::decoders;
 
 // Decode various types from storage Value
-let u64_value = value_decode::decode_u64(&value)?;
-let account = value_decode::decode_account_id32(&value)?;
-let vec_u16 = value_decode::decode_vec_u16(&value)?;
+let u64_value = decoders::decode_u64(&value)?;
+let account = decoders::decode_account_id32(&value)?;
+let vec_u16 = decoders::decode_vec_u16(&value)?;
 ```
 
 ## Next Steps

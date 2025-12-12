@@ -2,7 +2,7 @@
 //! Read-only queries for neuron bonds
 
 use crate::chain::BittensorClient;
-use crate::utils::value_decode::decode_u64;
+use crate::utils::decoders::decode_u64;
 use anyhow::Result;
 use subxt::dynamic::Value;
 
@@ -23,10 +23,7 @@ pub async fn get_neuron_bonds(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Bonds",
-            vec![
-                Value::u128(storage_index as u128),
-                Value::u128(uid as u128),
-            ],
+            vec![Value::u128(storage_index as u128), Value::u128(uid as u128)],
         )
         .await?;
 
@@ -57,10 +54,7 @@ pub async fn get_all_bonds(
             .storage_with_keys(
                 SUBTENSOR_MODULE,
                 "Bonds",
-                vec![
-                    Value::u128(storage_index as u128),
-                    Value::u128(uid as u128),
-                ],
+                vec![Value::u128(storage_index as u128), Value::u128(uid as u128)],
             )
             .await?;
 
@@ -89,10 +83,7 @@ pub async fn get_neuron_weights(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Weights",
-            vec![
-                Value::u128(storage_index as u128),
-                Value::u128(uid as u128),
-            ],
+            vec![Value::u128(storage_index as u128), Value::u128(uid as u128)],
         )
         .await?;
 
@@ -121,10 +112,7 @@ pub async fn get_all_weights(
             .storage_with_keys(
                 SUBTENSOR_MODULE,
                 "Weights",
-                vec![
-                    Value::u128(storage_index as u128),
-                    Value::u128(uid as u128),
-                ],
+                vec![Value::u128(storage_index as u128), Value::u128(uid as u128)],
             )
             .await?;
 
@@ -154,10 +142,10 @@ fn parse_weights_from_value(value: &Value) -> Result<Vec<(u16, u16)>> {
 /// Parse pairs of (u16, u64) from debug string
 fn parse_pairs_u16_u64(s: &str) -> Result<Vec<(u16, u64)>> {
     let mut pairs = Vec::new();
-    
+
     // Look for patterns like "U16(X)" followed by "U64(Y)" or "U128(Y)"
     let mut remaining = s;
-    
+
     while let Some(pos1) = remaining.find("U16(") {
         let after_u16 = &remaining[pos1 + 4..];
         if let Some(end1) = after_u16.find(')') {
@@ -180,18 +168,18 @@ fn parse_pairs_u16_u64(s: &str) -> Result<Vec<(u16, u64)>> {
         }
         remaining = &remaining[pos1 + 4..];
     }
-    
+
     Ok(pairs)
 }
 
 /// Parse pairs of (u16, u16) from debug string
 fn parse_pairs_u16_u16(s: &str) -> Result<Vec<(u16, u16)>> {
     let mut pairs = Vec::new();
-    
+
     // Look for patterns like "U16(X)" followed by another "U16(Y)"
     let mut remaining = s;
     let mut last_u16: Option<u16> = None;
-    
+
     while let Some(pos) = remaining.find("U16(") {
         let after_u16 = &remaining[pos + 4..];
         if let Some(end) = after_u16.find(')') {
@@ -206,7 +194,7 @@ fn parse_pairs_u16_u16(s: &str) -> Result<Vec<(u16, u16)>> {
         }
         remaining = &after_u16[after_u16.find(')').unwrap_or(0)..];
     }
-    
+
     Ok(pairs)
 }
 
