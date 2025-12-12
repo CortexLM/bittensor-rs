@@ -1,5 +1,5 @@
-/// Core constants from the Bittensor protocol
-/// These match the values defined in the Python implementation
+//! Core constants from the Bittensor protocol
+//! These match the values defined in the Python implementation
 
 /// TAO/RAO conversion factor (1 TAO = 1e9 RAO)
 pub const RAOPERTAO: u64 = 1_000_000_000;

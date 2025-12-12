@@ -7,7 +7,7 @@ pub const SS58_FORMAT: u16 = 42;
 
 /// Encode AccountId32 to SS58 string
 pub fn encode_ss58(account: &AccountId32) -> String {
-    account.to_ss58check_with_version(Ss58AddressFormat::custom(SS58_FORMAT as u16))
+    account.to_ss58check_with_version(Ss58AddressFormat::custom(SS58_FORMAT))
 }
 
 /// Decode SS58 string to AccountId32

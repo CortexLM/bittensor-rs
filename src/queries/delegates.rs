@@ -34,7 +34,7 @@ pub async fn get_delegate_by_hotkey(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Owner",
-            vec![Value::from_bytes(&hotkey.encode())],
+            vec![Value::from_bytes(hotkey.encode())],
         )
         .await?;
     let owner = match owner_val {
@@ -50,7 +50,7 @@ pub async fn get_delegate_by_hotkey(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "Delegates",
-            vec![Value::from_bytes(&hotkey.encode())],
+            vec![Value::from_bytes(hotkey.encode())],
         )
         .await?;
     let take = match take_val {
@@ -83,7 +83,7 @@ pub async fn get_delegate_by_hotkey(
                 "Uids",
                 vec![
                     Value::u128(netuid as u128),
-                    Value::from_bytes(&hotkey.encode()),
+                    Value::from_bytes(hotkey.encode()),
                 ],
             )
             .await?;
@@ -119,7 +119,7 @@ pub async fn get_delegate_by_hotkey(
                         crate::utils::decoders::decode_vec_account_u128_pairs(&stake_dict_val)
                             .unwrap_or_default();
                     for (ck, amt) in entries {
-                        let e = nominators.entry(ck).or_insert_with(HashMap::new);
+                        let e = nominators.entry(ck).or_default();
                         e.insert(netuid, amt);
                     }
                 }
@@ -130,7 +130,7 @@ pub async fn get_delegate_by_hotkey(
                         SUBTENSOR_MODULE,
                         "TotalHotkeyAlpha",
                         vec![
-                            Value::from_bytes(&hotkey.encode()),
+                            Value::from_bytes(hotkey.encode()),
                             Value::u128(netuid as u128),
                         ],
                     )
@@ -147,7 +147,7 @@ pub async fn get_delegate_by_hotkey(
     let delegate = DelegateInfo {
         base: DelegateInfoBase {
             hotkey_ss58: hotkey.clone(),
-            owner_ss58: owner_ss58,
+            owner_ss58,
             take,
             validator_permits,
             registrations,
@@ -306,7 +306,7 @@ pub async fn get_delegates_from_storage(client: &BittensorClient) -> Result<Vec<
 
 /// Get delegate take (commission)
 pub async fn get_delegate_take(client: &BittensorClient, hotkey: &AccountId32) -> Result<f64> {
-    let keys = vec![Value::from_bytes(&hotkey.encode())];
+    let keys = vec![Value::from_bytes(hotkey.encode())];
 
     if let Some(take_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "Delegates", keys)

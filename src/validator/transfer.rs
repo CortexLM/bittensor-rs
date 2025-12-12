@@ -47,8 +47,8 @@ pub async fn transfer_stake(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::from_bytes(&destination_coldkey.encode()),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(destination_coldkey.encode()),
+        Value::from_bytes(hotkey.encode()),
         Value::u128(origin_netuid as u128),
         Value::u128(destination_netuid as u128),
         Value::u128(amount),

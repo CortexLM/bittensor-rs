@@ -18,7 +18,7 @@ pub async fn get_balances(client: &BittensorClient, accounts: &[AccountId32]) ->
     let _keys: Vec<_> = accounts
         .iter()
         .map(|acc| {
-            subxt::dynamic::storage("System", "Account", vec![Value::from_bytes(&acc.encode())])
+            subxt::dynamic::storage("System", "Account", vec![Value::from_bytes(acc.encode())])
         })
         .collect();
 
@@ -26,7 +26,7 @@ pub async fn get_balances(client: &BittensorClient, accounts: &[AccountId32]) ->
     let mut out = Vec::with_capacity(accounts.len());
     for acc in accounts.iter() {
         let addr =
-            subxt::dynamic::storage("System", "Account", vec![Value::from_bytes(&acc.encode())]);
+            subxt::dynamic::storage("System", "Account", vec![Value::from_bytes(acc.encode())]);
         let res = storage.fetch(&addr).await?;
         if let Some(thunk) = res {
             let value = thunk

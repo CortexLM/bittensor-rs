@@ -10,7 +10,7 @@ pub async fn commit_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
+    mechanism_id: u8, // Changed from u64 to u8 (MechId)
     commit_hash: &str,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
@@ -41,9 +41,9 @@ pub async fn reveal_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
+    mechanism_id: u8, // Changed from u64 to u8 (MechId)
     uids: &[u64],
-    weights: &[u16],  // Changed from u64 to u16 to match Subtensor format
+    weights: &[u16], // Changed from u64 to u16 to match Subtensor format
     salt: &[u8],
     version_key: u64,
     wait_for: ExtrinsicWait,
@@ -53,7 +53,10 @@ pub async fn reveal_mechanism_weights(
     // Convert salt from u8 to u16 (Subtensor expects Vec<u16>)
     let salt_u16: Vec<u16> = salt.iter().map(|b| *b as u16).collect();
 
-    let uid_values: Vec<Value> = uid_u16.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    let uid_values: Vec<Value> = uid_u16
+        .iter()
+        .map(|uid| Value::u128(*uid as u128))
+        .collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
     let salt_values: Vec<Value> = salt_u16.iter().map(|s| Value::u128(*s as u128)).collect();
 
@@ -84,7 +87,7 @@ pub async fn set_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8,  // Changed from u64 to u8 (MechId)
+    mechanism_id: u8, // Changed from u64 to u8 (MechId)
     uids: &[u64],
     weights: &[f32],
     version_key: Option<u64>,

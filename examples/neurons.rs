@@ -6,7 +6,6 @@ use bittensor_rs::chain::BittensorClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     let seed: u64 = std::env::var("SEED")
         .ok()
         .and_then(|s| s.parse().ok())

@@ -57,7 +57,7 @@ pub async fn is_registered(
     // Query the Uids storage to check if hotkey is registered
     let keys = vec![
         Value::u128(netuid as u128),
-        Value::from_bytes(&hotkey.encode()),
+        Value::from_bytes(hotkey.encode()),
     ];
 
     let uid_data = client

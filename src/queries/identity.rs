@@ -14,7 +14,7 @@ pub async fn query_identity(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "IdentitiesV2",
-            vec![Value::from_bytes(&coldkey.encode())],
+            vec![Value::from_bytes(coldkey.encode())],
         )
         .await?
     {

@@ -176,7 +176,7 @@ impl Synapse {
     /// Convert synapse to headers for HTTP transmission
     pub fn to_headers(&self) -> SynapseHeaders {
         let mut headers = SynapseHeaders::default();
-        
+
         headers.name = self.name.clone();
         headers.timeout = self.timeout.map(|t| t.to_string());
         headers.total_size = self.total_size.map(|s| s.to_string());
@@ -219,10 +219,8 @@ mod tests {
 
     #[test]
     fn test_synapse_creation() {
-        let synapse = Synapse::new()
-            .with_name("TestSynapse")
-            .with_timeout(30.0);
-        
+        let synapse = Synapse::new().with_name("TestSynapse").with_timeout(30.0);
+
         assert_eq!(synapse.name, Some("TestSynapse".to_string()));
         assert_eq!(synapse.timeout, Some(30.0));
     }
@@ -231,7 +229,7 @@ mod tests {
     fn test_synapse_status() {
         let mut synapse = Synapse::new();
         synapse.dendrite = Some(TerminalInfo::new().with_status(200, "Success"));
-        
+
         assert!(synapse.is_success());
         assert!(!synapse.is_failure());
         assert!(!synapse.is_timeout());
@@ -241,7 +239,7 @@ mod tests {
     fn test_synapse_timeout() {
         let mut synapse = Synapse::new();
         synapse.dendrite = Some(TerminalInfo::new().with_status(408, "Timeout"));
-        
+
         assert!(synapse.is_timeout());
         assert!(synapse.is_failure());
     }
@@ -250,7 +248,7 @@ mod tests {
     fn test_custom_fields() {
         let mut synapse = Synapse::new();
         synapse.set_field("input", serde_json::json!(42));
-        
+
         assert_eq!(synapse.get_field("input"), Some(&serde_json::json!(42)));
     }
 }

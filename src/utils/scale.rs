@@ -1,7 +1,6 @@
+//! SCALE encoding/decoding utilities
 use anyhow::Result;
 use parity_scale_codec::{Compact, Decode, Encode};
-
-/// SCALE encoding/decoding utilities
 
 /// Encode a value to SCALE bytes
 pub fn encode_scale<T: Encode>(value: &T) -> Vec<u8> {

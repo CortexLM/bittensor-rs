@@ -95,7 +95,7 @@ pub async fn reveal_weights(
     signer: &BittensorSigner,
     netuid: u16,
     uids: &[u64],
-    weights: &[u16],  // Changed from u64 to u16 to match Subtensor format
+    weights: &[u16], // Changed from u64 to u16 to match Subtensor format
     salt: &[u8],
     version_key: u64,
     wait_for: ExtrinsicWait,
@@ -108,11 +108,14 @@ pub async fn reveal_weights(
 
     // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
     let uid_u16: Vec<u16> = uids.iter().map(|uid| *uid as u16).collect();
-    
+
     // Convert salt from u8 to u16 (Subtensor expects Vec<u16>)
     let salt_u16: Vec<u16> = salt.iter().map(|b| *b as u16).collect();
 
-    let uid_values: Vec<Value> = uid_u16.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    let uid_values: Vec<Value> = uid_u16
+        .iter()
+        .map(|uid| Value::u128(*uid as u128))
+        .collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
     let salt_values: Vec<Value> = salt_u16.iter().map(|s| Value::u128(*s as u128)).collect();
 
