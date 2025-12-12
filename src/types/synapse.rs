@@ -175,7 +175,7 @@ pub struct SynapseHeaders {
 impl Synapse {
     /// Convert synapse to headers for HTTP transmission
     pub fn to_headers(&self) -> SynapseHeaders {
-        let mut headers = SynapseHeaders::default();
+        let mut headers: SynapseHeaders = Default::default();
 
         headers.name = self.name.clone();
         headers.timeout = self.timeout.map(|t| t.to_string());
