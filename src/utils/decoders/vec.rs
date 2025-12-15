@@ -20,12 +20,9 @@ where
     // Parse from debug representation
     let s = format!("{:?}", value);
 
-    // Check if it looks like a vector/sequence
-    if s.contains("Composite(Unnamed([") || s.contains("Sequence([") {
-        Ok(Vec::new())
-    } else {
-        Ok(Vec::new())
-    }
+    // Check if it looks like a vector/sequence - return empty vec regardless
+    let _ = s.contains("Composite(Unnamed([") || s.contains("Sequence([");
+    Ok(Vec::new())
 }
 
 /// Decode a vector of u16 from Value
@@ -115,7 +112,7 @@ pub fn decode_vec_bool(value: &Value) -> Result<Vec<bool>> {
             let mut j = pos + 3;
             let mut num: u8 = 0;
             while j < bytes.len() && bytes[j].is_ascii_digit() {
-                num = num * 10 + (bytes[j] - b'0') as u8;
+                num = num * 10 + (bytes[j] - b'0');
                 j += 1;
             }
             res.push(num != 0);

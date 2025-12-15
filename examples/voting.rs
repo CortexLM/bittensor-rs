@@ -9,15 +9,11 @@ async fn main() -> Result<()> {
     let storage = client.api().storage().at_latest().await?;
     let base = subxt::dynamic::storage("Triumvirate", "Voting", vec![]);
     let mut iter = storage.iter(base).await?;
-    let mut printed = false;
-    while let Some(item) = iter.next().await {
+    if let Some(item) = iter.next().await {
         let kv = item?;
         let value = kv.value.to_value()?.remove_context();
         println!("found_voting_entry={:?}", value);
-        printed = true;
-        break;
-    }
-    if !printed {
+    } else {
         println!("no voting entries found");
     }
     Ok(())
