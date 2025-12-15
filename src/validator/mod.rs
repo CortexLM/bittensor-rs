@@ -7,6 +7,7 @@ pub mod serving;
 pub mod staking;
 pub mod take;
 pub mod transfer;
+pub mod utility;
 pub mod weights;
 
 pub use staking::{add_stake, unstake};
@@ -21,3 +22,4 @@ pub use root::*;
 pub use serving::{serve_axon, serve_axon_tls};
 pub use take::*;
 pub use transfer::{transfer, transfer_stake};
+pub use utility::*;
