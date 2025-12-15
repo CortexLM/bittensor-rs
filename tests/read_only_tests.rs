@@ -253,7 +253,7 @@ fn test_u16_normalized_float_half() {
 fn test_u16_normalized_float_range() {
     for i in (0..=u16::MAX).step_by(1000) {
         let result = u16_normalized_float(i);
-        assert!(result >= 0.0 && result <= 1.0);
+        assert!((0.0..=1.0).contains(&result));
     }
 }
 
@@ -525,10 +525,12 @@ fn test_dynamic_info_creation() {
 fn test_dynamic_info_fields() {
     use bittensor_rs::types::DynamicInfo;
 
-    let mut info = DynamicInfo::default();
-    info.netuid = 1;
-    info.tempo = 360;
-    info.emission_value = 1_000_000_000;
+    let info = DynamicInfo {
+        netuid: 1,
+        tempo: 360,
+        emission_value: 1_000_000_000,
+        ..Default::default()
+    };
 
     assert_eq!(info.netuid, 1);
     assert_eq!(info.tempo, 360);
@@ -564,7 +566,7 @@ fn test_config_default() {
     use bittensor_rs::Config;
 
     let config = Config::default();
-    assert!(config.subtensor.network.len() > 0);
+    assert!(!config.subtensor.network.is_empty());
 }
 
 #[test]
