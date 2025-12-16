@@ -28,5 +28,6 @@ pub use stakes::{
     get_stake_movement_fee, get_stake_operations_fee, get_unstake_fee, StakeInfo,
 };
 pub use subnets::{
-    commit_reveal_enabled, get_subnet_reveal_period_epochs, is_subnet_active, recycle,
+    commit_reveal_enabled, get_mechanism_count, get_subnet_reveal_period_epochs, is_subnet_active,
+    recycle,
 };

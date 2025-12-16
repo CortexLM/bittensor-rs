@@ -617,3 +617,15 @@ fn test_mixed_weight_magnitudes() {
     let sum: f32 = result.iter().sum();
     assert!((sum - 1.0).abs() < 0.01);
 }
+
+// =============================================================================
+// Query Function Export Tests
+// =============================================================================
+
+#[test]
+fn test_get_mechanism_count_export() {
+    // Verify the function is exported from queries module
+    use bittensor_rs::queries::get_mechanism_count;
+    // The function exists and is accessible (actual network call tested in integration tests)
+    let _ = get_mechanism_count;
+}
