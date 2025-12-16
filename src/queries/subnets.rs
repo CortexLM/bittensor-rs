@@ -24,6 +24,27 @@ pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Res
     Ok(false)
 }
 
+/// Get the number of mechanisms for a subnet
+/// Returns the count of mechanisms (0 to count-1 are valid mechanism IDs)
+/// Default is 1 (only mechanism 0 exists)
+pub async fn get_mechanism_count(client: &BittensorClient, netuid: u16) -> Result<u8> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MechanismCountCurrent",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        // MechId is stored as u8
+        if let Some(count) = val.as_u128() {
+            return Ok(count as u8);
+        }
+    }
+    // Default is 1 mechanism (mechanism 0)
+    Ok(1)
+}
+
 /// Get the recycle/burn amount for a subnet
 pub async fn recycle(client: &BittensorClient, netuid: u16) -> Result<Option<u128>> {
     if let Some(val) = client
