@@ -1,18 +1,31 @@
 //! Epoch tracking for Bittensor subnets
 //!
-//! Tracks epoch boundaries and phases for weight commit-reveal.
+//! Tracks epoch boundaries and commit-reveal timing windows as defined by Subtensor.
+//!
+//! # Bittensor Commit-Reveal Protocol
+//!
+//! Subtensor divides each epoch into timing windows for weight submission:
+//! - **Evaluation** (0% - 75%): Standard operation period
+//! - **CommitWindow** (75% - 87.5%): Validators submit weight commitment hashes
+//! - **RevealWindow** (87.5% - 100%): Validators reveal actual weights
+//!
+//! Reference: `pallets/subtensor/src/subnets/weights.rs`
 
 use crate::chain::BittensorClient;
 use anyhow::Result;
 
-/// Epoch phase in Bittensor
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Bittensor epoch timing window
+///
+/// Represents the current position within an epoch as defined by Subtensor's
+/// commit-reveal protocol for mechanism weights.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EpochPhase {
-    /// Normal operation / evaluation phase
+    /// Standard operation period (0% - 75% of epoch)
+    #[default]
     Evaluation,
-    /// Weight commit window is open
+    /// Subtensor accepts weight commitment hashes (75% - 87.5% of epoch)
     CommitWindow,
-    /// Weight reveal window is open  
+    /// Subtensor accepts weight reveals (87.5% - 100% of epoch)
     RevealWindow,
 }
 
@@ -147,21 +160,19 @@ impl EpochTracker {
         }
     }
 
-    /// Determine the current phase based on block position
+    /// Determines the current Subtensor timing window based on block position.
+    ///
+    /// Subtensor commit-reveal windows (percentage of epoch tempo):
+    /// - Evaluation: blocks 0 to 75%
+    /// - CommitWindow: blocks 75% to 87.5%
+    /// - RevealWindow: blocks 87.5% to 100%
     fn determine_phase(&self, current_block: u64, epoch_start_block: u64) -> EpochPhase {
-        if !self.commit_reveal_enabled {
+        if self.tempo == 0 {
             return EpochPhase::Evaluation;
         }
 
         let blocks_into_epoch = current_block.saturating_sub(epoch_start_block);
 
-        // Bittensor commit-reveal windows:
-        // - Commit window: blocks before reveal window
-        // - Reveal window: last portion of epoch
-        // The exact timing depends on subnet parameters
-
-        // Default: last 25% of epoch is commit/reveal
-        // Last 12.5% is reveal, 12.5% before that is commit
         let reveal_start = (self.tempo * 7) / 8; // 87.5%
         let commit_start = (self.tempo * 3) / 4; // 75%
 
@@ -277,5 +288,45 @@ mod tests {
 
         // No transition at block 400 (same epoch)
         assert!(tracker.check_epoch_transition(400).is_none());
+    }
+
+    #[test]
+    fn test_timing_windows() {
+        // Test with commit_reveal_enabled = false
+        let tracker = EpochTracker {
+            netuid: 1,
+            tempo: 100,
+            commit_reveal_enabled: false,
+            reveal_period_epochs: 1,
+            last_epoch_number: 0,
+        };
+
+        // 0-74: Evaluation, 75-87: CommitWindow, 88-99: RevealWindow
+        let info = tracker.get_epoch_info(50);
+        assert_eq!(info.phase, EpochPhase::Evaluation);
+
+        let info = tracker.get_epoch_info(75);
+        assert_eq!(info.phase, EpochPhase::CommitWindow);
+
+        let info = tracker.get_epoch_info(88);
+        assert_eq!(info.phase, EpochPhase::RevealWindow);
+
+        // Test with commit_reveal_enabled = true (same behavior)
+        let tracker = EpochTracker {
+            netuid: 1,
+            tempo: 100,
+            commit_reveal_enabled: true,
+            reveal_period_epochs: 1,
+            last_epoch_number: 0,
+        };
+
+        let info = tracker.get_epoch_info(50);
+        assert_eq!(info.phase, EpochPhase::Evaluation);
+
+        let info = tracker.get_epoch_info(75);
+        assert_eq!(info.phase, EpochPhase::CommitWindow);
+
+        let info = tracker.get_epoch_info(88);
+        assert_eq!(info.phase, EpochPhase::RevealWindow);
     }
 }
