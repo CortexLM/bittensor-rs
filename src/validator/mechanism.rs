@@ -87,17 +87,15 @@ pub async fn reveal_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8, // Changed from u64 to u8 (MechId)
-    uids: &[u64],
-    weights: &[u16], // Changed from u64 to u16 to match Subtensor format
-    salt: &[u8],
+    mechanism_id: u8,
+    uids: &[u16],
+    weights: &[u16],
+    salt: &[u16],
     version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
-    let uid_u16: Vec<u16> = uids.iter().map(|uid| *uid as u16).collect();
-    // Convert salt from u8 to u16 (Subtensor expects Vec<u16>)
-    let salt_u16: Vec<u16> = salt.iter().map(|b| *b as u16).collect();
+    let uid_u16 = uids;
+    let salt_u16 = salt;
 
     let uid_values: Vec<Value> = uid_u16
         .iter()
