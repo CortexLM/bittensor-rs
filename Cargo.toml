@@ -29,3 +29,16 @@ thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["full"] }
 rand = "0.9"
 regex = "1.10"
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+
+# CRv4 / Timelock encryption dependencies (same as subtensor)
+tle = { git = "https://github.com/ideal-lab5/timelock", rev = "5416406cfd32799e31e1795393d4916894de4468", default-features = false, features = ["std"] }
+w3f-bls = { git = "https://github.com/opentensor/bls", branch = "fix-no-std", default-features = false, features = ["std"] }
+ark-serialize = { version = "0.4.0", features = ["derive"] }
+ark-std = "0.4.0"
+sha2 = "0.10"
+rand_chacha = "0.3"
+
+[patch.crates-io]
+w3f-bls = { git = "https://github.com/opentensor/bls", branch = "fix-no-std" }
