@@ -23,7 +23,9 @@ pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Res
             let result = decode_bool(&val).unwrap_or(false);
             tracing::info!(
                 "CommitRevealWeightsEnabled for netuid {}: {} (raw value: {:?})",
-                netuid, result, val
+                netuid,
+                result,
+                val
             );
             Ok(result)
         }

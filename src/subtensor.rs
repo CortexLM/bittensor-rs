@@ -89,10 +89,7 @@ pub enum WeightResponseData {
         encrypted_payload: Vec<u8>,
     },
     /// Legacy commit-reveal data
-    CommitReveal {
-        commit_hash: String,
-        salt: Vec<u16>,
-    },
+    CommitReveal { commit_hash: String, salt: Vec<u16> },
 }
 
 /// Salt type for commit-reveal (Vec<u16>)
@@ -247,7 +244,9 @@ impl Subtensor {
 
     /// Get weights rate limit for a subnet
     pub async fn weights_rate_limit(&self, netuid: u16) -> Result<u64> {
-        weights_rate_limit(&self.client, netuid).await.map(|v| v.unwrap_or(0))
+        weights_rate_limit(&self.client, netuid)
+            .await
+            .map(|v| v.unwrap_or(0))
     }
 
     /// Get blocks since last update for a neuron
@@ -261,10 +260,7 @@ impl Subtensor {
             .storage_with_keys(
                 SUBTENSOR_MODULE,
                 "LastUpdate",
-                vec![
-                    Value::u128(storage_index as u128),
-                    Value::u128(uid as u128),
-                ],
+                vec![Value::u128(storage_index as u128), Value::u128(uid as u128)],
             )
             .await?
         {
@@ -327,11 +323,11 @@ impl Subtensor {
         let block = self.get_current_block().await?;
         let tempo = self.tempo(netuid).await? as u64;
         let block_in_epoch = block % (tempo + 1);
-        
+
         // Standard phase distribution: 75% eval, 15% commit, 10% reveal
         let eval_end = (tempo * 75) / 100;
         let commit_end = eval_end + (tempo * 15) / 100;
-        
+
         if block_in_epoch < eval_end {
             Ok("evaluation".to_string())
         } else if block_in_epoch < commit_end {
@@ -506,7 +502,8 @@ impl Subtensor {
         );
 
         // Encrypt payload
-        let encrypted = prepare_crv4_commit(&hotkey_bytes, uids, weights, version_key, reveal_round)?;
+        let encrypted =
+            prepare_crv4_commit(&hotkey_bytes, uids, weights, version_key, reveal_round)?;
 
         info!(
             "CRv4 commit: netuid={}, mechanism={}, uids={}, reveal_round={}",
@@ -547,11 +544,14 @@ impl Subtensor {
             tx_hash, reveal_round
         );
 
-        Ok(WeightResponse::success(tx_hash, "CRv4 weights committed (auto-reveal)")
-            .with_data(WeightResponseData::Crv4 {
-                reveal_round,
-                encrypted_payload: encrypted,
-            }))
+        Ok(
+            WeightResponse::success(tx_hash, "CRv4 weights committed (auto-reveal)").with_data(
+                WeightResponseData::Crv4 {
+                    reveal_round,
+                    encrypted_payload: encrypted,
+                },
+            ),
+        )
     }
 
     // ==========================================================================
@@ -615,8 +615,14 @@ impl Subtensor {
 
         // Submit commit
         let tx_hash = if mechanism_id == 0 {
-            raw_commit_weights(&self.client, signer, netuid, &commit_data.commit_hash, wait_for)
-                .await?
+            raw_commit_weights(
+                &self.client,
+                signer,
+                netuid,
+                &commit_data.commit_hash,
+                wait_for,
+            )
+            .await?
         } else {
             crate::commit_mechanism_weights(
                 &self.client,
@@ -659,11 +665,14 @@ impl Subtensor {
             tx_hash, epoch
         );
 
-        Ok(WeightResponse::success(tx_hash, "Weights committed - call again to reveal")
-            .with_data(WeightResponseData::CommitReveal {
-                commit_hash: commit_data.commit_hash,
-                salt: commit_data.salt,
-            }))
+        Ok(
+            WeightResponse::success(tx_hash, "Weights committed - call again to reveal").with_data(
+                WeightResponseData::CommitReveal {
+                    commit_hash: commit_data.commit_hash,
+                    salt: commit_data.salt,
+                },
+            ),
+        )
     }
 
     /// Reveal a pending commit
@@ -722,7 +731,10 @@ impl Subtensor {
 
         info!("Weights revealed: {}", tx_hash);
 
-        Ok(WeightResponse::success(tx_hash, "Weights revealed successfully"))
+        Ok(WeightResponse::success(
+            tx_hash,
+            "Weights revealed successfully",
+        ))
     }
 
     // ==========================================================================
@@ -829,7 +841,9 @@ impl Subtensor {
         let mut state = self.state.write().await;
         let cutoff = current_epoch.saturating_sub(max_age_epochs);
 
-        state.pending_commits.retain(|_, commit| commit.epoch >= cutoff);
+        state
+            .pending_commits
+            .retain(|_, commit| commit.epoch >= cutoff);
 
         if let Some(ref path) = self.state_path {
             let _ = state.save(path);
