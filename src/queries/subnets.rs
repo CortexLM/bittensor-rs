@@ -11,17 +11,39 @@ const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
 /// Check if commit-reveal mechanism is enabled for a subnet
 pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Result<bool> {
-    if let Some(val) = client
+    match client
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "CommitRevealWeightsEnabled",
             vec![Value::u128(netuid as u128)],
         )
-        .await?
+        .await
     {
-        return Ok(decode_bool(&val).unwrap_or(false));
+        Ok(Some(val)) => {
+            let result = decode_bool(&val).unwrap_or(false);
+            tracing::info!(
+                "CommitRevealWeightsEnabled for netuid {}: {} (raw value: {:?})",
+                netuid, result, val
+            );
+            Ok(result)
+        }
+        Ok(None) => {
+            // Storage key doesn't exist - this likely means commit-reveal IS enabled
+            // because on newer chains, the default is true
+            tracing::warn!(
+                "CommitRevealWeightsEnabled storage not found for netuid {} - defaulting to TRUE (safe default)",
+                netuid
+            );
+            Ok(true)
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to query CommitRevealWeightsEnabled for netuid {}: {} - defaulting to TRUE (safe default)",
+                netuid, e
+            );
+            Ok(true)
+        }
     }
-    Ok(false)
 }
 
 /// Get the number of mechanisms for a subnet
