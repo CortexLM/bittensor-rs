@@ -4,6 +4,7 @@ pub mod blocks;
 pub mod chain;
 pub mod config;
 pub mod core;
+pub mod crv4;
 pub mod metagraph;
 pub mod queries;
 pub mod types;
@@ -60,4 +61,14 @@ pub use utils::weights as utils_weights;
 pub use utils::crypto::{
     commit_hash_to_hex, generate_mechanism_commit_hash, generate_salt,
     generate_subtensor_commit_hash, hex_to_commit_hash_32, salt_u8_to_u16, verify_commit_hash,
+};
+
+// Re-export CRv4 (Commit-Reveal v4 with timelock encryption)
+pub use crv4::{
+    calculate_reveal_round, commit_timelocked_mechanism_weights, commit_timelocked_weights,
+    encrypt_for_round, get_commit_reveal_version, get_mechid_storage_index,
+    prepare_and_commit_crv4_mechanism_weights, prepare_and_commit_crv4_weights,
+    prepare_crv4_commit, verify_encrypted_data, Crv4CommitData, Crv4PersistedState,
+    Crv4StateManager, DrandInfo, WeightsTlockPayload, DEFAULT_COMMIT_REVEAL_VERSION,
+    DRAND_QUICKNET_GENESIS, DRAND_QUICKNET_PK_HEX, DRAND_ROUND_INTERVAL_SECS,
 };
