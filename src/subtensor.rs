@@ -309,6 +309,61 @@ impl Subtensor {
         Ok(None)
     }
 
+    /// Get current epoch number for a subnet
+    pub async fn get_current_epoch(&self, netuid: u16) -> Result<u64> {
+        let block = self.get_current_block().await?;
+        let tempo = self.tempo(netuid).await? as u64;
+        Ok(block / (tempo + 1))
+    }
+
+    /// Get mechanism count for a subnet
+    pub async fn get_mechanism_count(&self, netuid: u16) -> Result<u8> {
+        crate::get_mechanism_count(&self.client, netuid).await
+    }
+
+    /// Get current epoch phase for a subnet
+    /// Returns: "evaluation", "commit", or "reveal"
+    pub async fn get_current_phase(&self, netuid: u16) -> Result<String> {
+        let block = self.get_current_block().await?;
+        let tempo = self.tempo(netuid).await? as u64;
+        let block_in_epoch = block % (tempo + 1);
+        
+        // Standard phase distribution: 75% eval, 15% commit, 10% reveal
+        let eval_end = (tempo * 75) / 100;
+        let commit_end = eval_end + (tempo * 15) / 100;
+        
+        if block_in_epoch < eval_end {
+            Ok("evaluation".to_string())
+        } else if block_in_epoch < commit_end {
+            Ok("commit".to_string())
+        } else {
+            Ok("reveal".to_string())
+        }
+    }
+
+    /// Check if currently in reveal phase
+    pub async fn is_in_reveal_phase(&self, netuid: u16) -> Result<bool> {
+        let phase = self.get_current_phase(netuid).await?;
+        Ok(phase == "reveal")
+    }
+
+    /// Check if currently in commit phase
+    pub async fn is_in_commit_phase(&self, netuid: u16) -> Result<bool> {
+        let phase = self.get_current_phase(netuid).await?;
+        Ok(phase == "commit")
+    }
+
+    /// Get pending commits info string (for logging)
+    pub async fn pending_commits_info(&self) -> String {
+        let state = self.state.read().await;
+        if state.pending_commits.is_empty() {
+            "none".to_string()
+        } else {
+            let keys: Vec<_> = state.pending_commits.keys().collect();
+            format!("{} pending: {:?}", keys.len(), keys)
+        }
+    }
+
     // ==========================================================================
     // MAIN SET_WEIGHTS - Intelligent routing like Python SDK
     // ==========================================================================
