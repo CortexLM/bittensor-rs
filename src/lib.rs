@@ -7,6 +7,7 @@ pub mod core;
 pub mod crv4;
 pub mod metagraph;
 pub mod queries;
+pub mod subtensor;
 pub mod types;
 pub mod utils;
 pub mod validator;
@@ -71,4 +72,15 @@ pub use crv4::{
     prepare_crv4_commit, verify_encrypted_data, Crv4CommitData, Crv4PersistedState,
     Crv4StateManager, DrandInfo, WeightsTlockPayload, DEFAULT_COMMIT_REVEAL_VERSION,
     DRAND_QUICKNET_GENESIS, DRAND_QUICKNET_PK_HEX, DRAND_ROUND_INTERVAL_SECS,
+};
+
+// Re-export high-level Subtensor API (like Python SDK)
+pub use subtensor::{
+    PendingCommit, Salt, Subtensor, SubtensorBuilder, SubtensorState, WeightResponse,
+    WeightResponseData,
+};
+
+// Re-export mechanism functions from validator
+pub use validator::mechanism::{
+    commit_mechanism_weights, reveal_mechanism_weights, set_mechanism_weights,
 };
