@@ -56,14 +56,16 @@ pub fn generate_subtensor_commit_hash(
     // In subtensor: netuid_index = get_mechanism_storage_index(netuid, mecid)
     // GLOBAL_MAX_SUBNET_COUNT = 4096
     // Formula: mecid * 4096 + netuid
-    let mecid = mechanism_id.unwrap_or(0) as u32;
-    let netuid_index: u32 = mecid * 4096 + (netuid as u32);
+    // IMPORTANT: NetUidStorageIndex is u16 in subtensor, not u32!
+    let mecid = mechanism_id.unwrap_or(0) as u16;
+    let netuid_index: u16 = mecid.saturating_mul(4096).saturating_add(netuid);
 
     // Create SCALE-encodable tuple matching subtensor's format
     // The tuple is: (AccountId, NetUidStorageIndex, Vec<u16>, Vec<u16>, Vec<u16>, u64)
+    // NetUidStorageIndex is a newtype over u16, so it SCALE encodes as u16
     let data = (
         account,         // [u8; 32] - AccountId
-        netuid_index,    // u32 - NetUidStorageIndex
+        netuid_index,    // u16 - NetUidStorageIndex (NOT u32!)
         uids.to_vec(),   // Vec<u16>
         values.to_vec(), // Vec<u16>
         salt.to_vec(),   // Vec<u16>
