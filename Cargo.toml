@@ -1,0 +1,64 @@
+[package]
+name = "bittensor-rs"
+version = "2.0.0"
+edition = "2021"
+authors = ["Platform Network"]
+description = "A Rust SDK for interacting with the Bittensor network - rewritten to match Python SDK"
+repository = "https://github.com/PlatformNetwork/bittensor-rs"
+readme = "README.md"
+license = "MIT"
+keywords = ["bittensor", "blockchain", "substrate", "sdk", "ai"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.48", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Substrate/blockchain
+subxt = "0.44"
+subxt-rpcs = "0.44"
+sp-core = "38.1"
+sp-runtime = "44.0"
+parity-scale-codec = { version = "3.7", features = ["derive"] }
+scale-decode = "0.16"
+scale-encode = "0.10"
+scale-info = "2.11"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Crypto
+hex = "0.4"
+rand = "0.9"
+sha2 = "0.10"
+
+# Utilities
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+num-traits = "0.2"
+regex = "1.10"
+lazy_static = "1.4"
+dirs = "5.0"
+
+# Networking
+reqwest = { version = "0.12", features = ["json"] }
+
+# SCALE value decoding
+scale-value = "0.18"
+
+# Optional: numpy-like arrays
+ndarray = { version = "0.16", optional = true }
+
+[features]
+default = []
+numpy = ["ndarray"]
+
+[dev-dependencies]
+tokio-test = "0.4"
