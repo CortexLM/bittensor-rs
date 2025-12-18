@@ -67,7 +67,7 @@ pub use utils::crypto::{
 // Re-export CRv4 (Commit-Reveal v4 with timelock encryption)
 pub use crv4::{
     calculate_reveal_round, commit_timelocked_mechanism_weights, commit_timelocked_weights,
-    encrypt_for_round, get_commit_reveal_version, get_mechid_storage_index,
+    encrypt_for_round, get_commit_reveal_version, get_last_drand_round, get_mechid_storage_index,
     prepare_and_commit_crv4_mechanism_weights, prepare_and_commit_crv4_weights,
     prepare_crv4_commit, verify_encrypted_data, Crv4CommitData, Crv4PersistedState,
     Crv4StateManager, DrandInfo, WeightsTlockPayload, DEFAULT_COMMIT_REVEAL_VERSION,

@@ -470,6 +470,13 @@ impl Subtensor {
     // CRv4 (Timelock Encryption)
     // ==========================================================================
 
+    /// Get the chain's last stored DRAND round
+    pub async fn get_last_drand_round(&self) -> Result<u64> {
+        crate::queries::chain_info::last_drand_round(&self.client)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Failed to get Drand.LastStoredRound from chain"))
+    }
+
     /// Set weights using CRv4 timelock encryption
     /// Chain automatically decrypts when DRAND pulse arrives
     #[allow(clippy::too_many_arguments)]
@@ -491,7 +498,10 @@ impl Subtensor {
         let reveal_period = self.get_reveal_period(netuid).await?;
         let crv_version = self.get_commit_reveal_version().await?;
 
-        // Calculate reveal round
+        // Get chain's last DRAND round (CRITICAL: must use chain state, not system time)
+        let chain_last_drand_round = self.get_last_drand_round().await?;
+
+        // Calculate reveal round relative to chain's DRAND state
         let storage_index = get_mechid_storage_index(netuid, mechanism_id);
         let reveal_round = calculate_reveal_round(
             tempo,
@@ -499,6 +509,7 @@ impl Subtensor {
             storage_index,
             reveal_period,
             self.block_time,
+            chain_last_drand_round,
         );
 
         // Encrypt payload
@@ -506,10 +517,11 @@ impl Subtensor {
             prepare_crv4_commit(&hotkey_bytes, uids, weights, version_key, reveal_round)?;
 
         info!(
-            "CRv4 commit: netuid={}, mechanism={}, uids={}, reveal_round={}",
+            "CRv4 commit: netuid={}, mechanism={}, uids={}, chain_last_drand={}, reveal_round={}",
             netuid,
             mechanism_id,
             uids.len(),
+            chain_last_drand_round,
             reveal_round
         );
 
@@ -540,8 +552,8 @@ impl Subtensor {
         };
 
         info!(
-            "CRv4 commit submitted: tx={}, reveal_round={} (no manual reveal needed)",
-            tx_hash, reveal_round
+            "CRv4 commit submitted: tx={}, reveal_round={}, chain_last_drand={} (no manual reveal needed)",
+            tx_hash, reveal_round, chain_last_drand_round
         );
 
         Ok(
