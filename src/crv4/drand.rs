@@ -2,6 +2,10 @@
 //!
 //! DRAND (Distributed Randomness Beacon) provides the randomness used for
 //! timelock encryption. We use the Quicknet network.
+//!
+//! IMPORTANT: The chain's DRAND pallet may be behind real-world time.
+//! Always use `calculate_reveal_round` with the chain's `LastStoredRound`
+//! to ensure reveal_rounds are within the chain's DRAND range.
 
 use serde::{Deserialize, Serialize};
 
@@ -70,7 +74,10 @@ impl DrandInfo {
 
 /// Calculate the reveal round for CRv4 commits
 ///
-/// This matches the calculation in bittensor_drand Python library.
+/// IMPORTANT: This function calculates reveal_round relative to the chain's
+/// LastStoredRound, NOT real-world time. The chain's DRAND pallet may be
+/// significantly behind real time (e.g., 51 days), so using system time would
+/// produce reveal_rounds that don't exist on chain yet.
 ///
 /// # Arguments
 /// * `tempo` - Number of blocks in one epoch
@@ -78,6 +85,7 @@ impl DrandInfo {
 /// * `netuid` - Network/mechanism storage index (netuid or mechid * 4096 + netuid)
 /// * `subnet_reveal_period_epochs` - Number of epochs until reveal
 /// * `block_time` - Block time in seconds (default 12.0)
+/// * `chain_last_drand_round` - The chain's Drand.LastStoredRound value
 ///
 /// # Returns
 /// The DRAND round number when the reveal should occur
@@ -87,10 +95,10 @@ pub fn calculate_reveal_round(
     netuid: u16,
     subnet_reveal_period_epochs: u64,
     block_time: f64,
+    chain_last_drand_round: u64,
 ) -> u64 {
     let tempo = tempo as u64;
     let netuid = netuid as u64;
-    let drand_info = DrandInfo::quicknet();
 
     // Calculate current epoch (same formula as subtensor)
     // epoch = (current_block + netuid + 1) / (tempo + 1)
@@ -107,30 +115,32 @@ pub fn calculate_reveal_round(
         .saturating_mul(tempo_plus_one)
         .saturating_sub(netuid_plus_one);
 
-    // Calculate time until reveal
+    // Calculate time until reveal in seconds
     let blocks_until_reveal = first_reveal_block.saturating_sub(current_block);
     let secs_until_reveal = (blocks_until_reveal as f64 * block_time) as u64;
 
-    // Get current time and add offset
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    // Calculate how many DRAND rounds until reveal
+    // DRAND rounds occur every 3 seconds
+    let drand_rounds_until_reveal = secs_until_reveal / DRAND_ROUND_INTERVAL_SECS;
 
-    let reveal_time = now.saturating_add(secs_until_reveal);
+    // Calculate reveal_round relative to chain's last stored round
+    // Add +1 buffer for safety
+    let reveal_round = chain_last_drand_round
+        .saturating_add(drand_rounds_until_reveal)
+        .saturating_add(1);
 
-    // Get DRAND round at reveal time, add buffer for safety
-    let reveal_round = drand_info.round_at_time(reveal_time.saturating_add(drand_info.period));
-
-    tracing::debug!(
+    tracing::info!(
         "CRv4 reveal round calculation: tempo={}, current_block={}, netuid={}, \
-         reveal_period={}, current_epoch={}, reveal_epoch={}, reveal_round={}",
+         reveal_period={}, current_epoch={}, reveal_epoch={}, \
+         blocks_until_reveal={}, chain_last_drand_round={}, reveal_round={}",
         tempo,
         current_block,
         netuid,
         subnet_reveal_period_epochs,
         current_epoch,
         reveal_epoch,
+        blocks_until_reveal,
+        chain_last_drand_round,
         reveal_round
     );
 
@@ -140,15 +150,24 @@ pub fn calculate_reveal_round(
 /// Calculate reveal round with explicit epoch information
 ///
 /// This is useful when you already know the epoch boundaries.
+///
+/// # Arguments
+/// * `reveal_epoch` - The epoch when weights should be revealed
+/// * `tempo` - Number of blocks in one epoch
+/// * `netuid` - Network/mechanism storage index
+/// * `current_block` - Current block number
+/// * `block_time` - Block time in seconds
+/// * `chain_last_drand_round` - The chain's Drand.LastStoredRound value
 pub fn calculate_reveal_round_for_epoch(
     reveal_epoch: u64,
     tempo: u16,
     netuid: u16,
+    current_block: u64,
     block_time: f64,
+    chain_last_drand_round: u64,
 ) -> u64 {
     let tempo = tempo as u64;
     let netuid = netuid as u64;
-    let drand_info = DrandInfo::quicknet();
 
     let tempo_plus_one = tempo.saturating_add(1);
     let netuid_plus_one = netuid.saturating_add(1);
@@ -158,16 +177,17 @@ pub fn calculate_reveal_round_for_epoch(
         .saturating_mul(tempo_plus_one)
         .saturating_sub(netuid_plus_one);
 
-    // Estimate time from now
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    // Calculate blocks until reveal
+    let blocks_until_reveal = first_reveal_block.saturating_sub(current_block);
+    let secs_until_reveal = (blocks_until_reveal as f64 * block_time) as u64;
 
-    // Rough estimate: assume current block is now
-    let reveal_time = now + (first_reveal_block as f64 * block_time / 12.0) as u64;
+    // Calculate DRAND rounds until reveal
+    let drand_rounds_until_reveal = secs_until_reveal / DRAND_ROUND_INTERVAL_SECS;
 
-    drand_info.round_at_time(reveal_time.saturating_add(drand_info.period))
+    // Return reveal_round relative to chain's last stored round
+    chain_last_drand_round
+        .saturating_add(drand_rounds_until_reveal)
+        .saturating_add(1)
 }
 
 #[cfg(test)]
@@ -210,11 +230,58 @@ mod tests {
         let netuid = 1u16;
         let reveal_period = 1u64;
         let block_time = 12.0;
+        let chain_last_drand_round = 24_405_700u64; // Example chain state
 
-        let reveal_round =
-            calculate_reveal_round(tempo, current_block, netuid, reveal_period, block_time);
+        let reveal_round = calculate_reveal_round(
+            tempo,
+            current_block,
+            netuid,
+            reveal_period,
+            block_time,
+            chain_last_drand_round,
+        );
 
-        // Should be a valid round number in the future
-        assert!(reveal_round > 0);
+        // Should be greater than chain's last stored round
+        assert!(reveal_round > chain_last_drand_round);
+
+        // Should be within reasonable range (not millions of rounds ahead)
+        // With tempo=360, reveal_period=1, blocks_until_reveal ~= 360 blocks
+        // 360 blocks * 12 sec/block = 4320 secs, / 3 sec/round = 1440 rounds
+        let expected_rounds_ahead = (360 * 12 / 3) + 1; // ~1441
+        assert!(reveal_round < chain_last_drand_round + expected_rounds_ahead + 100);
+    }
+
+    #[test]
+    fn test_reveal_round_relative_to_chain() {
+        // Test that reveal_round is calculated relative to chain state
+        let tempo = 360u16;
+        let current_block = 5000u64;
+        let netuid = 1u16;
+        let reveal_period = 1u64;
+        let block_time = 12.0;
+
+        // Two different chain states
+        let chain_round_1 = 24_000_000u64;
+        let chain_round_2 = 25_000_000u64;
+
+        let reveal_1 = calculate_reveal_round(
+            tempo,
+            current_block,
+            netuid,
+            reveal_period,
+            block_time,
+            chain_round_1,
+        );
+        let reveal_2 = calculate_reveal_round(
+            tempo,
+            current_block,
+            netuid,
+            reveal_period,
+            block_time,
+            chain_round_2,
+        );
+
+        // The difference should be exactly 1_000_000 (the difference in chain state)
+        assert_eq!(reveal_2 - reveal_1, chain_round_2 - chain_round_1);
     }
 }

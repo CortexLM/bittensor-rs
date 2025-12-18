@@ -120,10 +120,22 @@ pub async fn commit_timelocked_mechanism_weights(
     Ok(tx_hash)
 }
 
+/// Get the chain's last stored DRAND round
+pub async fn get_last_drand_round(client: &BittensorClient) -> Result<u64> {
+    if let Some(val) = client.storage("Drand", "LastStoredRound", None).await? {
+        if let Ok(round) = crate::utils::decoders::decode_u64(&val) {
+            return Ok(round);
+        }
+    }
+    Err(anyhow::anyhow!(
+        "Failed to get Drand.LastStoredRound from chain"
+    ))
+}
+
 /// High-level function: Prepare and submit CRv4 weights
 ///
 /// This handles the entire flow:
-/// 1. Calculate reveal round based on tempo/epoch
+/// 1. Calculate reveal round based on tempo/epoch and chain's DRAND state
 /// 2. Encrypt payload with TLE
 /// 3. Submit to chain
 /// 4. Return commit data for persistence
@@ -144,7 +156,10 @@ pub async fn prepare_and_commit_crv4_weights(
     let reveal_period = get_reveal_period(client, netuid).await.unwrap_or(1);
     let block_time = 12.0; // Standard Bittensor block time
 
-    // Calculate reveal round
+    // Get chain's last DRAND round (CRITICAL: must use chain state, not system time)
+    let chain_last_drand_round = get_last_drand_round(client).await?;
+
+    // Calculate reveal round relative to chain's DRAND state
     let storage_index = get_mechid_storage_index(netuid, 0); // Main mechanism
     let reveal_round = calculate_reveal_round(
         tempo,
@@ -152,6 +167,7 @@ pub async fn prepare_and_commit_crv4_weights(
         storage_index,
         reveal_period,
         block_time,
+        chain_last_drand_round,
     );
 
     // Prepare and encrypt payload
@@ -175,10 +191,11 @@ pub async fn prepare_and_commit_crv4_weights(
     .await?;
 
     tracing::info!(
-        "CRv4 commit submitted: tx={}, netuid={}, reveal_round={}, version={}",
+        "CRv4 commit submitted: tx={}, netuid={}, reveal_round={}, chain_last_drand={}, version={}",
         tx_hash,
         netuid,
         reveal_round,
+        chain_last_drand_round,
         crv_version
     );
 
@@ -217,6 +234,9 @@ pub async fn prepare_and_commit_crv4_mechanism_weights(
     let reveal_period = get_reveal_period(client, netuid).await.unwrap_or(1);
     let block_time = 12.0;
 
+    // Get chain's last DRAND round (CRITICAL: must use chain state, not system time)
+    let chain_last_drand_round = get_last_drand_round(client).await?;
+
     let storage_index = get_mechid_storage_index(netuid, mechanism_id);
     let reveal_round = calculate_reveal_round(
         tempo,
@@ -224,6 +244,7 @@ pub async fn prepare_and_commit_crv4_mechanism_weights(
         storage_index,
         reveal_period,
         block_time,
+        chain_last_drand_round,
     );
 
     let encrypted = prepare_crv4_commit(&hotkey_bytes, uids, weights, version_key, reveal_round)?;
@@ -245,11 +266,12 @@ pub async fn prepare_and_commit_crv4_mechanism_weights(
     .await?;
 
     tracing::info!(
-        "CRv4 mechanism commit submitted: tx={}, netuid={}, mecid={}, reveal_round={}",
+        "CRv4 mechanism commit submitted: tx={}, netuid={}, mecid={}, reveal_round={}, chain_last_drand={}",
         tx_hash,
         netuid,
         mechanism_id,
-        reveal_round
+        reveal_round,
+        chain_last_drand_round
     );
 
     Ok(Crv4CommitData {
