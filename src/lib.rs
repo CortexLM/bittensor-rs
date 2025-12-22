@@ -14,7 +14,7 @@ pub mod validator;
 
 pub use chain::{BittensorClient, Error as ChainError};
 pub use config::{AxonConfig, Config, LoggingConfig, SubtensorConfig};
-pub use metagraph::Metagraph;
+pub use metagraph::{sync_metagraph, Metagraph};
 
 // Re-export types first (includes liquidity types)
 pub use types::*;
