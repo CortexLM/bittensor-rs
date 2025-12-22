@@ -222,17 +222,17 @@ pub async fn neurons(
     Ok(neurons)
 }
 
-// Helper functions
+// Helper functions - return empty vec if storage not found (graceful degradation)
 async fn fetch_vec_u16(
     client: &BittensorClient,
     storage: &str,
     keys: &[Value],
 ) -> Result<Vec<u16>> {
-    client
+    Ok(client
         .storage_with_keys(SUBTENSOR_MODULE, storage, keys.to_vec())
         .await?
         .and_then(|v| decode_vec_u16(&v).ok())
-        .ok_or_else(|| anyhow::anyhow!("{} not found", storage))
+        .unwrap_or_default())
 }
 
 async fn fetch_vec_u64(
@@ -240,11 +240,11 @@ async fn fetch_vec_u64(
     storage: &str,
     keys: &[Value],
 ) -> Result<Vec<u64>> {
-    client
+    Ok(client
         .storage_with_keys(SUBTENSOR_MODULE, storage, keys.to_vec())
         .await?
         .and_then(|v| decode_vec_u64(&v).ok())
-        .ok_or_else(|| anyhow::anyhow!("{} not found", storage))
+        .unwrap_or_default())
 }
 
 async fn fetch_vec_u128(
@@ -252,11 +252,11 @@ async fn fetch_vec_u128(
     storage: &str,
     keys: &[Value],
 ) -> Result<Vec<u128>> {
-    client
+    Ok(client
         .storage_with_keys(SUBTENSOR_MODULE, storage, keys.to_vec())
         .await?
         .and_then(|v| decode_vec_u128(&v).ok())
-        .ok_or_else(|| anyhow::anyhow!("{} not found", storage))
+        .unwrap_or_default())
 }
 
 async fn fetch_vec_bool(
@@ -264,11 +264,11 @@ async fn fetch_vec_bool(
     storage: &str,
     keys: &[Value],
 ) -> Result<Vec<bool>> {
-    client
+    Ok(client
         .storage_with_keys(SUBTENSOR_MODULE, storage, keys.to_vec())
         .await?
         .and_then(|v| decode_vec_bool(&v).ok())
-        .ok_or_else(|| anyhow::anyhow!("{} not found", storage))
+        .unwrap_or_default())
 }
 
 /// Get a specific neuron by subnet and UID
