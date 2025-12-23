@@ -399,6 +399,7 @@ fn test_neuron_info_structure() {
         stake_dict: HashMap::new(),
         total_stake: 1000000,
         root_stake: 0,
+        stake_weight: 0,
         rank: 0.5,
         emission: 100.0,
         incentive: 0.5,
