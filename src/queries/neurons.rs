@@ -4,12 +4,36 @@ use crate::types::{AxonInfo, NeuronInfo, PrometheusInfo};
 use crate::utils::decoders::*;
 use anyhow::{Context, Result};
 use futures::stream::{FuturesUnordered, StreamExt};
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Compact, Decode, Encode};
 use sp_core::crypto::AccountId32;
 use std::collections::HashMap;
 use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
+
+/// SubnetState structure matching the on-chain SCALE encoding from subtensor
+/// Used to decode the response from SubnetInfoRuntimeApi.get_subnet_state
+#[derive(Decode, Clone, Debug)]
+struct SubnetStateRaw {
+    netuid: Compact<u16>,
+    hotkeys: Vec<AccountId32>,
+    coldkeys: Vec<AccountId32>,
+    active: Vec<bool>,
+    validator_permit: Vec<bool>,
+    pruning_score: Vec<Compact<u16>>,
+    last_update: Vec<Compact<u64>>,
+    emission: Vec<Compact<u64>>,
+    dividends: Vec<Compact<u16>>,
+    incentives: Vec<Compact<u16>>,
+    consensus: Vec<Compact<u16>>,
+    trust: Vec<Compact<u16>>,
+    rank: Vec<Compact<u16>>,
+    block_at_registration: Vec<Compact<u64>>,
+    alpha_stake: Vec<Compact<u64>>,
+    tao_stake: Vec<Compact<u64>>,
+    total_stake: Vec<Compact<u64>>,
+    emission_history: Vec<Vec<Compact<u64>>>,
+}
 
 /// Get all neurons for a subnet with bulk storage queries
 pub async fn neurons(
@@ -802,76 +826,32 @@ pub async fn get_stake_weights_for_subnet(
     client: &BittensorClient,
     netuid: u16,
 ) -> Result<(Vec<u128>, Vec<u128>, Vec<u128>)> {
-    // Call SubnetInfoRuntimeApi.get_subnet_state to get correct stakes
-    let params = vec![Value::u128(netuid as u128)];
+    // Encode netuid as SCALE bytes for the runtime API call
+    let params = netuid.encode();
 
-    if let Some(val) = client
-        .runtime_api("SubnetInfoRuntimeApi", "get_subnet_state", params)
-        .await?
-    {
-        // Parse using debug string representation (same approach as other decoders)
-        let s = format!("{:?}", val);
+    // Call SubnetInfoRuntimeApi.get_subnet_state which returns SCALE-encoded Option<SubnetState>
+    let raw_bytes = client
+        .runtime_api_call("SubnetInfoRuntimeApi", "get_subnet_state", Some(params))
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to call get_subnet_state: {}", e))?;
 
-        // Extract alpha_stake, tao_stake, total_stake arrays from the debug string
-        let alpha_stake = extract_stake_array(&s, "alpha_stake");
-        let tao_stake = extract_stake_array(&s, "tao_stake");
-        let total_stake = extract_stake_array(&s, "total_stake");
-
-        if !alpha_stake.is_empty() {
-            return Ok((alpha_stake, tao_stake, total_stake));
-        }
+    if raw_bytes.is_empty() {
+        return Ok((Vec::new(), Vec::new(), Vec::new()));
     }
 
-    // Fallback: return empty vectors if runtime API fails
-    Ok((Vec::new(), Vec::new(), Vec::new()))
-}
+    // Decode Option<SubnetState> from SCALE bytes
+    let subnet_state: Option<SubnetStateRaw> =
+        Option::<SubnetStateRaw>::decode(&mut &raw_bytes[..])
+            .map_err(|e| anyhow::anyhow!("Failed to decode SubnetState: {}", e))?;
 
-/// Extract a stake array from the debug string representation of SubnetState
-/// The format is: ("alpha_stake", Value { value: Composite(Unnamed([Value { value: Primitive(U128(123)), ...
-fn extract_stake_array(s: &str, field_name: &str) -> Vec<u128> {
-    let mut result = Vec::new();
-
-    // Find the field pattern: ("field_name", Value { value: Composite(Unnamed([
-    let field_pattern = format!("(\"{}\", Value {{ value: Composite(Unnamed([", field_name);
-    if let Some(start_idx) = s.find(&field_pattern) {
-        let after_field = &s[start_idx + field_pattern.len()..];
-
-        // Find where this array ends - look for ])), which closes Unnamed([...]))
-        // We need to find the matching close
-        let mut depth = 1;
-        let mut end_idx = 0;
-        let mut i = 0;
-        let chars: Vec<char> = after_field.chars().collect();
-        while i < chars.len() {
-            match chars[i] {
-                '[' => depth += 1,
-                ']' => {
-                    depth -= 1;
-                    if depth == 0 {
-                        end_idx = i;
-                        break;
-                    }
-                }
-                _ => {}
-            }
-            i += 1;
+    match subnet_state {
+        Some(state) => {
+            // Convert Compact<u64> to u128
+            let alpha_stake: Vec<u128> = state.alpha_stake.iter().map(|c| c.0 as u128).collect();
+            let tao_stake: Vec<u128> = state.tao_stake.iter().map(|c| c.0 as u128).collect();
+            let total_stake: Vec<u128> = state.total_stake.iter().map(|c| c.0 as u128).collect();
+            Ok((alpha_stake, tao_stake, total_stake))
         }
-
-        if end_idx > 0 {
-            let array_content = &after_field[..end_idx];
-
-            // Extract all Primitive(U128(N)) values
-            // Format: Value { value: Primitive(U128(38121433580446)), context: () }
-            let re = regex::Regex::new(r"Primitive\(U128\((\d+)\)\)").unwrap();
-            for cap in re.captures_iter(array_content) {
-                if let Some(num_str) = cap.get(1) {
-                    if let Ok(num) = num_str.as_str().parse::<u128>() {
-                        result.push(num);
-                    }
-                }
-            }
-        }
+        None => Ok((Vec::new(), Vec::new(), Vec::new())),
     }
-
-    result
 }
