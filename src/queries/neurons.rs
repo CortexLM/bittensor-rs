@@ -224,10 +224,12 @@ pub async fn neurons(
     }
 
     neurons.sort_by_key(|n| n.uid);
-    
+
     // Step 6: Fetch correct stake values from runtime API (includes parent inheritance)
     // This overwrites the storage-based stakes with the actual consensus values
-    if let Ok((alpha_stakes, _tao_stakes, total_stakes)) = get_stake_weights_for_subnet(client, netuid).await {
+    if let Ok((alpha_stakes, _tao_stakes, total_stakes)) =
+        get_stake_weights_for_subnet(client, netuid).await
+    {
         for neuron in &mut neurons {
             let idx = neuron.uid as usize;
             if let Some(&alpha) = alpha_stakes.get(idx) {
@@ -242,7 +244,7 @@ pub async fn neurons(
             }
         }
     }
-    
+
     Ok(neurons)
 }
 
@@ -376,12 +378,7 @@ pub async fn query_neuron_from_storage(
             "PruningScores",
             netuid_key.clone()
         ),
-        fetch_vec_u16_storage(
-            client,
-            SUBTENSOR_MODULE,
-            "StakeWeight",
-            netuid_key.clone()
-        ),
+        fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "StakeWeight", netuid_key.clone()),
     )?;
 
     let rank = rank_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
@@ -807,24 +804,24 @@ pub async fn get_stake_weights_for_subnet(
 ) -> Result<(Vec<u128>, Vec<u128>, Vec<u128>)> {
     // Call SubnetInfoRuntimeApi.get_subnet_state to get correct stakes
     let params = vec![Value::u128(netuid as u128)];
-    
+
     if let Some(val) = client
         .runtime_api("SubnetInfoRuntimeApi", "get_subnet_state", params)
         .await?
     {
         // Parse using debug string representation (same approach as other decoders)
         let s = format!("{:?}", val);
-        
+
         // Extract alpha_stake, tao_stake, total_stake arrays from the debug string
         let alpha_stake = extract_stake_array(&s, "alpha_stake");
         let tao_stake = extract_stake_array(&s, "tao_stake");
         let total_stake = extract_stake_array(&s, "total_stake");
-        
+
         if !alpha_stake.is_empty() {
             return Ok((alpha_stake, tao_stake, total_stake));
         }
     }
-    
+
     // Fallback: return empty vectors if runtime API fails
     Ok((Vec::new(), Vec::new(), Vec::new()))
 }
@@ -833,12 +830,12 @@ pub async fn get_stake_weights_for_subnet(
 /// The format is: ("alpha_stake", Value { value: Composite(Unnamed([Value { value: Primitive(U128(123)), ...
 fn extract_stake_array(s: &str, field_name: &str) -> Vec<u128> {
     let mut result = Vec::new();
-    
+
     // Find the field pattern: ("field_name", Value { value: Composite(Unnamed([
     let field_pattern = format!("(\"{}\", Value {{ value: Composite(Unnamed([", field_name);
     if let Some(start_idx) = s.find(&field_pattern) {
         let after_field = &s[start_idx + field_pattern.len()..];
-        
+
         // Find where this array ends - look for ])), which closes Unnamed([...]))
         // We need to find the matching close
         let mut depth = 1;
@@ -859,10 +856,10 @@ fn extract_stake_array(s: &str, field_name: &str) -> Vec<u128> {
             }
             i += 1;
         }
-        
+
         if end_idx > 0 {
             let array_content = &after_field[..end_idx];
-            
+
             // Extract all Primitive(U128(N)) values
             // Format: Value { value: Primitive(U128(38121433580446)), context: () }
             let re = regex::Regex::new(r"Primitive\(U128\((\d+)\)\)").unwrap();
@@ -875,6 +872,6 @@ fn extract_stake_array(s: &str, field_name: &str) -> Vec<u128> {
             }
         }
     }
-    
+
     result
 }
