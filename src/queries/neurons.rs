@@ -42,6 +42,7 @@ pub async fn neurons(
         emission_vec,
         validator_permit_vec,
         pruning_scores_vec,
+        stake_weight_vec,
     ) = tokio::try_join!(
         fetch_vec_u16(client, "Rank", &n_key),
         fetch_vec_u16(client, "Trust", &n_key),
@@ -54,6 +55,7 @@ pub async fn neurons(
         fetch_vec_u128(client, "Emission", &n_key),
         fetch_vec_bool(client, "ValidatorPermit", &n_key),
         fetch_vec_u16(client, "PruningScores", &n_key),
+        fetch_vec_u16(client, "StakeWeight", &n_key),
     )?;
 
     // Step 2: Batch fetch all hotkeys
@@ -188,6 +190,8 @@ pub async fn neurons(
 
         let total_stake = stakes.get(&uid).copied().unwrap_or(0);
         let root_stake = root_stakes.get(&uid).copied().unwrap_or(0);
+        // Stake weight from StakeWeight storage - includes parent inheritance + TAO weight
+        let stake_weight = stake_weight_vec.get(idx).copied().unwrap_or(0);
 
         neurons.push(NeuronInfo {
             uid,
@@ -198,6 +202,7 @@ pub async fn neurons(
             stake_dict: HashMap::new(),
             total_stake,
             root_stake,
+            stake_weight,
             rank,
             trust,
             consensus,
@@ -324,6 +329,7 @@ pub async fn query_neuron_from_storage(
         emission_vec,
         validator_permit_vec,
         pruning_scores_vec,
+        stake_weight_vec,
     ) = tokio::try_join!(
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Rank", netuid_key.clone()),
         fetch_vec_u16_storage(client, SUBTENSOR_MODULE, "Trust", netuid_key.clone()),
@@ -349,6 +355,12 @@ pub async fn query_neuron_from_storage(
             client,
             SUBTENSOR_MODULE,
             "PruningScores",
+            netuid_key.clone()
+        ),
+        fetch_vec_u16_storage(
+            client,
+            SUBTENSOR_MODULE,
+            "StakeWeight",
             netuid_key.clone()
         ),
     )?;
@@ -436,6 +448,9 @@ pub async fn query_neuron_from_storage(
     };
     let bonds: Vec<Vec<u64>> = bonds_pairs.into_iter().map(|(a, b)| vec![a, b]).collect();
 
+    // Stake weight from StakeWeight storage - includes parent inheritance + TAO weight
+    let stake_weight = stake_weight_vec.get(idx).copied().unwrap_or(0);
+
     Ok(Some(NeuronInfo {
         uid,
         netuid,
@@ -445,6 +460,7 @@ pub async fn query_neuron_from_storage(
         stake_dict,
         total_stake,
         root_stake,
+        stake_weight,
         rank,
         trust,
         consensus,

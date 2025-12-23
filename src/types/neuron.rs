@@ -21,6 +21,9 @@ pub struct NeuronInfo {
     pub total_stake: u128,
     /// Total stake on root subnet (TAO) - used for dividend calculations
     pub root_stake: u128,
+    /// Stake weight (normalized u16, includes parent inheritance + TAO weight)
+    /// This is the actual weight used in Yuma Consensus calculations
+    pub stake_weight: u16,
     /// Neuron's rank score (normalized)
     pub rank: f64,
     /// Neuron's trust score (normalized)
