@@ -224,6 +224,25 @@ pub async fn neurons(
     }
 
     neurons.sort_by_key(|n| n.uid);
+    
+    // Step 6: Fetch correct stake values from runtime API (includes parent inheritance)
+    // This overwrites the storage-based stakes with the actual consensus values
+    if let Ok((alpha_stakes, _tao_stakes, total_stakes)) = get_stake_weights_for_subnet(client, netuid).await {
+        for neuron in &mut neurons {
+            let idx = neuron.uid as usize;
+            if let Some(&alpha) = alpha_stakes.get(idx) {
+                // Update stake and total_stake with the correct value including inheritance
+                neuron.stake = alpha;
+                neuron.total_stake = alpha;
+            }
+            if let Some(&total) = total_stakes.get(idx) {
+                // total_stake from runtime includes alpha + (tao * tao_weight)
+                // We store this for reference but primary stake field is alpha_stake
+                neuron.total_stake = total;
+            }
+        }
+    }
+    
     Ok(neurons)
 }
 
@@ -777,4 +796,85 @@ fn extract_last_u64_from_str(s: &str) -> Option<u64> {
     } else {
         None
     }
+}
+
+/// Get stake weights for all neurons in a subnet using runtime API
+/// Returns (alpha_stake, tao_stake, total_stake) vectors indexed by UID
+/// These values include parent inheritance and are the actual values used in consensus
+pub async fn get_stake_weights_for_subnet(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<(Vec<u128>, Vec<u128>, Vec<u128>)> {
+    // Call SubnetInfoRuntimeApi.get_subnet_state to get correct stakes
+    let params = vec![Value::u128(netuid as u128)];
+    
+    if let Some(val) = client
+        .runtime_api("SubnetInfoRuntimeApi", "get_subnet_state", params)
+        .await?
+    {
+        // Parse using debug string representation (same approach as other decoders)
+        let s = format!("{:?}", val);
+        
+        // Extract alpha_stake, tao_stake, total_stake arrays from the debug string
+        let alpha_stake = extract_stake_array(&s, "alpha_stake");
+        let tao_stake = extract_stake_array(&s, "tao_stake");
+        let total_stake = extract_stake_array(&s, "total_stake");
+        
+        if !alpha_stake.is_empty() {
+            return Ok((alpha_stake, tao_stake, total_stake));
+        }
+    }
+    
+    // Fallback: return empty vectors if runtime API fails
+    Ok((Vec::new(), Vec::new(), Vec::new()))
+}
+
+/// Extract a stake array from the debug string representation of SubnetState
+/// The format is: ("alpha_stake", Value { value: Composite(Unnamed([Value { value: Primitive(U128(123)), ...
+fn extract_stake_array(s: &str, field_name: &str) -> Vec<u128> {
+    let mut result = Vec::new();
+    
+    // Find the field pattern: ("field_name", Value { value: Composite(Unnamed([
+    let field_pattern = format!("(\"{}\", Value {{ value: Composite(Unnamed([", field_name);
+    if let Some(start_idx) = s.find(&field_pattern) {
+        let after_field = &s[start_idx + field_pattern.len()..];
+        
+        // Find where this array ends - look for ])), which closes Unnamed([...]))
+        // We need to find the matching close
+        let mut depth = 1;
+        let mut end_idx = 0;
+        let mut i = 0;
+        let chars: Vec<char> = after_field.chars().collect();
+        while i < chars.len() {
+            match chars[i] {
+                '[' => depth += 1,
+                ']' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end_idx = i;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+        
+        if end_idx > 0 {
+            let array_content = &after_field[..end_idx];
+            
+            // Extract all Primitive(U128(N)) values
+            // Format: Value { value: Primitive(U128(38121433580446)), context: () }
+            let re = regex::Regex::new(r"Primitive\(U128\((\d+)\)\)").unwrap();
+            for cap in re.captures_iter(array_content) {
+                if let Some(num_str) = cap.get(1) {
+                    if let Ok(num) = num_str.as_str().parse::<u128>() {
+                        result.push(num);
+                    }
+                }
+            }
+        }
+    }
+    
+    result
 }
