@@ -68,10 +68,11 @@ pub use utils::crypto::{
 pub use crv4::{
     calculate_reveal_round, commit_timelocked_mechanism_weights, commit_timelocked_weights,
     encrypt_for_round, get_commit_reveal_version, get_last_drand_round, get_mechid_storage_index,
-    prepare_and_commit_crv4_mechanism_weights, prepare_and_commit_crv4_weights,
-    prepare_crv4_commit, verify_encrypted_data, Crv4CommitData, Crv4PersistedState,
-    Crv4StateManager, DrandInfo, WeightsTlockPayload, DEFAULT_COMMIT_REVEAL_VERSION,
-    DRAND_QUICKNET_GENESIS, DRAND_QUICKNET_PK_HEX, DRAND_ROUND_INTERVAL_SECS,
+    get_reveal_period, get_tempo, prepare_and_commit_crv4_mechanism_weights,
+    prepare_and_commit_crv4_weights, prepare_crv4_commit, verify_encrypted_data, Crv4CommitData,
+    Crv4PersistedState, Crv4StateManager, DrandInfo, WeightsTlockPayload,
+    DEFAULT_COMMIT_REVEAL_VERSION, DRAND_QUICKNET_GENESIS, DRAND_QUICKNET_PK_HEX,
+    DRAND_ROUND_INTERVAL_SECS,
 };
 
 // Re-export high-level Subtensor API (like Python SDK)
