@@ -1,4 +1,5 @@
 use crate::chain::BittensorClient;
+use crate::errors::{BittensorError, BittensorResult, ChainQueryError};
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -6,6 +7,33 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const COMMITMENTS_PALLET: &str = "Commitments";
+
+/// Weight commitment information stored on chain
+#[derive(Debug, Clone)]
+pub struct WeightCommitInfo {
+    /// The block number when the commitment was made
+    pub block: u64,
+    /// The committed data (typically hash of weights)
+    pub commit_hash: Vec<u8>,
+    /// The reveal round number
+    pub reveal_round: u64,
+}
+
+impl WeightCommitInfo {
+    /// Create a new WeightCommitInfo
+    pub fn new(block: u64, commit_hash: Vec<u8>, reveal_round: u64) -> Self {
+        Self {
+            block,
+            commit_hash,
+            reveal_round,
+        }
+    }
+
+    /// Get the commit hash as a hex string
+    pub fn commit_hash_hex(&self) -> String {
+        hex::encode(&self.commit_hash)
+    }
+}
 
 /// Get commitment: SubtensorModule.Commits[(netuid, block, uid)] -> bytes
 pub async fn get_commitment(
@@ -388,4 +416,255 @@ fn extract_first_account_from_str(s: &str) -> Option<AccountId32> {
         }
     }
     None
+}
+
+/// Get weight commitment for a hotkey on a subnet
+///
+/// Queries the CRV3WeightCommits storage to get the weight commitment
+/// information for a specific hotkey on a subnet.
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `netuid` - The subnet ID
+/// * `hotkey` - The hotkey account to query
+///
+/// # Returns
+/// The WeightCommitInfo if found, None otherwise
+pub async fn get_weight_commitment(
+    client: &BittensorClient,
+    netuid: u16,
+    hotkey: &AccountId32,
+) -> BittensorResult<Option<WeightCommitInfo>> {
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(hotkey.encode()),
+    ];
+
+    match client
+        .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommits", keys)
+        .await
+    {
+        Ok(Some(val)) => {
+            let info = decode_weight_commit_info(&val);
+            Ok(info)
+        }
+        Ok(None) => Ok(None),
+        Err(e) => Err(BittensorError::ChainQuery(ChainQueryError::with_storage(
+            format!("Failed to query CRV3WeightCommits: {}", e),
+            SUBTENSOR_MODULE,
+            "CRV3WeightCommits",
+        ))),
+    }
+}
+
+/// Decode WeightCommitInfo from a Value
+fn decode_weight_commit_info(value: &Value) -> Option<WeightCommitInfo> {
+    let s = format!("{:?}", value);
+
+    // Extract block (u64), commit_hash (bytes), reveal_round (u64)
+    let block = extract_first_u64_from_str(&s).unwrap_or(0);
+
+    // Extract bytes for commit_hash
+    let mut commit_hash = Vec::new();
+    let mut rem = s.as_str();
+    while let Some(pos) = rem.find("U128(") {
+        let after = &rem[pos + 5..];
+        if let Some(end) = after.find(')') {
+            if let Ok(n) = after[..end].trim().parse::<u128>() {
+                if n <= 255 {
+                    commit_hash.push(n as u8);
+                }
+            }
+            rem = &after[end + 1..];
+        } else {
+            break;
+        }
+    }
+
+    let reveal_round = extract_last_u64_from_str(&s).unwrap_or(0);
+
+    if block > 0 || !commit_hash.is_empty() || reveal_round > 0 {
+        Some(WeightCommitInfo::new(block, commit_hash, reveal_round))
+    } else {
+        None
+    }
+}
+
+/// Get all weight commitments for a subnet
+///
+/// Queries all weight commitments from all neurons registered on the subnet.
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `netuid` - The subnet ID
+///
+/// # Returns
+/// A vector of (AccountId32, WeightCommitInfo) tuples for all commitments
+pub async fn get_all_weight_commitments(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<Vec<(AccountId32, WeightCommitInfo)>> {
+    // Get the number of neurons in the subnet
+    let n_val = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await
+        .map_err(|e| {
+            BittensorError::ChainQuery(ChainQueryError::with_storage(
+                format!("Failed to query SubnetworkN: {}", e),
+                SUBTENSOR_MODULE,
+                "SubnetworkN",
+            ))
+        })?;
+
+    let n = n_val
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
+        .unwrap_or(0);
+
+    let mut commitments = Vec::new();
+
+    for uid in 0..n {
+        // Get the hotkey for this UID
+        let hk_val = client
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "Keys",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
+            .await
+            .map_err(|e| {
+                BittensorError::ChainQuery(ChainQueryError::with_storage(
+                    format!("Failed to query Keys: {}", e),
+                    SUBTENSOR_MODULE,
+                    "Keys",
+                ))
+            })?;
+
+        if let Some(hk_val) = hk_val {
+            if let Ok(hotkey) = crate::utils::decoders::decode_account_id32(&hk_val) {
+                // Get the commitment for this hotkey
+                if let Ok(Some(commit_info)) = get_weight_commitment(client, netuid, &hotkey).await
+                {
+                    commitments.push((hotkey, commit_info));
+                }
+            }
+        }
+    }
+
+    Ok(commitments)
+}
+
+/// Get pending weight commits for a subnet
+///
+/// Returns weight commits that have been submitted but not yet revealed.
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `netuid` - The subnet ID
+///
+/// # Returns
+/// A vector of (AccountId32, WeightCommitInfo) for pending commits
+pub async fn get_pending_weight_commits(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<Vec<(AccountId32, WeightCommitInfo)>> {
+    // Query the V2 commits storage which contains pending commits
+    let commits_v2 = get_current_weight_commit_info_v2(client, netuid)
+        .await
+        .map_err(|e| {
+            BittensorError::ChainQuery(ChainQueryError::with_storage(
+                format!("Failed to query CRV3WeightCommitsV2: {}", e),
+                SUBTENSOR_MODULE,
+                "CRV3WeightCommitsV2",
+            ))
+        })?;
+
+    let mut result = Vec::new();
+    for (hotkey, block, msg, reveal_round) in commits_v2 {
+        let commit_hash = msg.into_bytes();
+        result.push((
+            hotkey,
+            WeightCommitInfo::new(block, commit_hash, reveal_round),
+        ));
+    }
+
+    Ok(result)
+}
+
+/// Check if a hotkey has a pending weight commitment on a subnet
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `netuid` - The subnet ID
+/// * `hotkey` - The hotkey to check
+///
+/// # Returns
+/// true if the hotkey has a pending commitment
+pub async fn has_pending_commitment(
+    client: &BittensorClient,
+    netuid: u16,
+    hotkey: &AccountId32,
+) -> BittensorResult<bool> {
+    let commitment = get_weight_commitment(client, netuid, hotkey).await?;
+    Ok(commitment.is_some())
+}
+
+/// Get the last commit block for a hotkey on a subnet
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `netuid` - The subnet ID
+/// * `hotkey` - The hotkey to query
+///
+/// # Returns
+/// The block number of the last commitment, or None if no commitment exists
+pub async fn get_last_commit_block(
+    client: &BittensorClient,
+    netuid: u16,
+    hotkey: &AccountId32,
+) -> BittensorResult<Option<u64>> {
+    match get_weight_commitment(client, netuid, hotkey).await? {
+        Some(info) => Ok(Some(info.block)),
+        None => Ok(None),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weight_commit_info_new() {
+        let info = WeightCommitInfo::new(100, vec![1, 2, 3, 4], 5);
+        assert_eq!(info.block, 100);
+        assert_eq!(info.commit_hash, vec![1, 2, 3, 4]);
+        assert_eq!(info.reveal_round, 5);
+    }
+
+    #[test]
+    fn test_weight_commit_info_commit_hash_hex() {
+        let info = WeightCommitInfo::new(100, vec![0xde, 0xad, 0xbe, 0xef], 5);
+        assert_eq!(info.commit_hash_hex(), "deadbeef");
+    }
+
+    #[test]
+    fn test_weight_commit_info_clone() {
+        let info = WeightCommitInfo::new(100, vec![1, 2, 3], 5);
+        let cloned = info.clone();
+        assert_eq!(cloned.block, info.block);
+        assert_eq!(cloned.commit_hash, info.commit_hash);
+        assert_eq!(cloned.reveal_round, info.reveal_round);
+    }
+
+    #[test]
+    fn test_weight_commit_info_debug() {
+        let info = WeightCommitInfo::new(100, vec![1, 2, 3], 5);
+        let debug_str = format!("{:?}", info);
+        assert!(debug_str.contains("WeightCommitInfo"));
+        assert!(debug_str.contains("100"));
+        assert!(debug_str.contains("5"));
+    }
 }

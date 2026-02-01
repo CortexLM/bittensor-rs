@@ -14,6 +14,7 @@ use tle::{
     stream_ciphers::AESGCMStreamCipherProvider, tlock::tle,
 };
 use w3f_bls::EngineBLS;
+use zeroize::Zeroize;
 
 /// Encrypt weights payload for CRv4 commit
 ///
@@ -73,13 +74,16 @@ pub fn encrypt_for_round(data: &[u8], reveal_round: u64) -> Result<Vec<u8>> {
 
     // Generate ephemeral secret key (random 32 bytes)
     let rng = ChaCha20Rng::from_entropy();
-    let esk: [u8; 32] = rand::random();
+    let mut esk: [u8; 32] = rand::random();
 
     // Encrypt using TLE
     let ciphertext = tle::<TinyBLS381, AESGCMStreamCipherProvider, ChaCha20Rng>(
         pub_key, esk, data, identity, rng,
     )
     .map_err(|e| anyhow::anyhow!("TLE encryption failed: {:?}", e))?;
+
+    // SECURITY: Zeroize ephemeral secret key after use to prevent leakage
+    esk.zeroize();
 
     // Serialize compressed
     let mut commit_bytes = Vec::new();
