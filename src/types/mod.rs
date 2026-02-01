@@ -25,7 +25,10 @@ pub use neuron_lite::NeuronInfoLite;
 pub use prometheus::PrometheusInfo;
 pub use proposal_vote::ProposalVoteData;
 pub use subnet::{SubnetHyperparameters, SubnetIdentity, SubnetInfo};
-pub use synapse::{Synapse, SynapseHeaders, TerminalInfo};
+pub use synapse::{
+    headers, Message, StreamingSynapse, StreamingTextPromptSynapse, Synapse, SynapseHeaders,
+    SynapseType, TerminalInfo, TextPromptSynapse,
+};
 
 /// Chain identity for delegates
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]

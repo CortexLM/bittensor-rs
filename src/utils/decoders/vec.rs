@@ -1,6 +1,7 @@
 use anyhow::Result;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 /// Helper to get the length of a numeric tag (U16, U32, U64, U128)
 fn get_tag_len(s: &str, pos: usize) -> usize {
@@ -13,16 +14,44 @@ fn get_tag_len(s: &str, pos: usize) -> usize {
 
 /// Decode a Vec<T> from a Value
 /// Returns empty Vec if value cannot be decoded as a vector
-pub fn decode_vec<T, F>(value: &Value, _decoder: F) -> Result<Vec<T>>
+pub fn decode_vec<T, F>(value: &Value, decoder: F) -> Result<Vec<T>>
 where
     F: Fn(&Value) -> Result<T>,
 {
-    // Parse from debug representation
-    let s = format!("{:?}", value);
+    let mut results = Vec::new();
 
-    // Check if it looks like a vector/sequence - return empty vec regardless
-    let _ = s.contains("Composite(Unnamed([") || s.contains("Sequence([");
-    Ok(Vec::new())
+    // Inspect the ValueDef to extract values from composite/sequence
+    match &value.value {
+        ValueDef::Composite(composite) => {
+            // Handle both named and unnamed composites
+            let values: Vec<&Value> = match composite {
+                Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+                Composite::Unnamed(vals) => vals.iter().collect(),
+            };
+            for inner_value in values {
+                if let Ok(decoded) = decoder(inner_value) {
+                    results.push(decoded);
+                }
+            }
+        }
+        ValueDef::Variant(variant) => {
+            // For variants, extract inner composite values
+            let values: Vec<&Value> = match &variant.values {
+                Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+                Composite::Unnamed(vals) => vals.iter().collect(),
+            };
+            for inner_value in values {
+                if let Ok(decoded) = decoder(inner_value) {
+                    results.push(decoded);
+                }
+            }
+        }
+        _ => {
+            // Not a composite or variant, return empty vec
+        }
+    }
+
+    Ok(results)
 }
 
 /// Decode a vector of u16 from Value

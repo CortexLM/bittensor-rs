@@ -111,7 +111,14 @@ pub async fn reveal_weights(
     }
 
     // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
-    let uid_u16: Vec<u16> = uids.iter().map(|uid| *uid as u16).collect();
+    let uid_u16: Vec<u16> = uids
+        .iter()
+        .map(|uid| {
+            u16::try_from(*uid).map_err(|_| {
+                anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX)
+            })
+        })
+        .collect::<Result<Vec<u16>>>()?;
 
     let uid_values: Vec<Value> = uid_u16
         .iter()
