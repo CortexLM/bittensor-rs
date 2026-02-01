@@ -1,9 +1,28 @@
 use anyhow::Result;
 use sp_core::crypto::{AccountId32, Ss58AddressFormat, Ss58Codec};
+use sp_core::sr25519;
 use std::str::FromStr;
 
 /// SS58 format constant for Bittensor (42 = "bt")
 pub const SS58_FORMAT: u16 = 42;
+
+/// Trait for converting types to SS58 address format
+pub trait AccountId32ToSS58 {
+    /// Convert to SS58 address string
+    fn to_ss58(&self) -> String;
+}
+
+impl AccountId32ToSS58 for AccountId32 {
+    fn to_ss58(&self) -> String {
+        encode_ss58(self)
+    }
+}
+
+impl AccountId32ToSS58 for sr25519::Public {
+    fn to_ss58(&self) -> String {
+        self.to_ss58check_with_version(Ss58AddressFormat::custom(SS58_FORMAT))
+    }
+}
 
 /// Encode AccountId32 to SS58 string
 pub fn encode_ss58(account: &AccountId32) -> String {

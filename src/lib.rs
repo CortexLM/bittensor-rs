@@ -1,20 +1,31 @@
-#![allow(dead_code, unused_variables, unused_imports)]
 
+pub mod axon;
 pub mod blocks;
 pub mod chain;
+pub mod cli;
 pub mod config;
 pub mod core;
 pub mod crv4;
+pub mod dendrite;
+pub mod errors;
+pub mod logging;
 pub mod metagraph;
 pub mod queries;
 pub mod subtensor;
 pub mod types;
 pub mod utils;
 pub mod validator;
+pub mod wallet;
 
 pub use chain::{BittensorClient, Error as ChainError};
-pub use config::{AxonConfig, Config, LoggingConfig, SubtensorConfig};
+pub use config::{AxonConfig, Config, LoggingConfig as ConfigLoggingConfig, SubtensorConfig};
 pub use metagraph::{sync_metagraph, Metagraph};
+
+// Re-export logging module
+pub use logging::{
+    init_default_logging, init_logging, is_initialized, BittensorFormatter, CompactFormatter,
+    JsonFormatter, LogFormat, LoggingConfig,
+};
 
 // Re-export types first (includes liquidity types)
 pub use types::*;
@@ -84,4 +95,48 @@ pub use subtensor::{
 // Re-export mechanism functions from validator
 pub use validator::mechanism::{
     commit_mechanism_weights, reveal_mechanism_weights, set_mechanism_weights,
+};
+
+// Re-export Dendrite HTTP client
+pub use dendrite::{
+    Dendrite, DendriteRequest, DendriteResponse, StreamingResponse, StreamingSynapse,
+};
+
+// Re-export Axon HTTP server
+pub use axon::{
+    Axon, AxonConfig as AxonServerConfig, AxonState, HandlerContext, RequestPriority,
+    VerifiedRequest, AXON_VERSION,
+};
+
+// Re-export wallet module for key management
+pub use wallet::{
+    default_wallet_path, is_legacy_format, list_wallets, list_wallets_at, migrate_legacy_keyfile,
+    wallet_path, Keyfile, KeyfileData, KeyfileError, Keypair, KeypairError, Mnemonic,
+    MnemonicError, Wallet, WalletError as WalletModuleError, BITTENSOR_SS58_FORMAT, KEYFILE_VERSION,
+};
+
+// Re-export comprehensive error types
+pub use errors::{
+    // Unified error type and result alias
+    BittensorError, BittensorResult,
+    // Chain/Network Errors
+    BlockNotFound, ChainConnectionError, ChainQueryError, ExtrinsicError, MetadataError,
+    TransactionFailed,
+    // Wallet Errors
+    InvalidKeyfile, InvalidMnemonic, KeyExists, KeyfileDecryptionError, KeyfileNotFound,
+    KeyfilePermissionError, WalletError,
+    // Registration Errors
+    AlreadyRegistered, NotRegistered, PowFailed, RegistrationFailed,
+    // Stake Errors
+    InsufficientBalance, InsufficientStake, StakeFailed,
+    // Weights Errors
+    InvalidWeights, TooManyWeights, WeightVersionMismatch, WeightsError,
+    // Synapse/Communication Errors
+    SerializationError, SynapseBlacklisted, SynapseError, SynapseTimeout, SynapseUnauthorized,
+    // Dendrite Errors
+    AxonUnreachable, DendriteError, InvalidResponse,
+    // Axon Errors
+    AxonConfigError, AxonError, AxonNotServing,
+    // Senate/Governance Errors
+    AlreadySenateMember, NotSenateMember, ProposalNotFound, VoteFailed,
 };

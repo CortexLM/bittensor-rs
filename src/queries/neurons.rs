@@ -14,6 +14,7 @@ const SUBTENSOR_MODULE: &str = "SubtensorModule";
 /// SubnetState structure matching the on-chain SCALE encoding from subtensor
 /// Used to decode the response from SubnetInfoRuntimeApi.get_subnet_state
 #[derive(Decode, Clone, Debug)]
+#[allow(dead_code)]
 struct SubnetStateRaw {
     netuid: Compact<u16>,
     hotkeys: Vec<AccountId32>,

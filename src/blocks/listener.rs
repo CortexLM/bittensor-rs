@@ -6,7 +6,7 @@
 //! - Phase changes (evaluation -> commit -> reveal)
 
 use crate::blocks::epoch_tracker::{EpochInfo, EpochPhase, EpochTracker, EpochTransition};
-use crate::chain::{BittensorClient, Error as ChainError};
+use crate::chain::BittensorClient;
 use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};

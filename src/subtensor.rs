@@ -22,15 +22,13 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::crv4::{
     calculate_reveal_round, commit_timelocked_mechanism_weights, commit_timelocked_weights,
-    get_mechid_storage_index, prepare_crv4_commit, Crv4CommitData, DEFAULT_COMMIT_REVEAL_VERSION,
+    get_mechid_storage_index, prepare_crv4_commit, DEFAULT_COMMIT_REVEAL_VERSION,
 };
-use crate::queries::subnets::{
-    blocks_since_last_step, commit_reveal_enabled, tempo, weights_rate_limit,
-};
+use crate::queries::subnets::{commit_reveal_enabled, tempo, weights_rate_limit};
 use crate::utils::weights::{normalize_weights, U16_MAX};
 use crate::validator::weights::{
     commit_weights as raw_commit_weights, reveal_weights as raw_reveal_weights,
-    set_weights as raw_set_weights, CommitRevealData,
+    set_weights as raw_set_weights,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -38,7 +36,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -668,7 +666,9 @@ impl Subtensor {
             let mut state = self.state.write().await;
             state.pending_commits.insert(key, pending);
             if let Some(ref path) = self.state_path {
-                let _ = state.save(path);
+                if let Err(e) = state.save(path) {
+                    tracing::warn!("Failed to save state: {}", e);
+                }
             }
         }
 
@@ -703,31 +703,34 @@ impl Subtensor {
 
         let uids_u64: Vec<u64> = pending.uids.iter().map(|u| *u as u64).collect();
 
-        let tx_hash = if pending.mechanism_id.is_none() || pending.mechanism_id == Some(0) {
-            raw_reveal_weights(
-                &self.client,
-                signer,
-                pending.netuid,
-                &uids_u64,
-                &pending.weights,
-                &pending.salt,
-                pending.version_key,
-                wait_for,
-            )
-            .await?
-        } else {
-            crate::reveal_mechanism_weights(
-                &self.client,
-                signer,
-                pending.netuid,
-                pending.mechanism_id.unwrap(),
-                &pending.uids,
-                &pending.weights,
-                &pending.salt,
-                pending.version_key,
-                wait_for,
-            )
-            .await?
+        let tx_hash = match pending.mechanism_id {
+            None | Some(0) => {
+                raw_reveal_weights(
+                    &self.client,
+                    signer,
+                    pending.netuid,
+                    &uids_u64,
+                    &pending.weights,
+                    &pending.salt,
+                    pending.version_key,
+                    wait_for,
+                )
+                .await?
+            }
+            Some(mechanism_id) => {
+                crate::reveal_mechanism_weights(
+                    &self.client,
+                    signer,
+                    pending.netuid,
+                    mechanism_id,
+                    &pending.uids,
+                    &pending.weights,
+                    &pending.salt,
+                    pending.version_key,
+                    wait_for,
+                )
+                .await?
+            }
         };
 
         // Remove pending commit
@@ -737,7 +740,9 @@ impl Subtensor {
             state.pending_commits.remove(&key);
             state.last_revealed.insert(key, pending.epoch);
             if let Some(ref path) = self.state_path {
-                let _ = state.save(path);
+                if let Err(e) = state.save(path) {
+                    tracing::warn!("Failed to save state: {}", e);
+                }
             }
         }
 
@@ -858,7 +863,9 @@ impl Subtensor {
             .retain(|_, commit| commit.epoch >= cutoff);
 
         if let Some(ref path) = self.state_path {
-            let _ = state.save(path);
+            if let Err(e) = state.save(path) {
+                tracing::warn!("Failed to save state: {}", e);
+            }
         }
     }
 
