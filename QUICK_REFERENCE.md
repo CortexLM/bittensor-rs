@@ -15,6 +15,9 @@ use bittensor_rs::chain::BittensorClient;
 let client = BittensorClient::with_default().await?;
 ```
 
+Default endpoint: `wss://entrypoint-finney.opentensor.ai:443`. Override with `BITTENSOR_RPC` or
+pass a custom URL to `BittensorClient::new`.
+
 ## Common Queries
 
 ### Network Information
@@ -154,7 +157,7 @@ let vec_u16 = decoders::decode_vec_u16(&value)?;
 
 ## Environment Variables
 
-- `BITTENSOR_RPC` - RPC endpoint URL
+- `BITTENSOR_RPC` - RPC endpoint URL (defaults to `wss://entrypoint-finney.opentensor.ai:443`)
 - `RUST_LOG` - Logging level (debug, info, warn, error)
 
 ## Useful Constants

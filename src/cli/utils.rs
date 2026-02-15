@@ -171,6 +171,10 @@ pub fn resolve_endpoint(network: &str, custom_endpoint: Option<&str>) -> String 
         return endpoint.to_string();
     }
 
+    if let Ok(endpoint) = std::env::var("BITTENSOR_RPC") {
+        return endpoint;
+    }
+
     match network.to_lowercase().as_str() {
         "finney" => "wss://entrypoint-finney.opentensor.ai:443".to_string(),
         "test" | "testnet" => "wss://test.finney.opentensor.ai:443".to_string(),
@@ -238,6 +242,8 @@ mod tests {
 
     #[test]
     fn test_resolve_endpoint() {
+        let previous = std::env::var("BITTENSOR_RPC").ok();
+        std::env::remove_var("BITTENSOR_RPC");
         assert_eq!(
             resolve_endpoint("finney", None),
             "wss://entrypoint-finney.opentensor.ai:443"
@@ -247,5 +253,10 @@ mod tests {
             resolve_endpoint("finney", Some("ws://custom:9944")),
             "ws://custom:9944"
         );
+        if let Some(value) = previous {
+            std::env::set_var("BITTENSOR_RPC", value);
+        } else {
+            std::env::remove_var("BITTENSOR_RPC");
+        }
     }
 }
