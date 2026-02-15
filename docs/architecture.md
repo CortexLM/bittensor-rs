@@ -13,6 +13,8 @@ The SDK is organized into modular components:
 - **types** - Rust structs representing Bittensor data types
 - **utils** - Utility functions for encoding, decoding, address conversion, and weight normalization
 - **validator** - Validator-specific operations (staking, weights, registration, serving)
+- **crv4** - Timelock encryption helpers for CRv4 commit-reveal
+- **subtensor** - High-level interface mirroring Python SDK flows
 
 ### Module Details
 
@@ -44,6 +46,7 @@ The `queries` module provides organized functions for querying network state:
 - **stakes.rs** - Stake distribution queries
 - **voting.rs** - Governance and voting queries
 - **liquidity.rs** - Liquidity pool queries
+- **commitments.rs** - Commit-reveal and timelock commitments
 
 All query functions are optimized for performance using bulk operations and concurrent fetching where possible.
 
@@ -89,6 +92,14 @@ The `validator` module provides operations for validators:
 - **children.rs** - Child subnet operations
 - **liquidity.rs** - Liquidity pool operations
 
+#### subtensor
+
+The `subtensor` module exposes a high-level API similar to the Python SDK:
+
+- Auto-handles commit-reveal vs direct `set_weights`
+- Supports CRv4 timelock encryption when enabled
+- Persists pending commits for reveal workflows
+
 ## Design Principles
 
 ### Performance
@@ -108,8 +119,10 @@ The `validator` module provides operations for validators:
 
 - **Subtensor Format**: All extrinsic calls match Subtensor's expected format
 - **Weights Format**: UIDs and weights as `Vec<u16>`, scaled by `u16::MAX`
+- **Commit-Reveal Indices**: Storage indices for commit-reveal use `NetUidStorageIndex` (u16), computed as `mechanism_id * 4096 + netuid`
 - **IP Encoding**: IPv4 as `u32` within `u128`, IPv6 direct as `u128`
 - **SCALE Encoding**: All serialization uses SCALE encoding
+- **RAO/TAO**: On-chain amounts are RAO (`u128`). TAO is for display only; convert explicitly using utilities.
 
 ## Data Flow
 
@@ -126,6 +139,13 @@ The `validator` module provides operations for validators:
 2. **Signing**: Sign transaction with key pair
 3. **Submission**: Submit transaction to chain
 4. **Monitoring**: Wait for inclusion and finality
+
+## Parity Notes (Python SDK)
+
+- Commit-reveal semantics must match Python SDK and runtime metadata; CRv4 is the default when `CommitRevealVersion >= 4`.
+- RAO/TAO unit handling should mirror Python SDK: on-chain calls and storage are RAO; TAO is formatting only.
+- Storage indices and extrinsic signatures must match Subtensor runtime types (e.g., `NetUidStorageIndex` is `u16`).
+- See `docs/parity_checklist.md` for open gaps and required changes.
 
 ## Error Handling
 

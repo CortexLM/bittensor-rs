@@ -2,6 +2,13 @@
 
 This document describes validator-specific operations for interacting with the Bittensor network, including weight setting, staking, registration, and network serving.
 
+## Parity Notes (Python SDK)
+
+- All on-chain balances and stake amounts are RAO (`u128`). TAO is for display only. Convert explicitly.
+- Commit-reveal must match Subtensor runtime: `uids`/`weights` as `Vec<u16>`, `salt: Vec<u16>`, and `version_key` must match `WeightsVersion` from chain.
+- CRv4 timelock encryption (`commit_timelocked_weights`) is the default when `CommitRevealVersion >= 4`.
+- See `docs/parity_checklist.md` for gaps and required updates.
+
 ## Weight Operations
 
 ### set_weights
@@ -147,6 +154,24 @@ pub async fn reveal_mechanism_weights(
     weights: Vec<u16>,
     salt: Vec<u16>
 ) -> Result<()>
+```
+
+### CRv4 Timelock Commit
+
+CRv4 uses timelock encryption and requires only a commit; the chain auto-reveals when drand data is available.
+
+```rust
+use bittensor_rs::crv4::prepare_and_commit_crv4_weights;
+
+let commit = prepare_and_commit_crv4_weights(
+    &client,
+    &signer,
+    netuid,
+    &uids,
+    &weights,
+    version_key,
+    ExtrinsicWait::Finalized,
+).await?;
 ```
 
 ## Staking Operations
@@ -399,9 +424,7 @@ use bittensor_rs::validator::{
 ## Best Practices
 
 1. **Weight Setting**: Use commit-reveal scheme to hide weights until reveal phase
-2. **Staking**: Monitor stake distributions and ensure sufficient liquidity
-3. **Registration**: Verify registration status before attempting operations
-4. **Network Serving**: Keep axon information up-to-date for network connectivity
-5. **Error Handling**: Always handle errors and check transaction status
-6. **Transaction Fees**: Maintain sufficient balance for operations
-
+2. **CRv4**: Prefer CRv4 timelock when enabled on chain (no manual reveal needed)
+3. **Rate Limits**: Respect weights rate limits and tempo
+4. **RAO Units**: Keep all on-chain values in RAO
+5. **Documentation**: Track parity updates in `docs/parity_checklist.md`
