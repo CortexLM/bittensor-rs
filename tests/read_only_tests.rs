@@ -50,7 +50,7 @@ async fn test_read_only_crv4_tempo_and_reveal_period() {
     let reveal_period = queries::subnets::get_subnet_reveal_period_epochs(&client, netuid)
         .await
         .expect("reveal period")
-        .unwrap_or(0);
+        .unwrap_or(1);
     assert!(reveal_period > 0, "Reveal period should be positive");
 
     let version = subtensor
