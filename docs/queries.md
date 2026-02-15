@@ -12,6 +12,13 @@ Query operations are the primary interface for retrieving data from the Bittenso
 - Emission, stake, and balances are RAO on-chain; TAO formatting is for display only.
 - Commit-reveal and CRv4 queries depend on runtime storage entries (e.g., `CRV3WeightCommitsV2`, `TimelockedWeightCommits`). Validate against runtime metadata.
 - See `docs/parity_checklist.md` for detailed parity gaps.
+- Finney metadata reference: `metadata_hash=0x31a1392ead4c198c974610bc078f69346261648d306def22607e95fc521baf50`, `spec_version=377`.
+## Parity Notes (Python SDK)
+
+- Storage key names and indices must match Subtensor runtime metadata. `NetUidStorageIndex` is `u16`, computed as `mechanism_id * 4096 + netuid`.
+- Emission, stake, and balances are RAO on-chain; TAO formatting is for display only.
+- Commit-reveal and CRv4 queries depend on runtime storage entries (e.g., `CRV3WeightCommitsV2`, `TimelockedWeightCommits`). Validate against runtime metadata.
+- See `docs/parity_checklist.md` for detailed parity gaps.
 
 ## Query Categories
 
