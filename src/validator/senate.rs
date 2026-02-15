@@ -457,6 +457,7 @@ fn extract_proposal_hashes(val: &Value) -> Vec<[u8; 32]> {
 }
 
 /// Extract call data from a proposal value
+#[cfg(test)]
 fn extract_u32_from_value(s: &str) -> Option<u32> {
     let s = s.trim();
     let (prefix, base) = if let Some(rest) = s.strip_prefix("U32(") {
@@ -476,6 +477,7 @@ fn extract_u32_from_value(s: &str) -> Option<u32> {
     Some(value as u32)
 }
 
+#[cfg(test)]
 fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
     let key_pos = s.find(key)?;
     let mut slice = &s[key_pos + key.len()..];
@@ -499,6 +501,7 @@ fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
     after_prefix[..end].trim().parse::<u64>().ok()
 }
 
+#[cfg(test)]
 fn extract_accounts_array_after_key(s: &str, key: &str) -> Vec<AccountId32> {
     let key_pos = match s.find(key) {
         Some(pos) => pos,

@@ -97,7 +97,7 @@ pub async fn reveal_mechanism_weights(
     mechanism_id: u8,
     uids: &[u16],
     weights: &[u16],
-    salt: &[u16],
+    _salt: &[u16],
     version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
