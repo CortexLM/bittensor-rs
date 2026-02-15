@@ -97,361 +97,95 @@ pub async fn batch_all(
             // Create call as named variant matching RuntimeCall enum structure
             // RuntimeCall::SubtensorModule(pallet_subtensor::Call::function_name { args })
             let call_args: Vec<(&str, Value)> = match call.function.as_str() {
-                "set_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "dests",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(3)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(4).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "set_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        (
-                            "dests",
-                            call.args
-                                .get(1)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(3).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "commit_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "commit_hash",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::from_bytes([0u8; 32])),
-                        ),
-                    ]
-                }
-                _ => {
-                    // Generic case - pass args as-is with indexed names
-                    call.args
-                        .iter()
-                        .enumerate()
-                        .map(|(i, v)| {
-                            let name: &'static str = match i {
-                                0 => "arg0",
-                                1 => "arg1",
-                                2 => "arg2",
-                                3 => "arg3",
-                                4 => "arg4",
-                                5 => "arg5",
-                                _ => "argN",
-                            };
-                            (name, v.clone())
-                        })
-                        .collect()
-                }
+                "set_mechanism_weights" => vec![
+                    (
+                        "netuid",
+                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                    ),
+                    ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
+                    (
+                        "dests",
+                        call.args
+                            .get(2)
+                            .cloned()
+                            .unwrap_or(Value::unnamed_composite(vec![])),
+                    ),
+                    (
+                        "weights",
+                        call.args
+                            .get(3)
+                            .cloned()
+                            .unwrap_or(Value::unnamed_composite(vec![])),
+                    ),
+                    (
+                        "version_key",
+                        call.args.get(4).cloned().unwrap_or(Value::u128(0)),
+                    ),
+                ],
+                "set_weights" => vec![
+                    (
+                        "netuid",
+                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                    ),
+                    (
+                        "dests",
+                        call.args
+                            .get(1)
+                            .cloned()
+                            .unwrap_or(Value::unnamed_composite(vec![])),
+                    ),
+                    (
+                        "weights",
+                        call.args
+                            .get(2)
+                            .cloned()
+                            .unwrap_or(Value::unnamed_composite(vec![])),
+                    ),
+                    (
+                        "version_key",
+                        call.args.get(3).cloned().unwrap_or(Value::u128(0)),
+                    ),
+                ],
+                "commit_mechanism_weights" => vec![
+                    (
+                        "netuid",
+                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                    ),
+                    ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
+                    (
+                        "hash",
+                        call.args.get(2).cloned().unwrap_or(Value::from_bytes([])),
+                    ),
+                ],
+                _ => call
+                    .args
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, val)| (format!("arg_{}", idx), val.clone()))
+                    .map(|(name, val)| (Box::leak(name.into_boxed_str()) as &str, val))
+                    .collect(),
             };
 
-            // Build the inner call variant
-            let inner_call = Value::named_variant(&call.function, call_args);
+            // Create the pallet call as a variant
+            let pallet_call = Value::named_variant(
+                call.function.clone(),
+                call_args
+                    .into_iter()
+                    .map(|(name, val)| (name.to_string(), val))
+                    .collect::<Vec<(String, Value)>>(),
+            );
 
-            // Wrap in the pallet variant (RuntimeCall::SubtensorModule(...))
-            Value::named_variant(&call.module, [("call", inner_call)])
+            // Wrap in the RuntimeCall variant for the module
+            Value::named_variant(call.module.clone(), vec![("call", pallet_call)])
         })
         .collect();
 
     let args = vec![Value::unnamed_composite(call_values)];
 
-    client
+    let tx_hash = client
         .submit_extrinsic(UTILITY_MODULE, "batch_all", args, signer, wait_for)
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to execute batch_all: {}", e))
-}
+        .map_err(|e| anyhow::anyhow!("Failed to submit batch_all: {}", e))?;
 
-/// Execute a batch of calls, continuing even if some fail
-/// Uses Utility.batch which continues on errors
-pub async fn batch(
-    client: &BittensorClient,
-    signer: &BittensorSigner,
-    calls: Vec<BatchCall>,
-    wait_for: ExtrinsicWait,
-) -> Result<String> {
-    if calls.is_empty() {
-        return Err(anyhow::anyhow!("Cannot batch empty call list"));
-    }
-
-    let call_values: Vec<Value> = calls
-        .iter()
-        .map(|call| {
-            let call_args: Vec<(&str, Value)> = match call.function.as_str() {
-                "set_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "dests",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(3)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(4).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "set_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        (
-                            "dests",
-                            call.args
-                                .get(1)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(3).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "commit_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "commit_hash",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::from_bytes([0u8; 32])),
-                        ),
-                    ]
-                }
-                _ => call
-                    .args
-                    .iter()
-                    .enumerate()
-                    .map(|(i, v)| {
-                        let name: &'static str = match i {
-                            0 => "arg0",
-                            1 => "arg1",
-                            2 => "arg2",
-                            3 => "arg3",
-                            4 => "arg4",
-                            5 => "arg5",
-                            _ => "argN",
-                        };
-                        (name, v.clone())
-                    })
-                    .collect(),
-            };
-
-            let inner_call = Value::named_variant(&call.function, call_args);
-            Value::named_variant(&call.module, [("call", inner_call)])
-        })
-        .collect();
-
-    let args = vec![Value::unnamed_composite(call_values)];
-
-    client
-        .submit_extrinsic(UTILITY_MODULE, "batch", args, signer, wait_for)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to execute batch: {}", e))
-}
-
-/// Execute a batch of calls, ignoring failures (force batch)
-/// Uses Utility.force_batch which never fails
-pub async fn force_batch(
-    client: &BittensorClient,
-    signer: &BittensorSigner,
-    calls: Vec<BatchCall>,
-    wait_for: ExtrinsicWait,
-) -> Result<String> {
-    if calls.is_empty() {
-        return Err(anyhow::anyhow!("Cannot batch empty call list"));
-    }
-
-    let call_values: Vec<Value> = calls
-        .iter()
-        .map(|call| {
-            let call_args: Vec<(&str, Value)> = match call.function.as_str() {
-                "set_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "dests",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(3)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(4).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "set_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        (
-                            "dests",
-                            call.args
-                                .get(1)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "weights",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::unnamed_composite(vec![])),
-                        ),
-                        (
-                            "version_key",
-                            call.args.get(3).cloned().unwrap_or(Value::u128(0)),
-                        ),
-                    ]
-                }
-                "commit_mechanism_weights" => {
-                    vec![
-                        (
-                            "netuid",
-                            call.args.first().cloned().unwrap_or(Value::u128(0)),
-                        ),
-                        ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
-                        (
-                            "commit_hash",
-                            call.args
-                                .get(2)
-                                .cloned()
-                                .unwrap_or(Value::from_bytes([0u8; 32])),
-                        ),
-                    ]
-                }
-                _ => call
-                    .args
-                    .iter()
-                    .enumerate()
-                    .map(|(i, v)| {
-                        let name: &'static str = match i {
-                            0 => "arg0",
-                            1 => "arg1",
-                            2 => "arg2",
-                            3 => "arg3",
-                            4 => "arg4",
-                            5 => "arg5",
-                            _ => "argN",
-                        };
-                        (name, v.clone())
-                    })
-                    .collect(),
-            };
-
-            let inner_call = Value::named_variant(&call.function, call_args);
-            Value::named_variant(&call.module, [("call", inner_call)])
-        })
-        .collect();
-
-    let args = vec![Value::unnamed_composite(call_values)];
-
-    client
-        .submit_extrinsic(UTILITY_MODULE, "force_batch", args, signer, wait_for)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to execute force_batch: {}", e))
-}
-
-/// Helper to batch set_mechanism_weights calls for multiple mechanisms
-pub async fn batch_set_mechanism_weights(
-    client: &BittensorClient,
-    signer: &BittensorSigner,
-    netuid: u16,
-    mechanism_weights: Vec<(u8, Vec<u16>, Vec<u16>)>, // (mechanism_id, uids, weights)
-    version_key: u64,
-    wait_for: ExtrinsicWait,
-) -> Result<String> {
-    let calls: Vec<BatchCall> = mechanism_weights
-        .into_iter()
-        .map(|(mecid, uids, weights)| {
-            BatchCall::set_mechanism_weights(netuid, mecid, &uids, &weights, version_key)
-        })
-        .collect();
-
-    batch_all(client, signer, calls, wait_for).await
+    Ok(tx_hash)
 }

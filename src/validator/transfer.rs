@@ -16,6 +16,10 @@ pub async fn transfer(
     keep_alive: bool,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!("Transfer amount must be greater than zero"));
+    }
+
     let dest_bytes = dest.encode();
     let dest_value = Value::from_bytes(&dest_bytes);
 
@@ -47,6 +51,12 @@ pub async fn transfer_stake(
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!(
+            "Stake transfer amount must be greater than zero"
+        ));
+    }
+
     let args = vec![
         Value::from_bytes(destination_coldkey.encode()),
         Value::from_bytes(hotkey.encode()),

@@ -61,6 +61,12 @@ pub async fn commit_timelocked_weights(
     commit_reveal_version: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if commit.is_empty() {
+        return Err(anyhow::anyhow!(
+            "Encrypted commit payload must not be empty"
+        ));
+    }
+
     let args = vec![
         Value::u128(netuid as u128),
         Value::from_bytes(commit),
@@ -94,6 +100,12 @@ pub async fn commit_timelocked_mechanism_weights(
     commit_reveal_version: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if commit.is_empty() {
+        return Err(anyhow::anyhow!(
+            "Encrypted commit payload must not be empty"
+        ));
+    }
+
     let args = vec![
         Value::u128(netuid as u128),
         Value::u128(mechanism_id as u128),

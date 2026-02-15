@@ -55,12 +55,19 @@ pub async fn commit_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8, // Changed from u64 to u8 (MechId)
+    mechanism_id: u8,
     commit_hash: &str,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let hash_bytes =
         hex::decode(commit_hash).map_err(|e| anyhow::anyhow!("Invalid commit hash: {}", e))?;
+
+    if hash_bytes.len() != 32 {
+        return Err(anyhow::anyhow!(
+            "Commit hash must be 32 bytes, got {}",
+            hash_bytes.len()
+        ));
+    }
 
     let args = vec![
         Value::u128(netuid as u128),
@@ -94,15 +101,15 @@ pub async fn reveal_mechanism_weights(
     version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let uid_u16 = uids;
-    let salt_u16 = salt;
+    if uids.len() != weights.len() {
+        return Err(anyhow::anyhow!(
+            "UIDS and weights must have the same length"
+        ));
+    }
 
-    let uid_values: Vec<Value> = uid_u16
-        .iter()
-        .map(|uid| Value::u128(*uid as u128))
-        .collect();
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
-    let salt_values: Vec<Value> = salt_u16.iter().map(|s| Value::u128(*s as u128)).collect();
+    let salt_values: Vec<Value> = salt.iter().map(|s| Value::u128(*s as u128)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
