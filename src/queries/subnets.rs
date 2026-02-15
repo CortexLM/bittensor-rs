@@ -552,3 +552,201 @@ pub async fn subnet_emission_percent(client: &BittensorClient, netuid: u16) -> R
     }
     Ok(Some((sub as f64) / (total as f64)))
 }
+
+/// Get the owner (coldkey) of a subnet
+/// Reads SubtensorModule::SubnetOwner storage
+pub async fn get_subnet_owner(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<sp_core::crypto::AccountId32>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetOwner",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_account_id32(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Get the network lock cost (burn cost to register a new subnet)
+/// Reads SubtensorModule::NetworkLockReductionInterval and NetworkMinLockCost
+pub async fn get_subnet_burn_cost(client: &BittensorClient) -> Result<u128> {
+    subnet_burn_cost(client, 0).await
+}
+
+/// Get emission value for a specific subnet (RAO per block)
+/// Reads SubtensorModule::EmissionValues storage
+pub async fn get_subnet_emission_value(client: &BittensorClient, netuid: u16) -> Result<u128> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "EmissionValues",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return decode_u128(&val)
+            .map_err(|e| anyhow::anyhow!("Failed to decode EmissionValues: {}", e));
+    }
+    Ok(0)
+}
+
+/// Get all subnets info (alias for all_subnets_info with richer data)
+pub async fn get_all_subnets_info(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
+    all_subnets_info(client).await
+}
+
+/// Get DynamicInfo for a specific subnet
+pub async fn get_dynamic_info(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<crate::types::DynamicInfo> {
+    use crate::types::DynamicInfo;
+
+    let mut info = DynamicInfo::new(netuid);
+
+    if !subnet_exists(client, netuid).await.unwrap_or(false) {
+        return Err(anyhow::anyhow!("Subnet {} does not exist", netuid));
+    }
+
+    info.tempo = tempo(client, netuid).await?.unwrap_or(0);
+    info.blocks_since_last_step = blocks_since_last_step(client, netuid).await?.unwrap_or(0);
+    info.is_active = crate::queries::subnets::is_subnet_active(client, netuid)
+        .await
+        .unwrap_or(false);
+
+    if let Some(n) = subnet_n(client, netuid).await? {
+        info.subnet_n = n;
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MaxAllowedUids",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        if let Ok(max_n) = decode_u64(&val) {
+            info.max_n = max_n;
+        }
+    }
+
+    info.emission_value = get_subnet_emission_value(client, netuid).await.unwrap_or(0);
+
+    if let Ok(Some(burn)) = recycle(client, netuid).await {
+        info.burn = burn;
+    }
+
+    if let Some(owner_ck) = get_subnet_owner(client, netuid).await? {
+        info.owner_coldkey = crate::utils::ss58::encode_ss58(&owner_ck);
+    }
+
+    if let Some(owner_hk) = subnet_owner_hotkey(client, netuid).await? {
+        info.owner_hotkey = crate::utils::ss58::encode_ss58(&owner_hk);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetAlphaIn",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_in = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetAlphaOut",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_out = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetTAO",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.tao_in = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetEmission",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_out_emission = decode_u128(&val).unwrap_or(0);
+    }
+
+    info.tao_in_emission = subnet_tao_in_emission(client, netuid).await?.unwrap_or(0) as u128;
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "PendingEmission",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.pending_emission = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetVolume",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.subnet_volume = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetMovingPrice",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.moving_price = decode_u128(&val).unwrap_or(0);
+    }
+
+    info.price = get_subnet_price(client, netuid).await.unwrap_or(0);
+
+    Ok(info)
+}
+
+/// Get DynamicInfo for all subnets
+pub async fn get_all_dynamic_info(
+    client: &BittensorClient,
+) -> Result<Vec<crate::types::DynamicInfo>> {
+    let total = total_subnets(client).await.unwrap_or(0);
+    let mut results = Vec::with_capacity(total as usize);
+    for netuid in 0u16..total {
+        if subnet_exists(client, netuid).await.unwrap_or(false) {
+            match get_dynamic_info(client, netuid).await {
+                Ok(info) => results.push(info),
+                Err(_) => continue,
+            }
+        }
+    }
+    Ok(results)
+}

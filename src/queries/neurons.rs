@@ -832,6 +832,216 @@ fn extract_last_u64_from_str(s: &str) -> Option<u64> {
     }
 }
 
+/// Get lightweight neuron info for a subnet (no weights or bonds)
+pub async fn neurons_lite(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Vec<crate::types::NeuronInfoLite>> {
+    use crate::types::NeuronInfoLite;
+
+    let n_key = vec![Value::u128(netuid as u128)];
+    let n_value = client
+        .storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", n_key.clone())
+        .await?;
+    let n = match n_value {
+        Some(v) => decode_u64(&v).unwrap_or(0),
+        None => return Ok(vec![]),
+    };
+
+    if n == 0 {
+        return Ok(vec![]);
+    }
+
+    let (
+        rank_vec,
+        trust_vec,
+        consensus_vec,
+        incentive_vec,
+        dividends_vec,
+        active_vec,
+        last_update_vec,
+        emission_vec,
+        validator_permit_vec,
+        pruning_scores_vec,
+    ) = tokio::try_join!(
+        fetch_vec_u16(client, "Rank", &n_key),
+        fetch_vec_u16(client, "Trust", &n_key),
+        fetch_vec_u16(client, "Consensus", &n_key),
+        fetch_vec_u16(client, "Incentive", &n_key),
+        fetch_vec_u16(client, "Dividends", &n_key),
+        fetch_vec_bool(client, "Active", &n_key),
+        fetch_vec_u64(client, "LastUpdate", &n_key),
+        fetch_vec_u128(client, "Emission", &n_key),
+        fetch_vec_bool(client, "ValidatorPermit", &n_key),
+        fetch_vec_u16(client, "PruningScores", &n_key),
+    )?;
+
+    let mut hotkeys_map = Vec::with_capacity(n as usize);
+    let mut futures = FuturesUnordered::new();
+
+    for uid in 0..n {
+        let uid_key = vec![Value::u128(netuid as u128), Value::u128(uid as u128)];
+        let client_ref = client;
+        futures.push(async move {
+            let hotkey_val = client_ref
+                .storage_with_keys(SUBTENSOR_MODULE, "Keys", uid_key)
+                .await
+                .ok()
+                .flatten();
+            (uid, hotkey_val)
+        });
+    }
+
+    while let Some((uid, hotkey_val)) = futures.next().await {
+        if let Some(val) = hotkey_val {
+            if let Ok(hotkey) = decode_account_id32(&val) {
+                hotkeys_map.push((uid, hotkey));
+            }
+        }
+    }
+
+    let mut coldkeys = HashMap::new();
+    let mut futures = FuturesUnordered::new();
+
+    for (uid, hotkey) in &hotkeys_map {
+        let owner_key = vec![Value::from_bytes(hotkey.encode())];
+        let client_ref = client;
+        let hk = hotkey.clone();
+        let u = *uid;
+        futures.push(async move {
+            let coldkey_val = client_ref
+                .storage_with_keys(SUBTENSOR_MODULE, "Owner", owner_key)
+                .await
+                .ok()
+                .flatten();
+            (u, hk, coldkey_val)
+        });
+    }
+
+    while let Some((uid, hotkey, coldkey_val)) = futures.next().await {
+        if let Some(val) = coldkey_val {
+            if let Ok(coldkey) = decode_account_id32(&val) {
+                coldkeys.insert(uid, (hotkey, coldkey));
+            }
+        }
+    }
+
+    let mut stakes = HashMap::new();
+    let mut futures = FuturesUnordered::new();
+
+    for (uid, (hotkey, _)) in &coldkeys {
+        let stake_key = vec![
+            Value::from_bytes(hotkey.encode()),
+            Value::u128(netuid as u128),
+        ];
+        let client_ref = client;
+        let u = *uid;
+        futures.push(async move {
+            let stake_val = client_ref
+                .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", stake_key)
+                .await
+                .ok()
+                .flatten();
+            (u, stake_val)
+        });
+    }
+
+    while let Some((uid, stake_val)) = futures.next().await {
+        if let Some(val) = stake_val {
+            if let Ok(stake) = decode_u128(&val) {
+                stakes.insert(uid, stake);
+            }
+        }
+    }
+
+    let mut neurons_lite = Vec::with_capacity(coldkeys.len());
+
+    for (uid, (hotkey, coldkey)) in &coldkeys {
+        let idx = *uid as usize;
+
+        let rank = rank_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
+        let trust = trust_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
+        let consensus = consensus_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
+        let incentive = incentive_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
+        let dividends = dividends_vec.get(idx).copied().unwrap_or(0) as f64 / 65535.0;
+        let active = active_vec.get(idx).copied().unwrap_or(false);
+        let validator_permit = validator_permit_vec.get(idx).copied().unwrap_or(false);
+        let last_update = last_update_vec.get(idx).copied().unwrap_or(0);
+        let emission = emission_vec.get(idx).copied().unwrap_or(0);
+        let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
+
+        let total_stake = stakes.get(uid).copied().unwrap_or(0);
+
+        neurons_lite.push(NeuronInfoLite {
+            uid: *uid,
+            netuid,
+            hotkey: hotkey.clone(),
+            coldkey: coldkey.clone(),
+            stake: total_stake,
+            stake_dict: HashMap::new(),
+            total_stake,
+            rank,
+            trust,
+            consensus,
+            validator_trust: 0.0,
+            incentive,
+            emission,
+            dividends,
+            active,
+            last_update,
+            validator_permit,
+            pruning_score,
+            prometheus_info: None,
+            axon_info: None,
+            is_null: false,
+        });
+    }
+
+    neurons_lite.sort_by_key(|n| n.uid);
+    Ok(neurons_lite)
+}
+
+/// Get the UID for a hotkey on a specific subnet
+/// Reads SubtensorModule::Uids storage
+pub async fn get_uid_for_hotkey(
+    client: &BittensorClient,
+    netuid: u16,
+    hotkey: &AccountId32,
+) -> Result<Option<u16>> {
+    let keys = vec![
+        Value::u128(netuid as u128),
+        Value::from_bytes(hotkey.encode()),
+    ];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Uids", keys)
+        .await?
+    {
+        if let Ok(uid) = decode_u64(&val) {
+            return Ok(Some(uid as u16));
+        }
+    }
+    Ok(None)
+}
+
+/// Get the hotkey for a specific UID on a subnet
+/// Reads SubtensorModule::Keys storage
+pub async fn get_hotkey_for_uid(
+    client: &BittensorClient,
+    netuid: u16,
+    uid: u16,
+) -> Result<Option<AccountId32>> {
+    let keys = vec![Value::u128(netuid as u128), Value::u128(uid as u128)];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Keys", keys)
+        .await?
+    {
+        return Ok(decode_account_id32(&val).ok());
+    }
+    Ok(None)
+}
+
 /// Get stake weights for all neurons in a subnet using runtime API
 /// Returns (alpha_stake, tao_stake, total_stake) vectors indexed by UID
 /// These values include parent inheritance and are the actual values used in consensus

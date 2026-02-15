@@ -301,3 +301,39 @@ pub struct StakeInfo {
     pub netuid: u16,
     pub stake: u128,
 }
+
+/// Get total stake for a hotkey across all subnets
+/// Reads SubtensorModule::TotalHotkeyStake storage
+pub async fn get_total_stake_for_hotkey(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+) -> Result<u128> {
+    let keys = vec![Value::from_bytes(hotkey.encode())];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyStake", keys)
+        .await?
+    {
+        return decode_u128(&val)
+            .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyStake: {}", e));
+    }
+    Ok(0)
+}
+
+/// Get total stake for a coldkey across all subnets
+/// Reads SubtensorModule::TotalColdkeyStake storage
+pub async fn get_total_stake_for_coldkey(
+    client: &BittensorClient,
+    coldkey: &AccountId32,
+) -> Result<u128> {
+    let keys = vec![Value::from_bytes(coldkey.encode())];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "TotalColdkeyStake", keys)
+        .await?
+    {
+        return decode_u128(&val)
+            .map_err(|e| anyhow::anyhow!("Failed to decode TotalColdkeyStake: {}", e));
+    }
+    Ok(0)
+}
