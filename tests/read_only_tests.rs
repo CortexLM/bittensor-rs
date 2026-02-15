@@ -10,9 +10,6 @@ use bittensor_rs::utils::weights::{
 use bittensor_rs::{
     get_commit_reveal_version, queries, BittensorClient, Subtensor, DEFAULT_COMMIT_REVEAL_VERSION,
 };
-use sp_core::crypto::AccountId32;
-use std::str::FromStr;
-
 #[tokio::test]
 async fn test_read_only_finney_endpoint_config() {
     let config = bittensor_rs::Config::default();
@@ -506,6 +503,7 @@ fn test_axon_info_structure() {
     use std::net::{IpAddr, Ipv4Addr};
 
     let axon = AxonInfo {
+        hotkey: None,
         block: 100,
         version: 1,
         ip: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
