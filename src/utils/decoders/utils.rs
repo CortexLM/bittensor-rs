@@ -1,49 +1,54 @@
 use anyhow::{anyhow, Result};
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 /// Extract bytes from a composite Value (for Vec<u8> representations)
 pub fn decode_bytes_from_composite(value: &Value) -> Result<Vec<u8>> {
-    let s = format!("{:?}", value);
-
-    // Look for Composite(Unnamed([...])) pattern
-    if s.contains("Composite(Unnamed([") {
-        let mut bytes = Vec::new();
-        let mut remaining = &s[..];
-
-        // Extract all U8/U128 values that represent bytes
-        while let Some(pos) = remaining.find("U8(") {
-            let after = &remaining[pos + 3..];
-            if let Some(end) = after.find(')') {
-                let num_str = &after[..end];
-                if let Ok(num) = num_str.trim().parse::<u8>() {
-                    bytes.push(num);
-                }
-            }
-            remaining = &remaining[pos + 3..];
+    let mut stack = vec![(value, 0usize)];
+    let mut bytes = Vec::new();
+    while let Some((current, depth)) = stack.pop() {
+        if depth > 32 {
+            continue;
         }
-
-        // Also try U128 values that might be bytes
-        remaining = &s[..];
-        while let Some(pos) = remaining.find("U128(") {
-            let after = &remaining[pos + 5..];
-            if let Some(end) = after.find(')') {
-                let num_str = &after[..end];
-                if let Ok(num) = num_str.trim().parse::<u128>() {
-                    if num <= 255 {
+        match &current.value {
+            ValueDef::Composite(composite) => match composite {
+                Composite::Named(fields) => {
+                    for (_, val) in fields.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+                Composite::Unnamed(vals) => {
+                    for val in vals.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            },
+            ValueDef::Variant(variant) => match &variant.values {
+                Composite::Named(fields) => {
+                    for (_, val) in fields.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+                Composite::Unnamed(vals) => {
+                    for val in vals.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            },
+            ValueDef::Primitive(primitive) => {
+                if let Some(num) = primitive.as_u128() {
+                    if num <= u8::MAX as u128 {
                         bytes.push(num as u8);
                     }
                 }
             }
-            remaining = &remaining[pos + 5..];
+            ValueDef::BitSequence(_) => {}
         }
-
-        if !bytes.is_empty() {
-            Ok(bytes)
-        } else {
-            Err(anyhow!("No bytes found in composite"))
-        }
+    }
+    if bytes.is_empty() {
+        Err(anyhow!("No bytes found in composite"))
     } else {
-        Err(anyhow!("Not a composite value"))
+        Ok(bytes)
     }
 }
 
@@ -52,31 +57,52 @@ pub fn decode_bytes_from_composite(value: &Value) -> Result<Vec<u8>> {
 /// 2. 0x-prefixed hex string (64 chars)
 /// 3. Bytes array
 pub fn extract_bytes_from_composite_sequence(value: &Value) -> Option<[u8; 32]> {
-    let value_str = format!("{:?}", value);
-
-    // Look for pattern: Composite(Unnamed([Value { value: Primitive(U128(XXX)), ... }, ...]))
-    // Extract all U128 values that represent bytes
+    let mut stack = vec![(value, 0usize)];
     let mut bytes = Vec::new();
-    let mut remaining = &value_str[..];
-
-    while let Some(pos) = remaining.find("U128(") {
-        let after_u128 = &remaining[pos + 5..];
-        if let Some(end) = after_u128.find(')') {
-            let num_str = &after_u128[..end];
-            if let Ok(num) = num_str.trim().parse::<u128>() {
-                if num <= 255 {
-                    bytes.push(num as u8);
-                    if bytes.len() == 32 {
-                        let mut arr = [0u8; 32];
-                        arr.copy_from_slice(&bytes);
-                        return Some(arr);
+    while let Some((current, depth)) = stack.pop() {
+        if depth > 32 {
+            continue;
+        }
+        match &current.value {
+            ValueDef::Composite(composite) => match composite {
+                Composite::Named(fields) => {
+                    for (_, val) in fields.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+                Composite::Unnamed(vals) => {
+                    for val in vals.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            },
+            ValueDef::Variant(variant) => match &variant.values {
+                Composite::Named(fields) => {
+                    for (_, val) in fields.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+                Composite::Unnamed(vals) => {
+                    for val in vals.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            },
+            ValueDef::Primitive(primitive) => {
+                if let Some(num) = primitive.as_u128() {
+                    if num <= u8::MAX as u128 {
+                        bytes.push(num as u8);
+                        if bytes.len() == 32 {
+                            let mut arr = [0u8; 32];
+                            arr.copy_from_slice(&bytes);
+                            return Some(arr);
+                        }
                     }
                 }
             }
+            ValueDef::BitSequence(_) => {}
         }
-        remaining = &remaining[pos + 5..];
     }
-
     None
 }
 

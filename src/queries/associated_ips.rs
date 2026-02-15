@@ -5,11 +5,15 @@
 
 use crate::chain::BittensorClient;
 use crate::errors::{BittensorError, BittensorResult, ChainQueryError};
-use crate::utils::decoders::utils::{extract_u128, extract_u8, parse_ip_addr};
+use crate::utils::decoders::primitive;
+use crate::utils::decoders::utils::parse_ip_addr;
+use crate::utils::decoders::vec::decode_vec;
+use anyhow::anyhow;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use std::net::IpAddr;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -59,14 +63,22 @@ impl IpInfo {
 /// Chain stores: { ip: u128, ip_type: u8, protocol: u8 }
 #[allow(dead_code)]
 fn decode_ip_info(value: &Value) -> Option<IpInfo> {
-    let s = format!("{:?}", value);
-
-    // Extract ip (u128), ip_type (u8), protocol (u8)
-    let ip_u128 = extract_u128(&s, 0)?;
-    let ip_type = extract_u8(&s, ip_u128.1)?;
-    let protocol = extract_u8(&s, ip_type.1)?;
-
-    Some(IpInfo::from_chain_data(ip_u128.0, ip_type.0, protocol.0))
+    let values = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(vals)) => vals.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(vals) => vals.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+    if values.len() < 3 {
+        return None;
+    }
+    let ip_u128 = primitive::extract_u128(values[0])?;
+    let ip_type = primitive::extract_u128(values[1])? as u8;
+    let protocol = primitive::extract_u128(values[2])? as u8;
+    Some(IpInfo::from_chain_data(ip_u128, ip_type, protocol))
 }
 
 /// Get associated IPs for a hotkey
@@ -105,27 +117,10 @@ pub async fn get_associated_ips(
 
 /// Decode a vector of IpInfo from a Value
 fn decode_ip_info_vec(value: &Value) -> Vec<IpInfo> {
-    let s = format!("{:?}", value);
-    let mut result = Vec::new();
-    let mut pos = 0;
-
-    // The storage is Vec<IpInfo>, so we need to iterate through
-    // Each IpInfo contains: ip (u128), ip_type (u8), protocol (u8)
-    loop {
-        if let Some(ip_u128) = extract_u128(&s, pos) {
-            if let Some(ip_type) = extract_u8(&s, ip_u128.1) {
-                if let Some(protocol) = extract_u8(&s, ip_type.1) {
-                    let ip_info = IpInfo::from_chain_data(ip_u128.0, ip_type.0, protocol.0);
-                    result.push(ip_info);
-                    pos = protocol.1;
-                    continue;
-                }
-            }
-        }
-        break;
-    }
-
-    result
+    decode_vec(value, |entry| {
+        decode_ip_info(entry).ok_or_else(|| anyhow!("invalid ip info"))
+    })
+    .unwrap_or_default()
 }
 
 /// Get the number of associated IPs for a hotkey

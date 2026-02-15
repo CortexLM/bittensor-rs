@@ -2,9 +2,11 @@
 //! Read-only queries for neuron bonds
 
 use crate::chain::BittensorClient;
-use crate::utils::decoders::decode_u64;
-use anyhow::Result;
+use crate::utils::decoders::vec::decode_vec;
+use crate::utils::decoders::{decode_u16, decode_u64};
+use anyhow::{anyhow, Result};
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -129,73 +131,61 @@ pub async fn get_all_weights(
 
 /// Parse bonds from storage value using debug string parsing
 fn parse_bonds_from_value(value: &Value) -> Result<Vec<(u16, u64)>> {
-    let value_str = format!("{:?}", value);
-    parse_pairs_u16_u64(&value_str)
+    decode_vec(value, |entry| {
+        if let Some((uid_val, bond_val)) = extract_pair(entry) {
+            let uid = decode_u16(uid_val)?;
+            let bond = decode_u64(bond_val)?;
+            return Ok((uid, bond));
+        }
+        Err(anyhow::anyhow!("invalid bond pair"))
+    })
 }
 
 /// Parse weights from storage value using debug string parsing
 fn parse_weights_from_value(value: &Value) -> Result<Vec<(u16, u16)>> {
-    let value_str = format!("{:?}", value);
-    parse_pairs_u16_u16(&value_str)
+    decode_vec(value, |entry| {
+        if let Some((uid_val, weight_val)) = extract_pair(entry) {
+            let uid = decode_u16(uid_val)?;
+            let weight = decode_u16(weight_val)?;
+            return Ok((uid, weight));
+        }
+        Err(anyhow::anyhow!("invalid weight pair"))
+    })
 }
-
-/// Parse pairs of (u16, u64) from debug string
-fn parse_pairs_u16_u64(s: &str) -> Result<Vec<(u16, u64)>> {
-    let mut pairs = Vec::new();
-
-    // Look for patterns like "U16(X)" followed by "U64(Y)" or "U128(Y)"
-    let mut remaining = s;
-
-    while let Some(pos1) = remaining.find("U16(") {
-        let after_u16 = &remaining[pos1 + 4..];
-        if let Some(end1) = after_u16.find(')') {
-            let num1_str = &after_u16[..end1];
-            if let Ok(uid) = num1_str.trim().parse::<u16>() {
-                let rest = &after_u16[end1..];
-                // Find next U64 or U128
-                if let Some(pos2) = rest.find("U64(").or_else(|| rest.find("U128(")) {
-                    let is_u128 = rest[pos2..].starts_with("U128");
-                    let offset = if is_u128 { 5 } else { 4 };
-                    let after_u64 = &rest[pos2 + offset..];
-                    if let Some(end2) = after_u64.find(')') {
-                        let num2_str = &after_u64[..end2];
-                        if let Ok(bond) = num2_str.trim().parse::<u64>() {
-                            pairs.push((uid, bond));
-                        }
-                    }
-                }
+fn extract_pair<'a>(value: &'a Value) -> Option<(&'a Value, &'a Value)> {
+    match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => {
+            if fields.len() >= 2 {
+                Some((&fields[0].1, &fields[1].1))
+            } else {
+                None
             }
         }
-        remaining = &remaining[pos1 + 4..];
-    }
-
-    Ok(pairs)
-}
-
-/// Parse pairs of (u16, u16) from debug string
-fn parse_pairs_u16_u16(s: &str) -> Result<Vec<(u16, u16)>> {
-    let mut pairs = Vec::new();
-
-    // Look for patterns like "U16(X)" followed by another "U16(Y)"
-    let mut remaining = s;
-    let mut last_u16: Option<u16> = None;
-
-    while let Some(pos) = remaining.find("U16(") {
-        let after_u16 = &remaining[pos + 4..];
-        if let Some(end) = after_u16.find(')') {
-            let num_str = &after_u16[..end];
-            if let Ok(val) = num_str.trim().parse::<u16>() {
-                if let Some(first) = last_u16.take() {
-                    pairs.push((first, val));
+        ValueDef::Composite(Composite::Unnamed(values)) => {
+            if values.len() >= 2 {
+                Some((&values[0], &values[1]))
+            } else {
+                None
+            }
+        }
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => {
+                if fields.len() >= 2 {
+                    Some((&fields[0].1, &fields[1].1))
                 } else {
-                    last_u16 = Some(val);
+                    None
                 }
             }
-        }
-        remaining = &after_u16[after_u16.find(')').unwrap_or(0)..];
+            Composite::Unnamed(values) => {
+                if values.len() >= 2 {
+                    Some((&values[0], &values[1]))
+                } else {
+                    None
+                }
+            }
+        },
+        _ => None,
     }
-
-    Ok(pairs)
 }
 
 /// Get subnet N (number of neurons)
