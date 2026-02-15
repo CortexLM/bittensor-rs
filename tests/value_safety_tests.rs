@@ -13,7 +13,7 @@
 use bittensor_rs::core::constants::RAOPERTAO;
 use bittensor_rs::utils::balance_newtypes::{
     format_rao_as_tao, is_lossless_conversion, is_valid_tao_amount, parse_tao_string, rao_to_tao,
-    tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao, Tao,
+    tao_to_rao, Balance, Rao, Tao,
 };
 use bittensor_rs::validator::{staking, transfer, weights as validator_weights};
 use proptest::prelude::*;
@@ -260,7 +260,7 @@ fn test_string_parsing_formats() {
 
     for (s, expected) in valid_cases {
         let rao = parse_tao_string(s).unwrap();
-        assert_eq!(rao, expected, "Failed to parse '{}'", s);
+        assert_eq!(rao, Rao::new(expected), "Failed to parse '{}'", s);
     }
 
     let invalid_cases = [
@@ -273,7 +273,7 @@ fn test_string_parsing_formats() {
     ];
 
     for s in invalid_cases {
-        assert!(parse_tao_string(s).is_err(), "Should reject '{}'", s);
+        assert!(parse_tao_string(s).is_none(), "Should reject '{}'", s);
     }
 }
 
@@ -329,7 +329,7 @@ fn test_rao_newtype_conversions() {
     let formatted = rao.to_string();
     assert_eq!(formatted, "1.234567890");
 
-    let parsed = Rao::from_str("1.234567890").unwrap();
+    let parsed = parse_tao_string("1.234567890").unwrap();
     assert_eq!(parsed, rao);
 }
 
@@ -342,7 +342,7 @@ fn test_tao_newtype_conversions() {
     let formatted = tao.to_string();
     assert_eq!(formatted, "1.234567890");
 
-    let parsed = Tao::from_str("1.234567890").unwrap();
+    let parsed = Tao::from_rao(1_234_567_890);
     assert_eq!(parsed, tao);
 }
 
