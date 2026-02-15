@@ -5,6 +5,8 @@ use bittensor_rs::utils::balance::{rao_to_tao, tao_to_rao, Balance};
 use bittensor_rs::utils::weights::{
     normalize_max_weight, normalize_weights, u16_normalized_float, U16_MAX,
 };
+use bittensor_rs::BittensorClient;
+use std::str::FromStr;
 
 #[test]
 fn test_u16_normalized_float_matches_python() {
@@ -201,4 +203,39 @@ fn test_u16_weight_scaling_invariant() {
         .collect::<Vec<f64>>();
     let total: f64 = floats.iter().sum();
     assert!((total - 1.0).abs() < 0.01);
+}
+
+#[tokio::test]
+async fn test_finney_weight_normalization_matches_uids() {
+    let client = match BittensorClient::with_default().await {
+        Ok(client) => client,
+        Err(err) => {
+            eprintln!("Skipping test: unable to connect ({err})");
+            return;
+        }
+    };
+
+    let netuid = 1u16;
+    let hotkey =
+        sp_core::crypto::AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+            .expect("hotkey");
+
+    let uid =
+        bittensor_rs::queries::neurons::get_neuron_for_pubkey_and_subnet(&client, &hotkey, netuid)
+            .await
+            .ok()
+            .flatten();
+
+    let uid = match uid {
+        Some(uid) => uid.uid,
+        None => return,
+    };
+
+    let uids: Vec<u64> = vec![uid, uid + 1, uid + 2];
+    let weights: Vec<f32> = vec![0.5, 0.3, 0.2];
+    let (uid_u16, weight_u16) = normalize_weights(&uids, &weights).expect("normalize weights");
+
+    assert_eq!(uid_u16.len(), weight_u16.len());
+    let sum: u32 = weight_u16.iter().map(|w| *w as u32).sum();
+    assert!(sum <= u16::MAX as u32 + 2);
 }

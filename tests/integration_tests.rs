@@ -3,12 +3,18 @@ use bittensor_rs::crv4::{
     calculate_reveal_round, get_last_drand_round, get_mechid_storage_index, prepare_crv4_commit,
     verify_encrypted_data,
 };
-use bittensor_rs::{get_commit_reveal_version, BittensorClient, Config, Metagraph, Subtensor};
+use bittensor_rs::logging::{init_default_logging, is_initialized};
+use bittensor_rs::wallet::Wallet;
+use bittensor_rs::{
+    chain::ConnectionManager, get_commit_reveal_version, sync_metagraph, BittensorClient, Config,
+    Metagraph, Subtensor,
+};
 use bittensor_rs::{queries, utils::weights::normalize_weights};
 use bittensor_rs::{validator, ExtrinsicWait, DEFAULT_COMMIT_REVEAL_VERSION};
 use sp_core::{crypto::AccountId32, sr25519, Pair};
 use std::str::FromStr;
 use std::sync::OnceLock;
+use tempfile::tempdir;
 use tokio::sync::Mutex;
 
 async fn connect_default_or_skip() -> Option<BittensorClient> {
@@ -26,8 +32,15 @@ async fn env_lock() -> tokio::sync::MutexGuard<'static, ()> {
     ENV_LOCK.get_or_init(|| Mutex::new(())).lock().await
 }
 
+fn init_logging_once() {
+    if !is_initialized() {
+        init_default_logging();
+    }
+}
+
 #[tokio::test]
 async fn test_client_connection() {
+    init_logging_once();
     if connect_default_or_skip().await.is_none() {
         return;
     }
@@ -43,6 +56,7 @@ async fn test_metagraph_creation() {
 
 #[tokio::test]
 async fn test_runtime_api() {
+    init_logging_once();
     if connect_default_or_skip().await.is_none() {
         return;
     }
@@ -50,6 +64,7 @@ async fn test_runtime_api() {
 
 #[tokio::test]
 async fn test_block_number() {
+    init_logging_once();
     let Some(client) = connect_default_or_skip().await else {
         return;
     };
@@ -62,6 +77,7 @@ async fn test_block_number() {
 
 #[tokio::test]
 async fn test_storage_query() {
+    init_logging_once();
     if connect_default_or_skip().await.is_none() {
         return;
     }
@@ -94,6 +110,7 @@ async fn test_keypair_generation() {
 
 #[tokio::test]
 async fn test_chain_connection() {
+    init_logging_once();
     let result = BittensorClient::new(FINNEY_ENDPOINT).await;
     assert!(result.is_ok(), "Failed to connect to default endpoint");
 }
@@ -115,6 +132,7 @@ async fn test_metagraph_neuron_lookup() {
 
 #[tokio::test]
 async fn test_finney_default_endpoint_config() {
+    init_logging_once();
     let config = Config::default();
     assert_eq!(config.subtensor.network, "finney");
     assert_eq!(config.subtensor.chain_endpoint, FINNEY_ENDPOINT);
@@ -127,6 +145,7 @@ async fn test_finney_default_endpoint_config() {
 
 #[tokio::test]
 async fn test_bittensor_rpc_env_override() {
+    init_logging_once();
     let _guard = env_lock().await;
 
     let custom_endpoint = "ws://127.0.0.1:9944";
@@ -144,6 +163,7 @@ async fn test_bittensor_rpc_env_override() {
 
 #[tokio::test]
 async fn test_query_and_weights_commit_flow() {
+    init_logging_once();
     let Some(client) = connect_default_or_skip().await else {
         return;
     };
@@ -173,6 +193,7 @@ async fn test_query_and_weights_commit_flow() {
 
 #[tokio::test]
 async fn test_transfer_and_stake_flow_requires_funded_keys() {
+    init_logging_once();
     let Some(client) = connect_default_or_skip().await else {
         return;
     };
@@ -198,6 +219,7 @@ async fn test_transfer_and_stake_flow_requires_funded_keys() {
 
 #[tokio::test]
 async fn test_subtensor_set_weights_crv4_branching() {
+    init_logging_once();
     let subtensor = Subtensor::new(FINNEY_ENDPOINT)
         .await
         .expect("Failed to create subtensor");
@@ -227,6 +249,7 @@ async fn test_subtensor_set_weights_crv4_branching() {
 
 #[tokio::test]
 async fn test_commit_reveal_flow_read_only() {
+    init_logging_once();
     let Some(client) = connect_default_or_skip().await else {
         return;
     };
@@ -251,6 +274,7 @@ async fn test_commit_reveal_flow_read_only() {
 
 #[tokio::test]
 async fn test_crv4_commit_payload_uses_chain_drand() {
+    init_logging_once();
     let Some(client) = connect_default_or_skip().await else {
         return;
     };
@@ -287,4 +311,99 @@ async fn test_crv4_commit_payload_uses_chain_drand() {
     let encrypted =
         prepare_crv4_commit(&hotkey_bytes, &uids, &weights, 0, reveal_round).expect("encrypt");
     assert!(verify_encrypted_data(&encrypted));
+}
+
+#[tokio::test]
+async fn test_connection_manager_retry_path() {
+    init_logging_once();
+    let manager = ConnectionManager::new(FINNEY_ENDPOINT);
+    let conn = manager.get_connection().await.expect("connection");
+    let block = conn.client().block_number().await.expect("block number");
+    conn.record_success().await;
+    assert!(block > 0);
+
+    let stats = manager.pool_stats().await;
+    assert!(stats.total_connections >= 1);
+    let stats = manager.pool_stats().await;
+    assert!(stats.total_connections >= 1);
+}
+
+#[tokio::test]
+async fn test_metagraph_sync_finney() {
+    init_logging_once();
+    let Some(client) = connect_default_or_skip().await else {
+        return;
+    };
+
+    let metagraph = sync_metagraph(&client, 1).await.expect("sync metagraph");
+    assert!(metagraph.n > 0);
+    assert_eq!(metagraph.hotkeys.len() as u64, metagraph.n);
+    assert_eq!(metagraph.coldkeys.len() as u64, metagraph.n);
+}
+
+#[tokio::test]
+async fn test_wallet_compatibility_addresses() {
+    init_logging_once();
+    let dir = tempdir().expect("tempdir");
+    let base_path = dir.path().to_str().expect("path");
+
+    let wallet = Wallet::create_at_path("integration", "default", base_path, Some("password"))
+        .expect("wallet create");
+    let coldkey = wallet.coldkey_ss58(Some("password")).expect("coldkey");
+    let hotkey = wallet.hotkey_ss58(Some("password")).expect("hotkey");
+
+    let coldkey_account = AccountId32::from_str(&coldkey).expect("coldkey account");
+    let hotkey_account = AccountId32::from_str(&hotkey).expect("hotkey account");
+
+    assert!(coldkey.starts_with('5'));
+    assert!(hotkey.starts_with('5'));
+    assert_eq!(coldkey_account.to_string(), coldkey);
+    assert_eq!(hotkey_account.to_string(), hotkey);
+}
+
+#[tokio::test]
+async fn test_commit_reveal_extrinsics_require_funds() {
+    init_logging_once();
+    let Some(client) = connect_default_or_skip().await else {
+        return;
+    };
+
+    let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
+    let signer = bittensor_rs::chain::create_signer(pair.clone());
+    let netuid = 1u16;
+    let uids: Vec<u16> = vec![0, 1, 2];
+    let weights: Vec<u16> = vec![10_000, 20_000, 30_000];
+    let salt = bittensor_rs::utils::crypto::generate_salt(8);
+
+    let commit_hash = validator::weights::generate_commit_hash_v2(
+        &pair.public().0,
+        netuid,
+        &uids,
+        &weights,
+        &salt,
+        0,
+    );
+
+    let commit_result = validator::weights::commit_weights(
+        &client,
+        &signer,
+        netuid,
+        &commit_hash,
+        ExtrinsicWait::None,
+    )
+    .await;
+    assert!(commit_result.is_err());
+
+    let reveal_result = validator::weights::reveal_weights(
+        &client,
+        &signer,
+        netuid,
+        &uids,
+        &weights,
+        &salt,
+        0,
+        ExtrinsicWait::None,
+    )
+    .await;
+    assert!(reveal_result.is_err());
 }
