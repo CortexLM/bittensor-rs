@@ -56,8 +56,6 @@ pub struct Crv4PersistedState {
     pub current_epoch: u64,
     /// Pending commits by key (netuid_mecid -> commit data)
     pub pending_commits: HashMap<String, Crv4CommitData>,
-    /// Revealed epochs by key (netuid_mecid -> last revealed epoch)
-    pub revealed_epochs: HashMap<String, u64>,
 }
 
 impl Crv4PersistedState {
@@ -116,30 +114,12 @@ impl Crv4PersistedState {
             .unwrap_or(false)
     }
 
-    /// Check if we already revealed for this epoch
-    pub fn has_revealed_for_epoch(
-        &self,
-        netuid: u16,
-        mechanism_id: Option<u8>,
-        epoch: u64,
-    ) -> bool {
+    /// Mark a commit as revealed (remove from pending)
+    pub fn mark_revealed(&mut self, netuid: u16, mechanism_id: Option<u8>) {
         let key = match mechanism_id {
             Some(mecid) => format!("{}_{}", netuid, mecid),
             None => format!("{}_main", netuid),
         };
-        self.revealed_epochs
-            .get(&key)
-            .map(|e| *e >= epoch)
-            .unwrap_or(false)
-    }
-
-    /// Mark a commit as revealed
-    pub fn mark_revealed(&mut self, netuid: u16, mechanism_id: Option<u8>, epoch: u64) {
-        let key = match mechanism_id {
-            Some(mecid) => format!("{}_{}", netuid, mecid),
-            None => format!("{}_main", netuid),
-        };
-        self.revealed_epochs.insert(key.clone(), epoch);
         self.pending_commits.remove(&key);
     }
 
@@ -262,9 +242,8 @@ impl Crv4StateManager {
         &mut self,
         netuid: u16,
         mechanism_id: Option<u8>,
-        epoch: u64,
     ) -> anyhow::Result<()> {
-        self.state.mark_revealed(netuid, mechanism_id, epoch);
+        self.state.mark_revealed(netuid, mechanism_id);
         self.save()
     }
 
@@ -331,9 +310,8 @@ mod tests {
         assert!(state.has_commit_for_epoch(1, Some(0), 5));
         assert!(!state.has_commit_for_epoch(1, Some(0), 6));
 
-        state.mark_revealed(1, Some(0), 5);
+        state.mark_revealed(1, Some(0));
 
         assert!(!state.has_pending_commit(1, Some(0)));
-        assert!(state.has_revealed_for_epoch(1, Some(0), 5));
     }
 }
