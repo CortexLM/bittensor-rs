@@ -200,11 +200,7 @@ fn test_conversion_precision_small_values() {
         // All values below 2^53 should convert exactly
         // But the round-trip via f64 can still lose precision for some patterns
         // We accept small epsilon due to floating point representation
-        let diff = if rao_back > rao {
-            rao_back - rao
-        } else {
-            rao - rao_back
-        };
+        let diff = rao_back.abs_diff(rao);
 
         assert!(
             diff <= 1,
@@ -231,11 +227,7 @@ fn test_conversion_precision_large_values() {
         let rao_back = tao_to_rao(tao);
 
         // For large values, we allow some precision loss within 1 RAO
-        let diff = if rao_back > rao {
-            rao_back - rao
-        } else {
-            rao - rao_back
-        };
+        let diff = rao_back.abs_diff(rao);
 
         assert!(
             diff <= 1,
@@ -380,7 +372,7 @@ proptest! {
         let rao_back = tao_to_rao(tao);
 
         // Allow for small precision loss due to float
-        let diff = if rao_back > rao { rao_back - rao } else { rao - rao_back };
+        let diff = rao_back.abs_diff(rao);
         prop_assert!(diff <= 1);
     }
 
@@ -392,7 +384,7 @@ proptest! {
 
             // Convert back to rao to compare
             let rao_back = tao_to_rao(tao_back);
-            let diff = if rao_back > rao { rao_back - rao } else { rao - rao_back };
+            let diff = rao_back.abs_diff(rao);
             prop_assert!(diff <= 1);
         }
     }
