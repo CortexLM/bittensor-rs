@@ -1,11 +1,67 @@
 //! Comprehensive read-only operation tests matching Python SDK behavior
 //! These tests verify that the Rust SDK produces identical results to the Python SDK
 
+use bittensor_rs::core::constants::FINNEY_ENDPOINT;
 use bittensor_rs::utils::balance::{rao_to_tao, tao_to_rao, Balance};
 use bittensor_rs::utils::weights::{
     convert_weight_uids_and_vals_to_tensor, normalize_max_weight, normalize_weights,
     u16_normalized_float,
 };
+use bittensor_rs::{
+    get_commit_reveal_version, queries, BittensorClient, Subtensor, DEFAULT_COMMIT_REVEAL_VERSION,
+};
+use sp_core::crypto::AccountId32;
+use std::str::FromStr;
+
+#[tokio::test]
+async fn test_read_only_finney_endpoint_config() {
+    let config = bittensor_rs::Config::default();
+    assert_eq!(config.subtensor.chain_endpoint, FINNEY_ENDPOINT);
+
+    let client = BittensorClient::with_default().await.expect("connect");
+    assert_eq!(client.rpc_url(), FINNEY_ENDPOINT);
+}
+
+#[tokio::test]
+async fn test_read_only_commit_reveal_metadata() {
+    let client = BittensorClient::with_default().await.expect("connect");
+
+    let netuid = 1u16;
+    let enabled = queries::subnets::commit_reveal_enabled(&client, netuid)
+        .await
+        .expect("commit reveal enabled");
+    assert!(enabled, "Commit-reveal should be enabled on finney");
+
+    let version = get_commit_reveal_version(&client)
+        .await
+        .unwrap_or(DEFAULT_COMMIT_REVEAL_VERSION);
+    assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
+}
+
+#[tokio::test]
+async fn test_read_only_crv4_tempo_and_reveal_period() {
+    let client = BittensorClient::with_default().await.expect("connect");
+    let subtensor = Subtensor::new(FINNEY_ENDPOINT).await.expect("subtensor");
+
+    let netuid = 1u16;
+    let tempo = queries::subnets::tempo(&client, netuid)
+        .await
+        .expect("tempo query")
+        .unwrap_or(0);
+    assert!(tempo > 0, "Tempo should be positive");
+
+    let reveal_period = queries::subnets::get_subnet_reveal_period_epochs(&client, netuid)
+        .await
+        .expect("reveal period")
+        .unwrap_or(0);
+    assert!(reveal_period > 0, "Reveal period should be positive");
+
+    let version = subtensor
+        .get_commit_reveal_version()
+        .await
+        .unwrap_or(DEFAULT_COMMIT_REVEAL_VERSION);
+    assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
+}
 use sp_core::crypto::AccountId32;
 use std::str::FromStr;
 

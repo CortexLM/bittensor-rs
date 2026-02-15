@@ -11,6 +11,11 @@
 //! Uses proptest to verify properties hold across a wide range of inputs.
 
 use bittensor_rs::core::constants::RAOPERTAO;
+use bittensor_rs::core::constants::RAOPERTAO;
+use bittensor_rs::utils::balance_newtypes::{
+    format_rao_as_tao, is_lossless_conversion, is_valid_tao_amount, parse_tao_string, rao_to_tao,
+    tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao, Tao,
+};
 use bittensor_rs::utils::balance_newtypes::{
     format_rao_as_tao, is_lossless_conversion, is_valid_tao_amount, parse_tao_string, rao_to_tao,
     tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao, Tao,
@@ -42,13 +47,31 @@ fn test_transfer_and_stake_requires_rao_inputs() {
 fn test_weight_inputs_require_u16_not_tao() {
     let uids: Vec<u16> = vec![0, 1, 2];
     let weights: Vec<u16> = vec![10_000, 20_000, 30_000];
+    fn test_weight_inputs_require_u16_not_tao() {
+        let uids: Vec<u16> = vec![0, 1, 2];
+        let weights: Vec<u16> = vec![10_000, 20_000, 30_000];
 
-    let _set_weights_fn = validator_weights::set_weights;
+        let _set_weights_fn = validator_weights::set_weights;
 
-    let _commit_weights_fn = validator_weights::commit_weights;
+        let _commit_weights_fn = validator_weights::commit_weights;
 
-    let _reveal_weights_fn = validator_weights::reveal_weights;
+        let _reveal_weights_fn = validator_weights::reveal_weights;
 
+        assert_eq!(uids.len(), weights.len());
+    }
+
+    #[test]
+    fn test_commit_reveal_units_require_u16() {
+        fn assert_u16_slice(_: &[u16]) {}
+
+        let uids: Vec<u16> = vec![1, 2, 3];
+        let weights: Vec<u16> = vec![100, 200, 300];
+        let salt: Vec<u16> = vec![4, 5, 6];
+
+        assert_u16_slice(&uids);
+        assert_u16_slice(&weights);
+        assert_u16_slice(&salt);
+    }
     assert_eq!(uids.len(), weights.len());
 }
 
@@ -57,10 +80,40 @@ fn test_rao_only_inputs_for_transfer_conversion() {
     let tao_amount = Tao(0.123456789);
     let rao_amount = tao_amount.as_rao();
     assert_eq!(rao_amount.as_u128(), 123_456_789);
+    fn test_rao_only_inputs_for_transfer_conversion() {
+        let tao_amount = Tao(0.123456789);
+        let rao_amount = tao_amount.as_rao();
+        assert_eq!(rao_amount.as_u128(), 123_456_789);
 
-    let rao_amount_direct = Rao::from_tao(0.123456789);
-    assert_eq!(rao_amount_direct.as_u128(), 123_456_789);
+        let rao_amount_direct = Rao::from_tao(0.123456789);
+        assert_eq!(rao_amount_direct.as_u128(), 123_456_789);
 
+        let balance = Balance::from_tao(0.123456789);
+        assert_eq!(balance.as_rao(), 123_456_789);
+    }
+
+    #[test]
+    fn test_tao_to_rao_truncation_invariant() {
+        let tao_amount = Tao(1.0000000009);
+        let rao = tao_amount.as_rao();
+        assert_eq!(rao.as_u128(), RAOPERTAO);
+
+        let rounded = tao_amount.as_rao_rounded();
+        assert_eq!(rounded.as_u128(), RAOPERTAO + 1);
+
+        let ceiling = tao_amount.as_rao_ceiling();
+        assert_eq!(ceiling.as_u128(), RAOPERTAO + 1);
+    }
+
+    #[test]
+    fn test_rao_tao_roundtrip_invariant_for_exact_values() {
+        let test_values = [0u128, 1, 10, 1_000, 1_000_000_000, 9_000_000_000_000u128];
+        for rao in test_values {
+            let tao = rao_to_tao(rao);
+            let rao_back = tao_to_rao(tao);
+            assert_eq!(rao_back, rao, "Round-trip failed for {}", rao);
+        }
+    }
     let balance = Balance::from_tao(0.123456789);
     assert_eq!(balance.as_rao(), 123_456_789);
 }

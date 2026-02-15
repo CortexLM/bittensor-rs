@@ -183,3 +183,22 @@ fn test_normalize_weights_all_zeros() {
         );
     }
 }
+
+#[test]
+fn test_u16_weight_scaling_invariant() {
+    let uids = vec![0u64, 1, 2];
+    let weights = vec![0.2f32, 0.3, 0.5];
+
+    let (uids_u16, weights_u16) = normalize_weights(&uids, &weights).unwrap();
+    assert_eq!(uids_u16, vec![0u16, 1, 2]);
+
+    let sum: u32 = weights_u16.iter().map(|w| *w as u32).sum();
+    assert!(sum <= u16::MAX as u32 + 2);
+
+    let floats = weights_u16
+        .iter()
+        .map(|w| u16_normalized_float(*w))
+        .collect::<Vec<f64>>();
+    let total: f64 = floats.iter().sum();
+    assert!((total - 1.0).abs() < 0.01);
+}

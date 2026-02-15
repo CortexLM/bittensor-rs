@@ -1,3 +1,4 @@
+use bittensor_rs::core::constants::FINNEY_ENDPOINT;
 use bittensor_rs::{get_commit_reveal_version, BittensorClient, Config, Metagraph, Subtensor};
 use bittensor_rs::{queries, utils::weights::normalize_weights};
 use bittensor_rs::{validator, ExtrinsicWait, DEFAULT_COMMIT_REVEAL_VERSION};
@@ -71,7 +72,7 @@ async fn test_keypair_generation() {
 
 #[tokio::test]
 async fn test_chain_connection() {
-    let result = BittensorClient::new(bittensor_rs::chain::DEFAULT_RPC_URL).await;
+    let result = BittensorClient::new(FINNEY_ENDPOINT).await;
     assert!(result.is_ok(), "Failed to connect to default endpoint");
 }
 
@@ -94,18 +95,12 @@ async fn test_metagraph_neuron_lookup() {
 async fn test_finney_default_endpoint_config() {
     let config = Config::default();
     assert_eq!(config.subtensor.network, "finney");
-    assert_eq!(
-        config.subtensor.chain_endpoint,
-        bittensor_rs::core::constants::FINNEY_ENDPOINT
-    );
+    assert_eq!(config.subtensor.chain_endpoint, FINNEY_ENDPOINT);
 
     let client = BittensorClient::with_default()
         .await
         .expect("Failed to connect to default endpoint");
-    assert_eq!(
-        client.rpc_url(),
-        bittensor_rs::core::constants::FINNEY_ENDPOINT
-    );
+    assert_eq!(client.rpc_url(), FINNEY_ENDPOINT);
 }
 
 #[tokio::test]
@@ -132,6 +127,9 @@ async fn test_query_and_weights_commit_flow() {
     let weights: Vec<f32> = vec![0.5, 0.3, 0.2];
     let (uid_u16, weight_u16) = normalize_weights(&uids, &weights).expect("normalize weights");
     assert_eq!(uid_u16.len(), weight_u16.len());
+
+    let total: u32 = weight_u16.iter().map(|v| *v as u32).sum();
+    assert!(total <= u16::MAX as u32 + 1);
 }
 
 #[tokio::test]
@@ -161,7 +159,7 @@ async fn test_transfer_and_stake_flow_requires_funded_keys() {
 
 #[tokio::test]
 async fn test_subtensor_set_weights_crv4_branching() {
-    let subtensor = Subtensor::new(bittensor_rs::core::constants::FINNEY_ENDPOINT)
+    let subtensor = Subtensor::new(FINNEY_ENDPOINT)
         .await
         .expect("Failed to create subtensor");
 
@@ -182,9 +180,30 @@ async fn test_subtensor_set_weights_crv4_branching() {
     let uids: Vec<u64> = vec![0, 1, 2];
     let weights: Vec<f32> = vec![0.5, 0.3, 0.2];
     let (uid_u16, weight_u16) = normalize_weights(&uids, &weights).expect("normalize weights");
-
     let result = subtensor
         .set_weights(&signer, 1, &uid_u16, &weight_u16, 0, ExtrinsicWait::None)
         .await;
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_commit_reveal_flow_read_only() {
+    let client = BittensorClient::with_default().await.expect("connect");
+    let netuid = 1u16;
+
+    let enabled = queries::subnets::commit_reveal_enabled(&client, netuid)
+        .await
+        .expect("commit reveal enabled");
+    assert!(enabled);
+
+    let version = get_commit_reveal_version(&client)
+        .await
+        .unwrap_or(DEFAULT_COMMIT_REVEAL_VERSION);
+    assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
+
+    let tempo = queries::subnets::tempo(&client, netuid)
+        .await
+        .expect("tempo")
+        .unwrap_or(0);
+    assert!(tempo > 0);
 }
