@@ -1,3 +1,4 @@
+pub mod connection;
 pub mod runtime;
 pub mod signer;
 
@@ -6,8 +7,12 @@ use sp_core::crypto::AccountId32;
 use subxt::{dynamic::Value, PolkadotConfig};
 use thiserror::Error;
 
+pub use connection::*;
 pub use runtime::*;
-pub use signer::{create_signer, signer_from_seed, BittensorSigner};
+pub use signer::{
+    create_signer, signer_from_seed, BittensorSigner, ManagedSigner, NonceManager,
+    SharedNonceManager,
+};
 
 /// Default RPC endpoint (managed by Opentensor)
 /// Same as Bittensor Python's DEFAULT_ENDPOINT
@@ -31,6 +36,7 @@ pub enum Error {
 }
 
 /// Bittensor client for interacting with the chain
+#[derive(Debug)]
 pub struct BittensorClient {
     pub api: subxt::OnlineClient<PolkadotConfig>,
     pub rpc_url: String,
