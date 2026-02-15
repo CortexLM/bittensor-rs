@@ -102,7 +102,12 @@ bittensor-rs = { git = "https://github.com/CortexLM/bittensor-rs" }
 - [Staking Queries](docs/queries/staking.md) - Query stake distributions
 
 ## Quick Start
+## Quick Start
 
+### Basic Connection
+
+```rust
+use bittensor_rs::chain::BittensorClient;
 ### Basic Connection
 
 ```rust
@@ -119,6 +124,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+The default RPC endpoint is `wss://entrypoint-finney.opentensor.ai:443`. Override it with the
+`BITTENSOR_RPC` environment variable or by passing a custom URL to `BittensorClient::new`.
 
 ### Querying Neurons
 

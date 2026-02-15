@@ -7,7 +7,7 @@ This directory contains comprehensive examples demonstrating how to use the Bitt
 Before running the examples, ensure you have:
 - Rust 1.70 or higher installed
 - Network connectivity to a Bittensor RPC endpoint
-- (Optional) Set `BITTENSOR_RPC` environment variable for custom endpoint
+- (Optional) Set `BITTENSOR_RPC` environment variable for custom endpoint (defaults to Finney)
 
 ## Running Examples
 

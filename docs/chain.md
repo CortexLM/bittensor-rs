@@ -20,7 +20,7 @@ The `BittensorClient` is the primary interface for connecting to and interacting
 ```rust
 use bittensor_rs::chain::BittensorClient;
 
-// Connect to default endpoint
+// Connect to default endpoint (Finney)
 let client = BittensorClient::with_default().await?;
 
 // Connect to local node
@@ -30,14 +30,14 @@ let client = BittensorClient::new("ws://127.0.0.1:9944").await?;
 ### Connection Options
 
 ```rust
-// Use default endpoint
+// Use default endpoint (Finney)
 let client = BittensorClient::with_default().await?;
 
 // Use custom endpoint
 use bittensor_rs::chain::DEFAULT_RPC_URL;
 let client = BittensorClient::new("ws://127.0.0.1:9944").await?;
 
-// Use environment variable or default
+// Use environment variable or default (Finney)
 let endpoint = std::env::var("BITTENSOR_RPC")
     .unwrap_or_else(|_| DEFAULT_RPC_URL.to_string());
 let client = BittensorClient::new(endpoint).await?;
