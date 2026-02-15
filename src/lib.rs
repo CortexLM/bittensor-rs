@@ -16,6 +16,7 @@ pub mod utils;
 pub mod validator;
 pub mod wallet;
 
+pub use chain::ExtrinsicWait;
 pub use chain::{BittensorClient, Error as ChainError};
 pub use config::{AxonConfig, Config, LoggingConfig as ConfigLoggingConfig, SubtensorConfig};
 pub use metagraph::{sync_metagraph, Metagraph};

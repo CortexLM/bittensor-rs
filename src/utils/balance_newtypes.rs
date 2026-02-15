@@ -303,7 +303,14 @@ impl From<Tao> for f64 {
 /// Uses exact truncation: `rao = floor(tao * RAOPERTAO)`
 /// This is the standard behavior used by the Python SDK.
 pub fn tao_to_rao(tao: f64) -> u128 {
-    (tao.max(0.0) * RAOPERTAO as f64) as u128
+    if !tao.is_finite() || tao <= 0.0 {
+        return 0;
+    }
+    let max_tao = u128::MAX as f64 / RAOPERTAO as f64;
+    if tao >= max_tao {
+        return u128::MAX;
+    }
+    (tao * RAOPERTAO as f64).trunc() as u128
 }
 
 /// Safe conversion from RAO (u128) to TAO (f64)
@@ -312,17 +319,34 @@ pub fn tao_to_rao(tao: f64) -> u128 {
 /// For values > 2^53 RAO (≈9 million TAO), this conversion may lose precision.
 /// The f64 mantissa has 53 bits of precision, so integers above 2^53 cannot be exactly represented.
 pub fn rao_to_tao(rao: u128) -> f64 {
+    if rao == 0 {
+        return 0.0;
+    }
     rao as f64 / RAOPERTAO as f64
 }
 
 /// Convert TAO to RAO with rounding (round half up)
 pub fn tao_to_rao_rounded(tao: f64) -> u128 {
-    (tao.max(0.0) * RAOPERTAO as f64).round() as u128
+    if !tao.is_finite() || tao <= 0.0 {
+        return 0;
+    }
+    let max_tao = u128::MAX as f64 / RAOPERTAO as f64;
+    if tao >= max_tao {
+        return u128::MAX;
+    }
+    (tao * RAOPERTAO as f64).round() as u128
 }
 
 /// Convert TAO to RAO with ceiling (useful for ensuring sufficient balance)
 pub fn tao_to_rao_ceiling(tao: f64) -> u128 {
-    (tao.max(0.0) * RAOPERTAO as f64).ceil() as u128
+    if !tao.is_finite() || tao <= 0.0 {
+        return 0;
+    }
+    let max_tao = u128::MAX as f64 / RAOPERTAO as f64;
+    if tao >= max_tao {
+        return u128::MAX;
+    }
+    (tao * RAOPERTAO as f64).ceil() as u128
 }
 
 /// Format RAO as TAO string with 9 decimal places
@@ -386,6 +410,8 @@ pub struct Balance {
     pub amount: Rao,
     /// Subnet ID (0 = TAO, non-zero = Alpha on that subnet)
     pub netuid: u16,
+    /// Backwards-compatible raw RAO value
+    pub rao: u128,
 }
 
 impl Balance {
@@ -393,6 +419,7 @@ impl Balance {
     pub const ZERO_TAO: Self = Self {
         amount: Rao::ZERO,
         netuid: 0,
+        rao: 0,
     };
 
     /// Create from RAO (default unit is TAO, netuid=0)
@@ -400,14 +427,17 @@ impl Balance {
         Self {
             amount: Rao(rao),
             netuid: 0,
+            rao,
         }
     }
 
     /// Create from TAO (default unit is TAO, netuid=0)
     pub fn from_tao(tao: f64) -> Self {
+        let rao = Rao::from_tao(tao).as_u128();
         Self {
-            amount: Rao::from_tao(tao),
+            amount: Rao(rao),
             netuid: 0,
+            rao,
         }
     }
 
@@ -416,14 +446,17 @@ impl Balance {
         Self {
             amount: Rao(rao),
             netuid,
+            rao,
         }
     }
 
     /// Create from TAO with specific netuid
     pub fn from_tao_with_netuid(tao: f64, netuid: u16) -> Self {
+        let rao = Rao::from_tao(tao).as_u128();
         Self {
-            amount: Rao::from_tao(tao),
+            amount: Rao(rao),
             netuid,
+            rao,
         }
     }
 
@@ -435,6 +468,10 @@ impl Balance {
     /// Get as RAO (u128 internal representation)
     pub fn as_rao(&self) -> u128 {
         self.amount.as_u128()
+    }
+
+    pub fn rao(&self) -> u128 {
+        self.rao
     }
 
     /// Set the unit/netuid for this balance
@@ -465,9 +502,11 @@ impl Balance {
         } else {
             self.netuid
         };
+        let amount = self.amount.saturating_add(other.amount);
         Self {
-            amount: self.amount.saturating_add(other.amount),
+            amount,
             netuid: result_netuid,
+            rao: amount.as_u128(),
         }
     }
 
@@ -478,9 +517,11 @@ impl Balance {
         } else {
             self.netuid
         };
+        let amount = self.amount.saturating_sub(other.amount);
         Self {
-            amount: self.amount.saturating_sub(other.amount),
+            amount,
             netuid: result_netuid,
+            rao: amount.as_u128(),
         }
     }
 }
@@ -519,9 +560,11 @@ impl Sub for Balance {
 impl Mul<u128> for Balance {
     type Output = Self;
     fn mul(self, other: u128) -> Self {
+        let amount = self.amount.saturating_mul(other);
         Self {
-            amount: self.amount.saturating_mul(other),
+            amount,
             netuid: self.netuid,
+            rao: amount.as_u128(),
         }
     }
 }
@@ -529,9 +572,11 @@ impl Mul<u128> for Balance {
 impl Div<u128> for Balance {
     type Output = Self;
     fn div(self, other: u128) -> Self {
+        let amount = self.amount.safe_div(other);
         Self {
-            amount: self.amount.safe_div(other),
+            amount,
             netuid: self.netuid,
+            rao: amount.as_u128(),
         }
     }
 }
