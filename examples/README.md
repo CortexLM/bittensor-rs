@@ -162,7 +162,13 @@ Features:
 
 ## Environment Variables
 
-- `BITTENSOR_RPC` - Custom RPC endpoint (default: wss://entrypoint-finney.opentensor.ai:443)
+- `BITTENSOR_RPC` - RPC endpoint override. All examples and integration tests default to the **Finney mainnet** entrypoint (`wss://entrypoint-finney.opentensor.ai:443`). Set this to use testnet, local, or archive nodes:
+  ```bash
+  # Use local node
+  BITTENSOR_RPC=ws://127.0.0.1:9944 cargo run --example chain_info
+  # Use testnet
+  BITTENSOR_RPC=wss://test.finney.opentensor.ai:443 cargo run --example chain_info
+  ```
 - `SEED` - Random seed for subnet selection in examples
 
 ## Common Patterns
@@ -180,10 +186,11 @@ match result {
 
 ### Connection Management
 
-Examples establish connection once and reuse:
+All examples use `BittensorClient::with_default()` which connects to the **Finney mainnet** by default (`wss://entrypoint-finney.opentensor.ai:443`). Override with `BITTENSOR_RPC` to point at a different endpoint (testnet, local, archive):
 
 ```rust
-let client = BittensorClient::new(rpc_url).await?;
+// Connects to Finney by default; override with BITTENSOR_RPC env var
+let client = BittensorClient::with_default().await?;
 // Multiple queries using same client
 ```
 
