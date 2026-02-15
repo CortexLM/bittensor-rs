@@ -2,9 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
 /// Complete axon information stored on-chain for a neuron endpoint
-/// Matches the subtensor pallet AxonInfo struct exactly
+/// Includes optional hotkey metadata when available.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AxonInfo {
+    /// Hotkey SS58 address (optional when read from chain)
+    pub hotkey: Option<String>,
     /// Axon serving block
     pub block: u64,
     /// Axon version
@@ -37,6 +39,7 @@ impl AxonInfo {
         placeholder2: u8,
     ) -> Self {
         Self {
+            hotkey: None,
             block,
             version,
             ip,

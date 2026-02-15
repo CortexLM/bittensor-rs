@@ -190,7 +190,9 @@ Axon network connection information.
 ```rust
 pub struct AxonInfo {
     pub version: u32,
-    pub ip: u128,
+    pub hotkey: Option<String>,
+    pub block: u64,
+    pub ip: IpAddr,
     pub port: u16,
     pub ip_type: u8,
     pub protocol: u8,
@@ -200,8 +202,10 @@ pub struct AxonInfo {
 ```
 
 **Fields:**
+- `hotkey`: Optional axon hotkey (SS58)
+- `block`: Registration block
 - `version`: Protocol version
-- `ip`: IP address (encoded as u128)
+- `ip`: IP address
 - `port`: Port number
 - `ip_type`: IP type (4 for IPv4, 6 for IPv6)
 - `protocol`: Protocol type (TCP, UDP, etc.)

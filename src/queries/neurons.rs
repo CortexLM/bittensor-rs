@@ -537,8 +537,15 @@ pub async fn fetch_axon_info(
     entry: &str,
     keys: Vec<Value>,
 ) -> Option<AxonInfo> {
+    let hotkey = keys
+        .get(1)
+        .and_then(|value| crate::utils::decoders::decode_account_id32(value).ok())
+        .map(|account| crate::utils::ss58::encode_ss58(&account));
+
     if let Some(value) = client.storage_with_keys(module, entry, keys).await.ok()? {
-        crate::utils::decoders::decode_axon_info(&value).ok()
+        let mut info = crate::utils::decoders::decode_axon_info(&value).ok()?;
+        info.hotkey = hotkey;
+        Some(info)
     } else {
         None
     }

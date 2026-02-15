@@ -523,6 +523,7 @@ impl Axon {
         };
 
         Ok(AxonInfo {
+            hotkey: Some(self.keypair.ss58_address().to_string()),
             block,
             version: AXON_VERSION as u32,
             ip,
