@@ -119,8 +119,7 @@ pub use axon::{
 pub use wallet::{
     default_wallet_path, is_legacy_format, list_wallets, list_wallets_at, migrate_legacy_keyfile,
     wallet_path, Keyfile, KeyfileData, KeyfileError, Keypair, KeypairError, Mnemonic,
-    MnemonicError, Wallet, WalletError as WalletModuleError, BITTENSOR_SS58_FORMAT,
-    KEYFILE_VERSION,
+    MnemonicError, Wallet, WalletError as WalletModuleError, BITTENSOR_SS58_FORMAT, NACL_HEADER,
 };
 
 // Re-export comprehensive error types

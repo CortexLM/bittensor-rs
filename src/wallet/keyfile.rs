@@ -3,30 +3,45 @@
 //! This module provides functionality to securely store keypairs on disk,
 //! compatible with the Python Bittensor SDK keyfile format.
 //!
-//! ## Keyfile Format
+//! ## Python-Compatible Keyfile Format
 //!
-//! The keyfile format uses JSON with the following structure:
+//! Python Bittensor SDK (bittensor-wallet) uses two formats:
+//!
+//! ### Encrypted Format (Binary with $NACL header)
+//! ```
+//! +--------+--------+---------+-----------+
+//! | Header |  Salt  |  Nonce  | Ciphertext|
+//! | 5 bytes|16 bytes| 24 bytes| variable  |
+//! +--------+--------+---------+-----------+
+//! ```
+//!
+//! - **Header**: `$NACL` (5 bytes)
+//! - **Salt**: 16 random bytes for Argon2id key derivation
+//! - **Nonce**: 24 random bytes for XSalsa20-Poly1305 encryption
+//! - **Ciphertext**: The encrypted keypair JSON data
+//!
+//! ### Unencrypted Format (JSON)
 //! ```json
 //! {
-//!     "crypto": {
-//!         "cipher": "secretbox",
-//!         "ciphertext": "<base64-encoded encrypted data>",
-//!         "cipherparams": {"nonce": "<base64-encoded 24-byte nonce>"},
-//!         "kdf": "argon2id",
-//!         "kdfparams": {
-//!             "salt": "<base64-encoded 16-byte salt>",
-//!             "n": 65536,
-//!             "r": 1,
-//!             "p": 4
-//!         }
-//!     },
-//!     "version": 4
+//!     "ss58Address": "5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH",
+//!     "publicKey": "0x66933bd1f37070ef87bd1198af3dacceb095237f803f3d32b173e6b425ed7972",
+//!     "privateKey": "0x2ec306fc1c5bc2f0e3a2c7a6ec6014ca4a0823a7d7d42ad5e9d7f376a1c36c0d...",
+//!     "secretSeed": "0x4ed8d4b17698ddeaa1f1559f152f87b5d472f725ca86d341bd0276f1b61197e2",
+//!     "secretPhrase": "abandon abandon abandon ...",
+//!     "accountId": "0x66933bd1f37070ef87bd1198af3dacceb095237f803f3d32b173e6b425ed7972"
 //! }
 //! ```
+//!
+//! ### Argon2id Parameters (PyNaCl Compatible)
+//! - Memory: 64 MiB (67108864 bytes = 65536 KiB blocks)
+//! - Iterations: 2 (OPSLIMIT_INTERACTIVE)
+//! - Parallelism: 1
+//! - Salt length: 16 bytes
+//! - Key length: 32 bytes
+//! - Algorithm: Argon2id v1.3
 
 use crate::wallet::keypair::{Keypair, KeypairError};
 use argon2::{Argon2, Params, Version};
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use crypto_secretbox::{
     aead::{Aead, KeyInit},
     XSalsa20Poly1305,
@@ -38,13 +53,16 @@ use std::path::{Path, PathBuf};
 use thiserror::Error;
 use zeroize::Zeroize;
 
-/// Current keyfile format version
-pub const KEYFILE_VERSION: u32 = 4;
+/// NaCl header for encrypted keyfiles (matches Python bittensor-wallet)
+pub const NACL_HEADER: &[u8] = b"$NACL";
 
-/// Default Argon2 parameters matching Python SDK
-const ARGON2_TIME_COST: u32 = 1;
-const ARGON2_MEMORY_COST: u32 = 65536; // 64 MiB
-const ARGON2_PARALLELISM: u32 = 4;
+/// Argon2id parameters matching Python bittensor-wallet (PyNaCl interactive preset)
+/// - Memory: 64 MiB (67108864 bytes = 65536 KiB blocks)
+/// - Iterations: 2 (matches PyNaCl's OPSLIMIT_INTERACTIVE)
+/// - Parallelism: 1
+const ARGON2_MEMORY_COST: u32 = 65536; // 64 MiB in KiB blocks
+const ARGON2_TIME_COST: u32 = 2; // Iterations
+const ARGON2_PARALLELISM: u32 = 1; // Parallelism
 
 /// Errors that can occur during keyfile operations.
 #[derive(Debug, Error)]
@@ -90,52 +108,37 @@ pub enum KeyfileError {
 
     #[error("Legacy format detected: {0}")]
     LegacyFormat(String),
+
+    #[error("Invalid NACL header")]
+    InvalidNaclHeader,
 }
 
-/// Encryption parameters for a keyfile.
+/// Data structure for unencrypted keyfile (JSON format) matching Python SDK.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KdfParams {
-    pub salt: String,
-    #[serde(rename = "n")]
-    pub memory_cost: u32,
-    #[serde(rename = "r")]
-    pub time_cost: u32,
-    #[serde(rename = "p")]
-    pub parallelism: u32,
-}
-
-/// Cipher parameters for a keyfile.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CipherParams {
-    pub nonce: String,
-}
-
-/// Crypto section of the keyfile.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CryptoData {
-    pub cipher: String,
-    pub ciphertext: String,
-    pub cipherparams: CipherParams,
-    pub kdf: String,
-    pub kdfparams: KdfParams,
-}
-
-/// The complete keyfile structure.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KeyfileJson {
-    pub crypto: CryptoData,
-    pub version: u32,
+pub struct KeyfileJsonData {
+    #[serde(rename = "ss58Address")]
+    pub ss58_address: String,
+    #[serde(rename = "publicKey")]
+    pub public_key: String,
+    #[serde(rename = "privateKey")]
+    pub private_key: String,
+    #[serde(rename = "secretSeed", skip_serializing_if = "Option::is_none")]
+    pub secret_seed: Option<String>,
+    #[serde(rename = "secretPhrase", skip_serializing_if = "Option::is_none")]
+    pub secret_phrase: Option<String>,
+    #[serde(rename = "accountId", skip_serializing_if = "Option::is_none")]
+    pub account_id: Option<String>,
 }
 
 /// Data structure for encrypted key material.
 #[derive(Debug, Clone)]
 pub struct KeyfileData {
-    /// Encrypted key bytes
-    pub encrypted_key: Vec<u8>,
-    /// 24-byte nonce for XSalsa20Poly1305
-    pub nonce: [u8; 24],
     /// 16-byte salt for Argon2
     pub salt: [u8; 16],
+    /// 24-byte nonce for XSalsa20Poly1305
+    pub nonce: [u8; 24],
+    /// Encrypted key bytes (ciphertext)
+    pub encrypted_key: Vec<u8>,
 }
 
 /// A keyfile represents a keypair stored on disk.
@@ -188,10 +191,7 @@ impl Keyfile {
         }
 
         match self.read_raw() {
-            Ok(data) => {
-                // Try to parse as encrypted JSON format
-                serde_json::from_slice::<KeyfileJson>(&data).is_ok()
-            }
+            Ok(data) => data.starts_with(NACL_HEADER),
             Err(_) => false,
         }
     }
@@ -240,12 +240,13 @@ impl Keyfile {
             fs::create_dir_all(parent)?;
         }
 
-        let raw_key = keypair.to_bytes();
+        let raw_key = keypair.to_full_bytes();
 
         let content = match password {
             Some(pass) => {
-                let keyfile_data = self.encrypt(&raw_key, pass)?;
-                self.to_json(&keyfile_data)?
+                // Encrypt and create binary format with $NACL header
+                let encrypted_data = self.encrypt(&raw_key, pass)?;
+                self.to_binary_format(&encrypted_data)?
             }
             None => {
                 // SECURITY WARNING: Storing key without encryption
@@ -254,15 +255,20 @@ impl Keyfile {
                      This is insecure - consider using a password.",
                     self.path
                 );
-                // Store unencrypted (just the raw key bytes as hex)
-                // This matches legacy unencrypted format
-                hex::encode(&raw_key).into_bytes()
+                // Store as JSON format matching Python SDK
+                let json_data = KeyfileJsonData {
+                    ss58_address: keypair.ss58_address().to_string(),
+                    public_key: format!("0x{}", hex::encode(keypair.public_key())),
+                    private_key: format!("0x{}", hex::encode(&raw_key)),
+                    secret_seed: None,
+                    secret_phrase: None,
+                    account_id: Some(format!("0x{}", hex::encode(keypair.public_key()))),
+                };
+                serde_json::to_vec_pretty(&json_data)?
             }
         };
 
         // Write atomically by writing to temp file first
-        // On Unix, set restrictive permissions (0o600) at creation time to avoid
-        // a race condition where the file is briefly world-readable.
         let temp_path = self.path.with_extension("tmp");
         {
             #[cfg(unix)]
@@ -283,13 +289,6 @@ impl Keyfile {
         }
         fs::rename(&temp_path, &self.path)?;
 
-        // On non-Unix platforms, set permissions after rename (best effort)
-        #[cfg(not(unix))]
-        {
-            // No race condition mitigation available on non-Unix
-            // At least try to restrict permissions after creation
-        }
-
         self.keypair = Some(keypair);
         Ok(())
     }
@@ -303,7 +302,7 @@ impl Keyfile {
     /// # Returns
     /// The encrypted data with salt and nonce.
     pub fn encrypt(&self, data: &[u8], password: &str) -> Result<KeyfileData, KeyfileError> {
-        // Generate random salt and nonce
+        // Generate random salt (16 bytes) and nonce (24 bytes)
         let mut salt = [0u8; 16];
         let mut nonce = [0u8; 24];
 
@@ -312,7 +311,7 @@ impl Keyfile {
         rng.fill_bytes(&mut salt);
         rng.fill_bytes(&mut nonce);
 
-        // Derive key using Argon2id
+        // Derive key using Argon2id with PyNaCl-compatible parameters
         let mut key = derive_key(password, &salt)?;
 
         // Encrypt using XSalsa20Poly1305
@@ -327,9 +326,9 @@ impl Keyfile {
         key.zeroize();
 
         Ok(KeyfileData {
-            encrypted_key,
-            nonce,
             salt,
+            nonce,
+            encrypted_key,
         })
     }
 
@@ -360,6 +359,45 @@ impl Keyfile {
         Ok(decrypted)
     }
 
+    /// Convert encrypted data to binary format with $NACL header.
+    fn to_binary_format(&self, data: &KeyfileData) -> Result<Vec<u8>, KeyfileError> {
+        // Binary format: $NACL + salt (16) + nonce (24) + ciphertext
+        let mut result = Vec::with_capacity(NACL_HEADER.len() + 16 + 24 + data.encrypted_key.len());
+
+        result.extend_from_slice(NACL_HEADER);
+        result.extend_from_slice(&data.salt);
+        result.extend_from_slice(&data.nonce);
+        result.extend_from_slice(&data.encrypted_key);
+
+        Ok(result)
+    }
+
+    /// Parse binary format with $NACL header.
+    fn parse_nacl_format(data: &[u8]) -> Option<KeyfileData> {
+        if data.len() < 5 + 16 + 24 {
+            return None;
+        }
+
+        if !data.starts_with(NACL_HEADER) {
+            return None;
+        }
+
+        let salt_slice = &data[5..21];
+        let nonce_slice = &data[21..45];
+        let ciphertext = &data[45..];
+
+        let mut salt = [0u8; 16];
+        let mut nonce = [0u8; 24];
+        salt.copy_from_slice(salt_slice);
+        nonce.copy_from_slice(nonce_slice);
+
+        Some(KeyfileData {
+            salt,
+            nonce,
+            encrypted_key: ciphertext.to_vec(),
+        })
+    }
+
     /// Re-encrypt the keyfile with a new password or update encryption parameters.
     ///
     /// # Arguments
@@ -385,52 +423,40 @@ impl Keyfile {
         Ok(data)
     }
 
-    /// Convert KeyfileData to JSON bytes.
-    fn to_json(&self, data: &KeyfileData) -> Result<Vec<u8>, KeyfileError> {
-        let json = KeyfileJson {
-            crypto: CryptoData {
-                cipher: "secretbox".to_string(),
-                ciphertext: BASE64.encode(&data.encrypted_key),
-                cipherparams: CipherParams {
-                    nonce: BASE64.encode(data.nonce),
-                },
-                kdf: "argon2id".to_string(),
-                kdfparams: KdfParams {
-                    salt: BASE64.encode(data.salt),
-                    memory_cost: ARGON2_MEMORY_COST,
-                    time_cost: ARGON2_TIME_COST,
-                    parallelism: ARGON2_PARALLELISM,
-                },
-            },
-            version: KEYFILE_VERSION,
-        };
-
-        serde_json::to_vec_pretty(&json).map_err(KeyfileError::Json)
-    }
-
-    /// Parse JSON and decrypt to keypair.
+    /// Parse keyfile data and decrypt to keypair.
     fn decrypt_keypair(
         &self,
         data: &[u8],
         password: Option<&str>,
     ) -> Result<Keypair, KeyfileError> {
-        // Try to parse as JSON (encrypted format)
-        if let Ok(json) = serde_json::from_slice::<KeyfileJson>(data) {
-            return self.decrypt_from_json(&json, password);
+        // Check for NACL format (encrypted)
+        if data.starts_with(NACL_HEADER) {
+            return self.decrypt_nacl(data, password);
         }
 
-        // Try as unencrypted hex
-        if let Ok(hex_str) = std::str::from_utf8(data) {
-            let hex_str = hex_str.trim();
-            if let Ok(key_bytes) = hex::decode(hex_str) {
+        // Try as unencrypted JSON format
+        if let Ok(json) = serde_json::from_slice::<KeyfileJsonData>(data) {
+            // Extract private key from JSON and create keypair
+            let private_key_hex = json.private_key.trim_start_matches("0x");
+            if let Ok(key_bytes) = hex::decode(private_key_hex) {
                 return Keypair::from_bytes(&key_bytes).map_err(KeyfileError::Keypair);
             }
         }
 
-        // Try as raw bytes (legacy unencrypted)
-        if data.len() >= 32 {
-            if let Ok(keypair) = Keypair::from_bytes(data) {
-                return Ok(keypair);
+        // Try legacy hex format
+        if let Ok(s) = std::str::from_utf8(data) {
+            let trimmed = s.trim();
+            if let Ok(bytes) = hex::decode(trimmed) {
+                if let Ok(kp) = Keypair::from_bytes(&bytes) {
+                    return Ok(kp);
+                }
+            }
+        }
+
+        // Try raw keypair bytes
+        if data.len() >= 64 {
+            if let Ok(kp) = Keypair::from_bytes(data) {
+                return Ok(kp);
             }
         }
 
@@ -446,54 +472,18 @@ impl Keyfile {
         ))
     }
 
-    /// Decrypt keypair from parsed JSON.
-    fn decrypt_from_json(
-        &self,
-        json: &KeyfileJson,
-        password: Option<&str>,
-    ) -> Result<Keypair, KeyfileError> {
-        if json.version > KEYFILE_VERSION {
-            return Err(KeyfileError::UnsupportedVersion(json.version));
-        }
-
+    /// Decrypt keypair from NACL binary format.
+    fn decrypt_nacl(&self, data: &[u8], password: Option<&str>) -> Result<Keypair, KeyfileError> {
         let password = password.ok_or(KeyfileError::PasswordRequired)?;
 
-        // Decode base64 fields
-        let ciphertext = BASE64.decode(&json.crypto.ciphertext)?;
-        let nonce_bytes = BASE64.decode(&json.crypto.cipherparams.nonce)?;
-        let salt_bytes = BASE64.decode(&json.crypto.kdfparams.salt)?;
-
-        if nonce_bytes.len() != 24 {
-            return Err(KeyfileError::InvalidFormat(format!(
-                "Invalid nonce length: expected 24, got {}",
-                nonce_bytes.len()
-            )));
-        }
-
-        if salt_bytes.len() != 16 {
-            return Err(KeyfileError::InvalidFormat(format!(
-                "Invalid salt length: expected 16, got {}",
-                salt_bytes.len()
-            )));
-        }
-
-        let mut nonce = [0u8; 24];
-        let mut salt = [0u8; 16];
-        nonce.copy_from_slice(&nonce_bytes);
-        salt.copy_from_slice(&salt_bytes);
-
-        let keyfile_data = KeyfileData {
-            encrypted_key: ciphertext,
-            nonce,
-            salt,
-        };
+        let keyfile_data = Self::parse_nacl_format(data).ok_or(KeyfileError::InvalidNaclHeader)?;
 
         let key_bytes = self.decrypt(&keyfile_data, password)?;
         Keypair::from_bytes(&key_bytes).map_err(KeyfileError::Keypair)
     }
 }
 
-/// Derive an encryption key using Argon2id.
+/// Derive an encryption key using Argon2id with PyNaCl-compatible parameters.
 fn derive_key(password: &str, salt: &[u8; 16]) -> Result<[u8; 32], KeyfileError> {
     let params = Params::new(
         ARGON2_MEMORY_COST,
@@ -507,7 +497,7 @@ fn derive_key(password: &str, salt: &[u8; 16]) -> Result<[u8; 32], KeyfileError>
 
     let mut key = [0u8; 32];
     argon2
-        .hash_password_into(password.as_bytes(), salt, &mut key)
+        .hash_password_into(password.as_bytes(), salt.as_slice(), &mut key)
         .map_err(|e| KeyfileError::KeyDerivationFailed(e.to_string()))?;
 
     Ok(key)
@@ -523,22 +513,13 @@ fn derive_key(password: &str, salt: &[u8; 16]) -> Result<[u8; 32], KeyfileError>
 pub fn is_legacy_format(data: &[u8]) -> bool {
     // Check for old JSON formats with different structure
     if let Ok(value) = serde_json::from_slice::<serde_json::Value>(data) {
-        // Legacy formats might have different fields
         if let Some(obj) = value.as_object() {
             // Check for pre-v4 format markers
-            if obj.contains_key("secretPhrase") {
+            if obj.contains_key("secretPhrase") && !obj.contains_key("privateKey") {
                 return true;
             }
-            if obj.contains_key("data") && !obj.contains_key("crypto") {
+            if obj.contains_key("data") && !obj.contains_key("privateKey") {
                 return true;
-            }
-            // Version check
-            if let Some(version) = obj.get("version") {
-                if let Some(v) = version.as_u64() {
-                    if v < KEYFILE_VERSION as u64 {
-                        return true;
-                    }
-                }
             }
         }
     }
@@ -703,16 +684,16 @@ mod tests {
 
     #[test]
     fn test_is_legacy_format() {
-        // Legacy secretPhrase format
+        // Legacy secretPhrase format without privateKey
         let legacy1 = br#"{"secretPhrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"}"#;
         assert!(is_legacy_format(legacy1));
 
         // Legacy data format
-        let legacy2 = br#"{"data": "0123456789abcdef", "version": 2}"#;
+        let legacy2 = br#"{"data": "0123456789abcdef"}"#;
         assert!(is_legacy_format(legacy2));
 
         // Current format should not be detected as legacy
-        let current = br#"{"crypto": {"cipher": "secretbox"}, "version": 4}"#;
+        let current = br#"{"privateKey": "0x1234", "publicKey": "0x5678", "ss58Address": "5xxx"}"#;
         assert!(!is_legacy_format(current));
     }
 
@@ -728,7 +709,6 @@ mod tests {
             .unwrap();
 
         // Create a fresh Keyfile instance to avoid cached keypair
-        // This simulates loading from disk like a real application would
         let keyfile2 = Keyfile::new(&path);
 
         // Should require password when loading from encrypted file
@@ -737,5 +717,56 @@ mod tests {
             eprintln!("Got error: {:?}", e);
         }
         assert!(matches!(result, Err(KeyfileError::PasswordRequired)));
+    }
+
+    #[test]
+    fn test_nacl_binary_format() {
+        let keyfile = Keyfile::new("/tmp/test");
+        let data = b"test data for encryption";
+        let password = "test_password";
+
+        // Encrypt
+        let encrypted = keyfile.encrypt(data, password).unwrap();
+        let binary = keyfile.to_binary_format(&encrypted).unwrap();
+
+        // Verify format
+        assert!(binary.starts_with(NACL_HEADER));
+        assert_eq!(binary.len(), 5 + 16 + 24 + encrypted.encrypted_key.len());
+
+        // Parse back
+        let parsed = Keyfile::parse_nacl_format(&binary).unwrap();
+        assert_eq!(parsed.salt, encrypted.salt);
+        assert_eq!(parsed.nonce, encrypted.nonce);
+        assert_eq!(parsed.encrypted_key, encrypted.encrypted_key);
+
+        // Decrypt
+        let decrypted = keyfile.decrypt(&parsed, password).unwrap();
+        assert_eq!(data.as_slice(), decrypted.as_slice());
+    }
+
+    #[test]
+    fn test_json_format_roundtrip() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("test_json_key");
+
+        let original = Keypair::generate();
+
+        {
+            let mut keyfile = Keyfile::new(&path);
+            keyfile.set_keypair(original.clone(), None, false).unwrap();
+        }
+
+        // Read and verify JSON format
+        let content = fs::read_to_string(&path).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        assert!(json.get("ss58Address").is_some());
+        assert!(json.get("publicKey").is_some());
+        assert!(json.get("privateKey").is_some());
+
+        // Verify we can load it back
+        let keyfile = Keyfile::new(&path);
+        let loaded = keyfile.get_keypair(None).unwrap();
+        assert_eq!(original.public_key(), loaded.public_key());
     }
 }

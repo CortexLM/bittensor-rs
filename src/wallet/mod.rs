@@ -62,18 +62,27 @@
 //!
 //! ## Keyfile Format
 //!
-//! This module uses a keyfile format compatible with the Python SDK:
+//! This module uses keyfile formats compatible with the Python Bittensor SDK:
 //!
+//! ### Encrypted Keyfile (Binary)
+//! Uses NaCl binary format with `$NACL` header:
+//! ```
+//! +--------+--------+---------+-----------+
+//! |$NACL   |  Salt  |  Nonce  | Ciphertext|
+//! |5 bytes |16 bytes| 24 bytes| variable  |
+//! +--------+--------+---------+-----------+
+//! ```
+//! - Salt: 16 random bytes for Argon2id key derivation
+//! - Nonce: 24 random bytes for XSalsa20-Poly1305 encryption
+//! - Argon2id params: memory=64MiB, iterations=2, parallelism=1
+//!
+//! ### Unencrypted Keyfile (JSON)
 //! ```json
 //! {
-//!     "crypto": {
-//!         "cipher": "secretbox",
-//!         "ciphertext": "<base64>",
-//!         "cipherparams": {"nonce": "<base64>"},
-//!         "kdf": "argon2id",
-//!         "kdfparams": {"salt": "<base64>", "n": 65536, "r": 1, "p": 4}
-//!     },
-//!     "version": 4
+//!     "ss58Address": "5EPCUjPxiHAcNooYipQFWr9NmmXJKpNG5RhcntXwbtUySrgH",
+//!     "publicKey": "0x66933bd1f37070ef87bd1198af3dacceb095237f803f3d32b173e6b425ed7972",
+//!     "privateKey": "0x2ec306fc1c5bc2f0e3a2c7a6ec6014ca4a0823a7d7d42ad5e9d7f376a1c36c0d14a2ddb1ef1df4adba49f3a4d8c0f6205117907265f09a53ccf07a4e8616dfd8",
+//!     "secretSeed": "0x4ed8d4b17698ddeaa1f1559f152f87b5d472f725ca86d341bd0276f1b61197e2"
 //! }
 //! ```
 //!
@@ -93,8 +102,8 @@ pub mod wallet;
 
 // Re-export main types at module level
 pub use keyfile::{
-    is_legacy_format, migrate_legacy_keyfile, Keyfile, KeyfileData, KeyfileError, KeyfileJson,
-    KEYFILE_VERSION,
+    is_legacy_format, migrate_legacy_keyfile, Keyfile, KeyfileData, KeyfileError, KeyfileJsonData,
+    NACL_HEADER,
 };
 pub use keypair::{Keypair, KeypairError, BITTENSOR_SS58_FORMAT};
 pub use mnemonic::{Mnemonic, MnemonicError};
@@ -153,7 +162,8 @@ mod tests {
 
     #[test]
     fn test_keyfile_python_compatibility() {
-        // This test verifies the JSON format matches Python SDK expectations
+        // This test verifies the keyfile format matches Python SDK (bittensor-wallet)
+        // Python SDK uses binary format with $NACL header for encrypted files
         let dir = tempdir().unwrap();
         let path = dir.path().join("test_keyfile");
 
@@ -163,17 +173,37 @@ mod tests {
             .set_keypair(keypair.clone(), Some("password"), false)
             .unwrap();
 
-        // Read and parse the JSON
-        let content = std::fs::read_to_string(&path).unwrap();
-        let json: serde_json::Value = serde_json::from_str(&content).unwrap();
+        // Read the raw bytes
+        let content = std::fs::read(&path).unwrap();
 
-        // Verify structure
-        assert_eq!(json["version"], 4);
-        assert_eq!(json["crypto"]["cipher"], "secretbox");
-        assert_eq!(json["crypto"]["kdf"], "argon2id");
-        assert!(json["crypto"]["ciphertext"].as_str().is_some());
-        assert!(json["crypto"]["cipherparams"]["nonce"].as_str().is_some());
-        assert!(json["crypto"]["kdfparams"]["salt"].as_str().is_some());
+        // Verify binary format with $NACL header (Python SDK compatible)
+        assert!(
+            content.starts_with(b"$NACL"),
+            "Keyfile should start with $NACL header"
+        );
+
+        // Verify structure: $NACL (5) + salt (16) + nonce (24) + ciphertext
+        assert!(content.len() >= 5 + 16 + 24, "Keyfile too short");
+
+        // Verify we can decrypt it back
+        let keyfile2 = Keyfile::new(&path);
+        let loaded = keyfile2.get_keypair(Some("password")).unwrap();
+        assert_eq!(keypair.public_key(), loaded.public_key());
+
+        // Also test unencrypted JSON format
+        let json_path = dir.path().join("test_keyfile_json");
+        let mut json_keyfile = Keyfile::new(&json_path);
+        json_keyfile
+            .set_keypair(keypair.clone(), None, false)
+            .unwrap();
+
+        let json_content = std::fs::read_to_string(&json_path).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&json_content).unwrap();
+
+        // Verify JSON structure matches Python SDK
+        assert!(json["ss58Address"].as_str().is_some());
+        assert!(json["publicKey"].as_str().is_some());
+        assert!(json["privateKey"].as_str().is_some());
     }
 
     #[test]

@@ -294,16 +294,21 @@ impl Keypair {
         sr25519::Pair::verify(&sig, message, &public)
     }
 
-    /// Export the keypair as bytes (raw seed if available, otherwise serialized).
+    /// Export the full keypair as bytes (64 bytes for SR25519).
+    ///
+    /// This returns the full keypair suitable for storage in Python-compatible
+    /// keyfile format. The private key is 64 bytes (32 bytes seed + 32 bytes public key).
     ///
     /// WARNING: This exposes the private key. Handle with care.
-    ///
-    /// # Returns
-    /// The raw key bytes suitable for storage.
-    pub fn to_bytes(&self) -> Vec<u8> {
-        // Export the full keypair in a format that can be restored
-        // We use the raw seed bytes (64 bytes for sr25519)
+    pub fn to_full_bytes(&self) -> Vec<u8> {
+        // SR25519 stores private key as 64 bytes: 32-byte seed + 32-byte public key
+        // The to_raw_vec() returns this format
         self.pair.to_raw_vec()
+    }
+
+    /// Alias for to_full_bytes() for backward compatibility.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.to_full_bytes()
     }
 
     /// Create a keypair from exported bytes.
