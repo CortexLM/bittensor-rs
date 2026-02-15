@@ -35,9 +35,8 @@ use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 
 /// Type alias for synapse handler function
-pub type SynapseHandler = Arc<
-    dyn Fn(Synapse) -> Pin<Box<dyn Future<Output = Synapse> + Send>> + Send + Sync,
->;
+pub type SynapseHandler =
+    Arc<dyn Fn(Synapse) -> Pin<Box<dyn Future<Output = Synapse> + Send>> + Send + Sync>;
 
 /// Type alias for blacklist check function
 pub type BlacklistFn = Arc<dyn Fn(&str, &str) -> bool + Send + Sync>;
@@ -386,9 +385,7 @@ impl Axon {
                 let keypair = keypair.clone();
                 let state = state_clone.clone();
 
-                async move {
-                    handle_synapse_request(state, keypair, headers, body, handler).await
-                }
+                async move { handle_synapse_request(state, keypair, headers, body, handler).await }
             };
 
             router = router.route(&format!("/{}", name), post(route_handler));
@@ -396,11 +393,26 @@ impl Axon {
 
         // Add middleware layers
         router
-            .layer(axum_middleware::from_fn_with_state(state.clone(), counter_middleware))
-            .layer(axum_middleware::from_fn_with_state(state.clone(), timeout_middleware))
-            .layer(axum_middleware::from_fn_with_state(state.clone(), verify_middleware))
-            .layer(axum_middleware::from_fn_with_state(state.clone(), priority_middleware))
-            .layer(axum_middleware::from_fn_with_state(state.clone(), blacklist_middleware))
+            .layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                counter_middleware,
+            ))
+            .layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                timeout_middleware,
+            ))
+            .layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                verify_middleware,
+            ))
+            .layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                priority_middleware,
+            ))
+            .layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                blacklist_middleware,
+            ))
             .layer(axum_middleware::from_fn(logging_middleware))
             .layer(TraceLayer::new_for_http())
             .layer(

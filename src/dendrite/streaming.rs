@@ -397,8 +397,10 @@ mod tests {
         assert_eq!(chunk, Some(TestData { value: 42 }));
 
         // NDJSON format
-        let chunk = synapse.process_chunk(br#"{"value": 100}
-"#);
+        let chunk = synapse.process_chunk(
+            br#"{"value": 100}
+"#,
+        );
         assert_eq!(chunk, Some(TestData { value: 100 }));
     }
 

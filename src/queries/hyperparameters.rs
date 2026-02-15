@@ -49,7 +49,10 @@ async fn fetch_u16_param(
     netuid: u16,
 ) -> BittensorResult<u16> {
     let keys = vec![Value::u128(netuid as u128)];
-    match client.storage_with_keys(SUBTENSOR_MODULE, entry, keys).await {
+    match client
+        .storage_with_keys(SUBTENSOR_MODULE, entry, keys)
+        .await
+    {
         Ok(Some(val)) => decode_u16(&val).map_err(|e| {
             BittensorError::ChainQuery(ChainQueryError::with_storage(
                 format!("Failed to decode {} as u16: {}", entry, e),
@@ -73,7 +76,10 @@ async fn fetch_u64_param(
     netuid: u16,
 ) -> BittensorResult<u64> {
     let keys = vec![Value::u128(netuid as u128)];
-    match client.storage_with_keys(SUBTENSOR_MODULE, entry, keys).await {
+    match client
+        .storage_with_keys(SUBTENSOR_MODULE, entry, keys)
+        .await
+    {
         Ok(Some(val)) => decode_u64(&val).map_err(|e| {
             BittensorError::ChainQuery(ChainQueryError::with_storage(
                 format!("Failed to decode {} as u64: {}", entry, e),
@@ -97,7 +103,10 @@ async fn fetch_bool_param(
     netuid: u16,
 ) -> BittensorResult<bool> {
     let keys = vec![Value::u128(netuid as u128)];
-    match client.storage_with_keys(SUBTENSOR_MODULE, entry, keys).await {
+    match client
+        .storage_with_keys(SUBTENSOR_MODULE, entry, keys)
+        .await
+    {
         Ok(Some(val)) => decode_bool(&val).map_err(|e| {
             BittensorError::ChainQuery(ChainQueryError::with_storage(
                 format!("Failed to decode {} as bool: {}", entry, e),
@@ -229,7 +238,10 @@ pub async fn get_immunity_period(client: &BittensorClient, netuid: u16) -> Bitte
 
 /// Get minimum allowed weights for a subnet
 /// Minimum number of weights each validator must set
-pub async fn get_min_allowed_weights(client: &BittensorClient, netuid: u16) -> BittensorResult<u16> {
+pub async fn get_min_allowed_weights(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<u16> {
     fetch_u16_param(client, "MinAllowedWeights", netuid).await
 }
 
@@ -265,7 +277,10 @@ pub async fn get_difficulty(client: &BittensorClient, netuid: u16) -> BittensorR
 
 /// Get weights version key for a subnet
 /// Version number for weight format compatibility
-pub async fn get_weights_version_key(client: &BittensorClient, netuid: u16) -> BittensorResult<u64> {
+pub async fn get_weights_version_key(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<u64> {
     fetch_u64_param(client, "WeightsVersionKey", netuid).await
 }
 
@@ -277,7 +292,10 @@ pub async fn get_weights_rate_limit(client: &BittensorClient, netuid: u16) -> Bi
 
 /// Get adjustment interval for a subnet
 /// Number of blocks between difficulty adjustments
-pub async fn get_adjustment_interval(client: &BittensorClient, netuid: u16) -> BittensorResult<u16> {
+pub async fn get_adjustment_interval(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<u16> {
     fetch_u16_param(client, "AdjustmentInterval", netuid).await
 }
 
@@ -289,7 +307,10 @@ pub async fn get_activity_cutoff(client: &BittensorClient, netuid: u16) -> Bitte
 
 /// Check if registration is allowed for a subnet
 /// Whether new neurons can register on this subnet
-pub async fn get_registration_allowed(client: &BittensorClient, netuid: u16) -> BittensorResult<bool> {
+pub async fn get_registration_allowed(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<bool> {
     fetch_bool_param(client, "NetworkRegistrationAllowed", netuid).await
 }
 
@@ -316,7 +337,10 @@ pub async fn get_max_burn(client: &BittensorClient, netuid: u16) -> BittensorRes
 
 /// Get bonds moving average for a subnet
 /// Rate at which bonds update (higher = faster updates)
-pub async fn get_bonds_moving_average(client: &BittensorClient, netuid: u16) -> BittensorResult<u64> {
+pub async fn get_bonds_moving_average(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<u64> {
     fetch_u64_param(client, "BondsMovingAverage", netuid).await
 }
 
@@ -374,7 +398,10 @@ pub async fn get_alpha_low(client: &BittensorClient, netuid: u16) -> BittensorRe
 }
 
 /// Check if liquid alpha mechanism is enabled for a subnet
-pub async fn get_liquid_alpha_enabled(client: &BittensorClient, netuid: u16) -> BittensorResult<bool> {
+pub async fn get_liquid_alpha_enabled(
+    client: &BittensorClient,
+    netuid: u16,
+) -> BittensorResult<bool> {
     fetch_bool_param(client, "LiquidAlphaOn", netuid).await
 }
 

@@ -225,10 +225,7 @@ async fn set_weights(
         return Err(anyhow::anyhow!("Invalid weights"));
     }
 
-    let normalized: Vec<f32> = weight_values
-        .iter()
-        .map(|w| (*w / sum) as f32)
-        .collect();
+    let normalized: Vec<f32> = weight_values.iter().map(|w| (*w / sum) as f32).collect();
 
     let wallet = match Wallet::new(wallet_name, hotkey_name, None) {
         Ok(w) => w,
@@ -273,7 +270,15 @@ async fn set_weights(
     let netuids_u64: Vec<u64> = netuids.iter().map(|n| *n as u64).collect();
 
     let sp = spinner("Submitting root weights...");
-    let result = root_set_weights(&client, &signer, &netuids_u64, &normalized, Some(0), ExtrinsicWait::Finalized).await;
+    let result = root_set_weights(
+        &client,
+        &signer,
+        &netuids_u64,
+        &normalized,
+        Some(0),
+        ExtrinsicWait::Finalized,
+    )
+    .await;
     sp.finish_and_clear();
 
     match result {
@@ -350,7 +355,7 @@ async fn get_weights(hotkey_addr: &str, cli: &Cli) -> anyhow::Result<()> {
 /// Show root network information
 async fn show_info(cli: &Cli) -> anyhow::Result<()> {
     use crate::chain::BittensorClient;
-    use crate::queries::subnets::{subnet_info, tempo, difficulty, immunity_period};
+    use crate::queries::subnets::{difficulty, immunity_period, subnet_info, tempo};
 
     const ROOT_NETUID: u16 = 0;
 
@@ -366,10 +371,22 @@ async fn show_info(cli: &Cli) -> anyhow::Result<()> {
     let info = subnet_info(&client, ROOT_NETUID)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to fetch root info: {}", e))?;
-    
-    let tempo_val = tempo(&client, ROOT_NETUID).await.ok().flatten().unwrap_or(0);
-    let diff_val = difficulty(&client, ROOT_NETUID).await.ok().flatten().unwrap_or(0);
-    let immunity_val = immunity_period(&client, ROOT_NETUID).await.ok().flatten().unwrap_or(0);
+
+    let tempo_val = tempo(&client, ROOT_NETUID)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let diff_val = difficulty(&client, ROOT_NETUID)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let immunity_val = immunity_period(&client, ROOT_NETUID)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
     sp.finish_and_clear();
 
     match info {
@@ -421,12 +438,7 @@ async fn show_delegates(cli: &Cli) -> anyhow::Result<()> {
     println!("\nRoot Network Delegates");
     println!("═══════════════════════════════════════════════════════════════");
 
-    let mut table = create_table_with_headers(&[
-        "Hotkey",
-        "Total Stake",
-        "Take",
-        "Owner",
-    ]);
+    let mut table = create_table_with_headers(&["Hotkey", "Total Stake", "Take", "Owner"]);
 
     for delegate in &delegates {
         // Calculate total stake across all subnets

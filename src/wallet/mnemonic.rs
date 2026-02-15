@@ -264,10 +264,10 @@ mod tests {
     fn test_to_seed() {
         let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         let mnemonic = Mnemonic::from_phrase(phrase).unwrap();
-        
+
         let seed_no_pass = mnemonic.to_seed(None);
         let seed_with_pass = mnemonic.to_seed(Some("password"));
-        
+
         assert_eq!(seed_no_pass.len(), 64);
         assert_eq!(seed_with_pass.len(), 64);
         assert_ne!(seed_no_pass, seed_with_pass);
@@ -278,7 +278,7 @@ mod tests {
         let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         let m1 = Mnemonic::from_phrase(phrase).unwrap();
         let m2 = Mnemonic::from_phrase(phrase).unwrap();
-        
+
         assert_eq!(m1.to_seed(None), m2.to_seed(None));
         assert_eq!(m1.to_seed(Some("test")), m2.to_seed(Some("test")));
     }

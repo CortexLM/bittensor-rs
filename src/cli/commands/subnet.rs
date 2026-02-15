@@ -1,9 +1,8 @@
 //! Subnet commands for viewing subnet information and registration.
 
 use crate::cli::utils::{
-    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer,
-    print_error, print_info, print_success, print_warning, prompt_password_optional,
-    resolve_endpoint, spinner,
+    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer, print_error,
+    print_info, print_success, print_warning, prompt_password_optional, resolve_endpoint, spinner,
 };
 use crate::cli::Cli;
 use crate::wallet::Wallet;
@@ -108,12 +107,7 @@ async fn list_subnets(cli: &Cli) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let mut table = create_table_with_headers(&[
-        "NetUID",
-        "Name",
-        "Neurons",
-        "Emission",
-    ]);
+    let mut table = create_table_with_headers(&["NetUID", "Name", "Neurons", "Emission"]);
 
     for info in &subnets {
         table.add_row(vec![
@@ -133,7 +127,7 @@ async fn list_subnets(cli: &Cli) -> anyhow::Result<()> {
 /// Show detailed subnet information
 async fn show_subnet(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
     use crate::chain::BittensorClient;
-    use crate::queries::subnets::{subnet_info, tempo, difficulty, immunity_period};
+    use crate::queries::subnets::{difficulty, immunity_period, subnet_info, tempo};
 
     let endpoint = resolve_endpoint(&cli.network, cli.endpoint.as_deref());
 
@@ -147,11 +141,17 @@ async fn show_subnet(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
     let info = subnet_info(&client, netuid)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to fetch subnet info: {}", e))?;
-    
+
     // Fetch additional params
     let tempo_val = tempo(&client, netuid).await.unwrap_or(Some(0)).unwrap_or(0);
-    let diff_val = difficulty(&client, netuid).await.unwrap_or(Some(0)).unwrap_or(0);
-    let immunity_val = immunity_period(&client, netuid).await.unwrap_or(Some(0)).unwrap_or(0);
+    let diff_val = difficulty(&client, netuid)
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
+    let immunity_val = immunity_period(&client, netuid)
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
     sp.finish_and_clear();
 
     match info {
@@ -338,15 +338,38 @@ async fn show_hyperparams(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
     sp.finish_and_clear();
 
-    let sp = spinner(&format!("Fetching hyperparameters for subnet {}...", netuid));
+    let sp = spinner(&format!(
+        "Fetching hyperparameters for subnet {}...",
+        netuid
+    ));
 
     // Fetch available hyperparameters
     let tempo_val = tempo(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let difficulty_val = difficulty(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let immunity_val = immunity_period(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let max_weights = max_weight_limit(&client, netuid).await.ok().flatten().unwrap_or(0.0);
-    let min_weights = min_allowed_weights(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let weights_rate = weights_rate_limit(&client, netuid).await.ok().flatten().unwrap_or(0);
+    let difficulty_val = difficulty(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let immunity_val = immunity_period(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let max_weights = max_weight_limit(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0.0);
+    let min_weights = min_allowed_weights(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let weights_rate = weights_rate_limit(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
 
     sp.finish_and_clear();
 

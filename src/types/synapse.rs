@@ -1165,10 +1165,8 @@ mod tests {
 
     #[test]
     fn test_text_prompt_synapse_with_system_prompt() {
-        let synapse = TextPromptSynapse::with_system_prompt(
-            "You are a math tutor.",
-            "What is 2+2?",
-        );
+        let synapse =
+            TextPromptSynapse::with_system_prompt("You are a math tutor.", "What is 2+2?");
 
         assert_eq!(synapse.messages.len(), 2);
         assert_eq!(synapse.messages[0].role, "system");
@@ -1203,9 +1201,7 @@ mod tests {
 
     #[test]
     fn test_text_prompt_synapse_body_hash() {
-        let mut synapse = TextPromptSynapse::new(vec![
-            Message::user("Hello"),
-        ]);
+        let mut synapse = TextPromptSynapse::new(vec![Message::user("Hello")]);
 
         let hash = synapse.compute_body_hash();
 
@@ -1214,15 +1210,11 @@ mod tests {
         assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
 
         // Same messages should produce same hash
-        let synapse2 = TextPromptSynapse::new(vec![
-            Message::user("Hello"),
-        ]);
+        let synapse2 = TextPromptSynapse::new(vec![Message::user("Hello")]);
         assert_eq!(hash, synapse2.compute_body_hash());
 
         // Different messages should produce different hash
-        let synapse3 = TextPromptSynapse::new(vec![
-            Message::user("Goodbye"),
-        ]);
+        let synapse3 = TextPromptSynapse::new(vec![Message::user("Goodbye")]);
         assert_ne!(hash, synapse3.compute_body_hash());
 
         // Update body hash should store it
@@ -1232,10 +1224,9 @@ mod tests {
 
     #[test]
     fn test_text_prompt_synapse_serialization() {
-        let synapse = TextPromptSynapse::new(vec![
-            Message::system("Be helpful"),
-            Message::user("Hello"),
-        ]).with_timeout(30.0);
+        let synapse =
+            TextPromptSynapse::new(vec![Message::system("Be helpful"), Message::user("Hello")])
+                .with_timeout(30.0);
 
         let json = serde_json::to_string(&synapse).expect("Failed to serialize");
         let deserialized: TextPromptSynapse =
@@ -1248,10 +1239,7 @@ mod tests {
     #[test]
     fn test_text_prompt_synapse_type_trait() {
         assert_eq!(TextPromptSynapse::name(), "TextPromptSynapse");
-        assert_eq!(
-            TextPromptSynapse::required_hash_fields(),
-            vec!["messages"]
-        );
+        assert_eq!(TextPromptSynapse::required_hash_fields(), vec!["messages"]);
 
         let synapse = TextPromptSynapse::from_prompt("test").with_timeout(45.0);
         assert_eq!(synapse.timeout(), Duration::from_secs_f64(45.0));
@@ -1263,9 +1251,7 @@ mod tests {
 
     #[test]
     fn test_streaming_text_prompt_synapse_creation() {
-        let synapse = StreamingTextPromptSynapse::new(vec![
-            Message::user("Generate text"),
-        ]);
+        let synapse = StreamingTextPromptSynapse::new(vec![Message::user("Generate text")]);
 
         assert_eq!(synapse.messages.len(), 1);
         assert!(synapse.accumulated_response.is_empty());
@@ -1318,7 +1304,10 @@ mod tests {
 
     #[test]
     fn test_streaming_text_prompt_synapse_type_trait() {
-        assert_eq!(StreamingTextPromptSynapse::name(), "StreamingTextPromptSynapse");
+        assert_eq!(
+            StreamingTextPromptSynapse::name(),
+            "StreamingTextPromptSynapse"
+        );
         assert_eq!(
             StreamingTextPromptSynapse::required_hash_fields(),
             vec!["messages"]

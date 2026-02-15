@@ -47,9 +47,8 @@ pub fn normalize_weights(uids: &[u64], weights: &[f32]) -> Result<(Vec<u16>, Vec
     for (uid, val) in uids.iter().zip(weight_vals.iter()) {
         if *val > 0 {
             // Convert uid from u64 to u16 (Subtensor expects Vec<u16>)
-            let uid_u16 = u16::try_from(*uid).map_err(|_| {
-                anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX)
-            })?;
+            let uid_u16 = u16::try_from(*uid)
+                .map_err(|_| anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX))?;
             filtered_uids.push(uid_u16);
             filtered_vals.push(*val);
         }

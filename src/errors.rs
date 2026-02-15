@@ -625,9 +625,9 @@ pub struct InsufficientBalance {
     /// Detailed error message
     pub message: String,
     /// The required amount in RAO
-    pub required: Option<u64>,
+    pub required: Option<u128>,
     /// The available amount in RAO
-    pub available: Option<u64>,
+    pub available: Option<u128>,
 }
 
 impl InsufficientBalance {
@@ -641,7 +641,7 @@ impl InsufficientBalance {
     }
 
     /// Create a new insufficient balance error with amounts
-    pub fn with_amounts(message: impl Into<String>, required: u64, available: u64) -> Self {
+    pub fn with_amounts(message: impl Into<String>, required: u128, available: u128) -> Self {
         Self {
             message: message.into(),
             required: Some(required),
@@ -657,9 +657,9 @@ pub struct InsufficientStake {
     /// Detailed error message
     pub message: String,
     /// The requested unstake amount in RAO
-    pub requested: Option<u64>,
+    pub requested: Option<u128>,
     /// The current stake amount in RAO
-    pub current_stake: Option<u64>,
+    pub current_stake: Option<u128>,
 }
 
 impl InsufficientStake {
@@ -673,7 +673,7 @@ impl InsufficientStake {
     }
 
     /// Create a new insufficient stake error with amounts
-    pub fn with_amounts(message: impl Into<String>, requested: u64, current_stake: u64) -> Self {
+    pub fn with_amounts(message: impl Into<String>, requested: u128, current_stake: u128) -> Self {
         Self {
             message: message.into(),
             requested: Some(requested),
@@ -689,7 +689,7 @@ pub struct StakeFailed {
     /// Detailed error message
     pub message: String,
     /// The amount attempted in RAO
-    pub amount: Option<u64>,
+    pub amount: Option<u128>,
     /// The dispatch error if available
     pub dispatch_error: Option<String>,
 }
@@ -705,7 +705,7 @@ impl StakeFailed {
     }
 
     /// Create a new stake failed error with amount
-    pub fn with_amount(message: impl Into<String>, amount: u64) -> Self {
+    pub fn with_amount(message: impl Into<String>, amount: u128) -> Self {
         Self {
             message: message.into(),
             amount: Some(amount),
@@ -1567,7 +1567,10 @@ mod tests {
 
         let err_with_url =
             ChainConnectionError::with_url("Connection refused", "wss://example.com:9944");
-        assert_eq!(err_with_url.rpc_url, Some("wss://example.com:9944".to_string()));
+        assert_eq!(
+            err_with_url.rpc_url,
+            Some("wss://example.com:9944".to_string())
+        );
     }
 
     #[test]
