@@ -1,18 +1,18 @@
-use bittensor_rs::{BittensorClient, Metagraph};
+use bittensor_rs::{get_commit_reveal_version, BittensorClient, Config, Metagraph, Subtensor};
+use bittensor_rs::{queries, utils::weights::normalize_weights};
+use bittensor_rs::{validator, ExtrinsicWait, DEFAULT_COMMIT_REVEAL_VERSION};
 use sp_core::{crypto::AccountId32, sr25519, Pair};
 use std::str::FromStr;
 
 #[tokio::test]
 async fn test_client_connection() {
-    // Test client connection
     let result = BittensorClient::with_default().await;
     assert!(result.is_ok(), "Failed to connect to Bittensor network");
 }
 
 #[tokio::test]
 async fn test_metagraph_creation() {
-    // Test metagraph creation
-    let metagraph = Metagraph::new(1); // Subnet 1
+    let metagraph = Metagraph::new(1);
     assert_eq!(metagraph.netuid, 1);
     assert_eq!(metagraph.n, 0);
     assert_eq!(metagraph.neurons.len(), 0);
@@ -23,9 +23,6 @@ async fn test_runtime_api() {
     let _client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
-
-    // Test client usage (API accessible from BittensorClient)
-    // Client is already connected, no need to call get_api()
 }
 
 #[tokio::test]
@@ -34,7 +31,6 @@ async fn test_block_number() {
         .await
         .expect("Failed to connect");
 
-    // Test block number retrieval
     let result = client.block_number().await;
     assert!(result.is_ok(), "Failed to get block number");
     let block = result.unwrap();
@@ -46,19 +42,14 @@ async fn test_storage_query() {
     let _client = BittensorClient::with_default()
         .await
         .expect("Failed to connect");
-
-    // Simple test: verify client is connected
-    // (block_number already uses internal API)
 }
 
 #[tokio::test]
 async fn test_account_id_parsing() {
-    // Test with valid address
     let valid_address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
     let account = AccountId32::from_str(valid_address);
     assert!(account.is_ok(), "Failed to parse valid address");
 
-    // Test with invalid address
     let invalid_address = "invalid_address";
     let account = AccountId32::from_str(invalid_address);
     assert!(account.is_err(), "Should fail with invalid address");
@@ -66,14 +57,12 @@ async fn test_account_id_parsing() {
 
 #[tokio::test]
 async fn test_error_handling() {
-    // Test with invalid URL
     let result = BittensorClient::new("invalid_url").await;
     assert!(result.is_err(), "Should fail with invalid URL");
 }
 
 #[tokio::test]
 async fn test_keypair_generation() {
-    // Test keypair generation
     let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
     let public_key = pair.public();
 
@@ -82,7 +71,6 @@ async fn test_keypair_generation() {
 
 #[tokio::test]
 async fn test_chain_connection() {
-    // Test connection with default endpoint
     let result = BittensorClient::new(bittensor_rs::chain::DEFAULT_RPC_URL).await;
     assert!(result.is_ok(), "Failed to connect to default endpoint");
 }
@@ -91,15 +79,112 @@ async fn test_chain_connection() {
 async fn test_metagraph_neuron_lookup() {
     let metagraph = Metagraph::new(1);
 
-    // Test get_neuron avec metagraph vide
     let neuron = metagraph.get_neuron(0);
     assert!(neuron.is_none(), "Should return None for empty metagraph");
 
-    // Test get_neuron_by_hotkey avec metagraph vide
     let hotkey = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap();
     let uid = metagraph.get_neuron_by_hotkey(&hotkey);
     assert!(
         uid.is_none(),
         "Should return None for hotkey not in metagraph"
     );
+}
+
+#[tokio::test]
+async fn test_finney_default_endpoint_config() {
+    let config = Config::default();
+    assert_eq!(config.subtensor.network, "finney");
+    assert_eq!(
+        config.subtensor.chain_endpoint,
+        bittensor_rs::core::constants::FINNEY_ENDPOINT
+    );
+
+    let client = BittensorClient::with_default()
+        .await
+        .expect("Failed to connect to default endpoint");
+    assert_eq!(
+        client.rpc_url(),
+        bittensor_rs::core::constants::FINNEY_ENDPOINT
+    );
+}
+
+#[tokio::test]
+async fn test_query_and_weights_commit_flow() {
+    let client = BittensorClient::with_default()
+        .await
+        .expect("Failed to connect");
+
+    let netuid = 1u16;
+    let tempo = queries::subnets::tempo(&client, netuid)
+        .await
+        .expect("Tempo query failed")
+        .unwrap_or(0);
+    assert!(tempo > 0, "Expected non-zero tempo");
+
+    let _cr_enabled = queries::subnets::commit_reveal_enabled(&client, netuid)
+        .await
+        .expect("commit_reveal_enabled failed");
+
+    let cr_version = get_commit_reveal_version(&client).await.unwrap_or(0);
+    assert!(cr_version >= DEFAULT_COMMIT_REVEAL_VERSION);
+
+    let uids: Vec<u64> = vec![0, 1, 2];
+    let weights: Vec<f32> = vec![0.5, 0.3, 0.2];
+    let (uid_u16, weight_u16) = normalize_weights(&uids, &weights).expect("normalize weights");
+    assert_eq!(uid_u16.len(), weight_u16.len());
+}
+
+#[tokio::test]
+async fn test_transfer_and_stake_flow_requires_funded_keys() {
+    let client = BittensorClient::with_default()
+        .await
+        .expect("Failed to connect");
+
+    let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
+    let signer = bittensor_rs::chain::create_signer(pair);
+
+    let coldkey = AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+        .expect("Invalid coldkey");
+    let hotkey = AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")
+        .expect("Invalid hotkey");
+
+    let transfer_result =
+        validator::transfer::transfer(&client, &signer, &coldkey, 1u128, true, ExtrinsicWait::None)
+            .await;
+    assert!(transfer_result.is_err());
+
+    let stake_result =
+        validator::staking::add_stake(&client, &signer, &hotkey, 1, 1u128, ExtrinsicWait::None)
+            .await;
+    assert!(stake_result.is_err());
+}
+
+#[tokio::test]
+async fn test_subtensor_set_weights_crv4_branching() {
+    let subtensor = Subtensor::new(bittensor_rs::core::constants::FINNEY_ENDPOINT)
+        .await
+        .expect("Failed to create subtensor");
+
+    let version = subtensor
+        .get_commit_reveal_version()
+        .await
+        .unwrap_or(DEFAULT_COMMIT_REVEAL_VERSION);
+    assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
+
+    let enabled = subtensor
+        .commit_reveal_enabled(1)
+        .await
+        .expect("commit_reveal_enabled failed");
+    assert!(enabled);
+
+    let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
+    let signer = bittensor_rs::chain::create_signer(pair);
+    let uids: Vec<u64> = vec![0, 1, 2];
+    let weights: Vec<f32> = vec![0.5, 0.3, 0.2];
+    let (uid_u16, weight_u16) = normalize_weights(&uids, &weights).expect("normalize weights");
+
+    let result = subtensor
+        .set_weights(&signer, 1, &uid_u16, &weight_u16, 0, ExtrinsicWait::None)
+        .await;
+    assert!(result.is_err());
 }

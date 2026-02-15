@@ -15,6 +15,108 @@ use bittensor_rs::utils::balance_newtypes::{
     format_rao_as_tao, is_lossless_conversion, is_valid_tao_amount, parse_tao_string, rao_to_tao,
     tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao, Tao,
 };
+use bittensor_rs::validator::{staking, transfer, weights as validator_weights};
+
+#[test]
+fn test_transfer_and_stake_requires_rao_inputs() {
+    fn assert_u128_input<T>(_: T)
+    where
+        T: Into<u128>,
+    {
+    }
+
+    assert_u128_input::<u128>(0);
+    assert_u128_input::<u128>(Rao::ZERO.as_u128());
+    assert_u128_input::<u128>(RAOPERTAO);
+
+    let _transfer_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        &sp_core::crypto::AccountId32,
+        u128,
+        bool,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = transfer::transfer;
+
+    let _transfer_stake_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        &sp_core::crypto::AccountId32,
+        &sp_core::crypto::AccountId32,
+        u16,
+        u16,
+        u128,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = transfer::transfer_stake;
+
+    let _add_stake_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        &sp_core::crypto::AccountId32,
+        u16,
+        u128,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = staking::add_stake;
+
+    let _unstake_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        &sp_core::crypto::AccountId32,
+        u16,
+        u128,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = staking::unstake;
+}
+
+#[test]
+fn test_weight_inputs_require_u16_not_tao() {
+    let uids: Vec<u16> = vec![0, 1, 2];
+    let weights: Vec<u16> = vec![10_000, 20_000, 30_000];
+
+    let _set_weights_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        u16,
+        &[u16],
+        &[u16],
+        u64,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = validator_weights::set_weights;
+
+    let _commit_weights_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        u16,
+        &str,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = validator_weights::commit_weights;
+
+    let _reveal_weights_fn: fn(
+        &bittensor_rs::chain::BittensorClient,
+        &bittensor_rs::chain::BittensorSigner,
+        u16,
+        &[u16],
+        &[u16],
+        &[u16],
+        u64,
+        bittensor_rs::chain::ExtrinsicWait,
+    ) -> _ = validator_weights::reveal_weights;
+
+    assert_eq!(uids.len(), weights.len());
+}
+
+#[test]
+fn test_rao_only_inputs_for_transfer_conversion() {
+    let tao_amount = Tao(0.123456789);
+    let rao_amount = tao_amount.as_rao();
+    assert_eq!(rao_amount.as_u128(), 123_456_789);
+
+    let rao_amount_direct = Rao::from_tao(0.123456789);
+    assert_eq!(rao_amount_direct.as_u128(), 123_456_789);
+
+    let balance = Balance::from_tao(0.123456789);
+    assert_eq!(balance.as_rao(), 123_456_789);
+}
 
 // ============================================================================
 // Unit Tests
