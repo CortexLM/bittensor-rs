@@ -27,26 +27,6 @@ pub async fn set_weights(
 ```
 
 **Parameters:**
-- `amount`: Amount to transfer in RAO (on-chain unit)
-) -> Result<()>
-```
-
-**Parameters:**
-- `amount`: Amount to swap in RAO (on-chain unit)
-) -> Result<()>
-```
-
-**Parameters:**
-- `amount`: Amount to move in RAO (on-chain unit)
-) -> Result<()>
-```
-
-**Parameters:**
-- `amount`: Amount to unstake in RAO (on-chain unit)
-) -> Result<()>
-```
-
-**Parameters:**
 - `client`: Bittensor client instance
 - `signer`: Key pair signer
 - `netuid`: Subnet ID
@@ -206,7 +186,7 @@ pub async fn add_stake(
     signer: &PairSigner<DefaultConfig, Pair>,
     hotkey: &AccountId32,
     netuid: u16,
-    amount: u128
+    amount: Rao
 ) -> Result<()>
 ```
 
@@ -221,8 +201,9 @@ pub async fn add_stake(
 ```rust
 use bittensor_rs::validator::add_stake;
 use bittensor_rs::utils::tao_to_rao;
+use bittensor_rs::Rao;
 
-let amount_rao = tao_to_rao(100.0); // 100 TAO
+let amount_rao = Rao::from(tao_to_rao(100.0)); // 100 TAO
 add_stake(&client, &signer, &hotkey, netuid, amount_rao).await?;
 ```
 
@@ -238,7 +219,7 @@ pub async fn unstake(
     signer: &PairSigner<DefaultConfig, Pair>,
     hotkey: &AccountId32,
     netuid: u16,
-    amount: u128
+    amount: Rao
 ) -> Result<()>
 ```
 
@@ -255,7 +236,7 @@ pub async fn move_stake(
     hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128
+    amount: Rao
 ) -> Result<()>
 ```
 
@@ -272,7 +253,7 @@ pub async fn swap_stake(
     hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128
+    amount: Rao
 ) -> Result<()>
 ```
 
@@ -283,14 +264,13 @@ Transfer stake to another coldkey.
 
 ```rust
 pub async fn transfer_stake(
-pub async fn transfer_stake(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,
     destination_coldkey: &AccountId32,
     hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128
+    amount: Rao
 ) -> Result<()>
 ```
 
@@ -319,12 +299,32 @@ pub async fn register(
     signer: &PairSigner<DefaultConfig, Pair>,
     netuid: u16
 ) -> Result<()>
+pub async fn register(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    netuid: u16
+) -> Result<()>
 ```
 
 **Example:**
 ```rust
 use bittensor_rs::validator::register;
 
+register(&client, &signer, 1).await?;
+```
+
+### burned_register
+
+Register using burned TAO (registration cost).
+
+```rust
+pub async fn burned_register(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    netuid: u16,
+    hotkey: &AccountId32
+) -> Result<()>
+```
 register(&client, &signer, 1).await?;
 ```
 

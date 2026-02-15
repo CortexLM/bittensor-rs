@@ -593,9 +593,13 @@ async fn transfer(name: &str, dest: &str, amount: f64, cli: &Cli) -> anyhow::Res
     let dest_account = AccountId32::from_str(dest)
         .map_err(|e| anyhow::anyhow!("Invalid destination address: {:?}", e))?;
 
-    let rao_amount = tao_to_rao(amount);
+    let rao_amount = crate::utils::balance_newtypes::Rao::from(tao_to_rao(amount));
 
-    print_info(&format!("Transfer {} TAO ({} RAO)", amount, rao_amount));
+    print_info(&format!(
+        "Transfer {} TAO ({} RAO)",
+        amount,
+        rao_amount.as_u128()
+    ));
     print_info(&format!("From: {}", coldkey.ss58_address()));
     print_info(&format!("To: {}", dest));
 

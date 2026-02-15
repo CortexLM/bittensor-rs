@@ -1,4 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
+use crate::utils::balance_newtypes::Rao;
 use anyhow::Result;
 use subxt::dynamic::Value;
 
@@ -9,14 +10,14 @@ pub async fn add_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    amount_a: u128,
-    amount_b: u128,
+    amount_a: Rao,
+    amount_b: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
         Value::from(netuid),
-        Value::u128(amount_a),
-        Value::u128(amount_b),
+        Value::u128(amount_a.as_u128()),
+        Value::u128(amount_b.as_u128()),
     ];
 
     client
@@ -30,10 +31,10 @@ pub async fn remove_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    liquidity_amount: u128,
+    liquidity_amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from(netuid), Value::u128(liquidity_amount)];
+    let args = vec![Value::from(netuid), Value::u128(liquidity_amount.as_u128())];
 
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "remove_liquidity", args, signer, wait_for)

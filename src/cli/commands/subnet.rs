@@ -7,6 +7,7 @@ use crate::cli::utils::{
 use crate::cli::Cli;
 use crate::wallet::Wallet;
 use clap::{Args, Subcommand};
+use std::str::FromStr;
 
 /// Subnet command container
 #[derive(Args, Clone)]
@@ -296,14 +297,31 @@ async fn register(
     sp.finish_and_clear();
 
     let result = if burned {
-        let sp = spinner("Submitting burned registration...");
-        let r = burned_register(&client, &signer, netuid, ExtrinsicWait::Finalized).await;
+        let hotkey_account = sp_core::crypto::AccountId32::from_str(hotkey.ss58_address())
+            .map_err(|e| anyhow::anyhow!("Invalid hotkey address: {:?}", e))?;
+        let r = burned_register(
+            &client,
+            &signer,
+            netuid,
+            &hotkey_account,
+            ExtrinsicWait::Finalized,
+        )
+        .await;
         sp.finish_and_clear();
         r
     } else {
         let sp = spinner("Performing PoW registration (this may take a while)...");
         // Standard register
-        let r = pow_register(&client, &signer, netuid, ExtrinsicWait::Finalized).await;
+        let hotkey_account = sp_core::crypto::AccountId32::from_str(hotkey.ss58_address())
+            .map_err(|e| anyhow::anyhow!("Invalid hotkey address: {:?}", e))?;
+        let r = pow_register(
+            &client,
+            &signer,
+            netuid,
+            &hotkey_account,
+            ExtrinsicWait::Finalized,
+        )
+        .await;
         sp.finish_and_clear();
         r
     };
