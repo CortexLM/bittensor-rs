@@ -6,7 +6,7 @@ This document describes validator-specific operations for interacting with the B
 
 - All on-chain balances and stake amounts are RAO (`u128`). TAO is for display only. Convert explicitly.
 - Commit-reveal must match Subtensor runtime: `uids`/`weights` as `Vec<u16>`, `salt: Vec<u16>`, and `version_key` must match `WeightsVersion` from chain.
-- CRv4 timelock encryption (`commit_timelocked_weights`) is the default when `CommitRevealVersion >= 4`.
+- CRv4 timelock encryption (`commit_timelocked_weights`) is the default when `CommitRevealVersion >= 4` and uses chain `Drand.LastStoredRound` to compute reveal rounds.
 - See `docs/parity_checklist.md` for gaps and required updates.
 
 ## Weight Operations
@@ -178,7 +178,7 @@ pub async fn reveal_mechanism_weights(
 
 ### CRv4 Timelock Commit
 
-CRv4 uses timelock encryption and requires only a commit; the chain auto-reveals when drand data is available.
+CRv4 uses timelock encryption and requires only a commit; the chain auto-reveals when drand data is available. Reveal rounds must be computed relative to the on-chain `Drand.LastStoredRound`, tempo, and `RevealPeriodEpochs`.
 
 ```rust
 use bittensor_rs::crv4::prepare_and_commit_crv4_weights;

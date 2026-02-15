@@ -105,12 +105,9 @@ pub async fn get_current_weight_commit_info(
     client: &BittensorClient,
     netuid: u16,
 ) -> Result<Vec<Vec<u8>>> {
+    let key = vec![Value::u128(netuid as u128)];
     if let Some(val) = client
-        .storage_with_keys(
-            SUBTENSOR_MODULE,
-            "CRV3WeightCommitsV2",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommitsV2", key)
         .await?
     {
         return Ok(decode_vec_of_bytes(&val));
@@ -123,12 +120,10 @@ pub async fn get_timelocked_weight_commits(
     client: &BittensorClient,
     netuid: u16,
 ) -> Result<Vec<Vec<u8>>> {
+    let storage_index = crate::crv4::get_mechid_storage_index(netuid, 0);
+    let key = vec![Value::u128(storage_index as u128)];
     if let Some(val) = client
-        .storage_with_keys(
-            SUBTENSOR_MODULE,
-            "TimelockedWeightCommits",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys(SUBTENSOR_MODULE, "TimelockedWeightCommits", key)
         .await?
     {
         return Ok(decode_vec_of_bytes(&val));
@@ -326,6 +321,35 @@ fn decode_commit_info_v2_entry(value: &Value) -> Option<(AccountId32, u64, Strin
     Some((hotkey, block, message, reveal_round))
 }
 
+fn decode_timelocked_weight_commit_info(value: &Value) -> Vec<(AccountId32, WeightCommitInfo)> {
+    decode_vec(value, |entry| {
+        decode_timelocked_commit_entry(entry).ok_or_else(|| anyhow!("invalid"))
+    })
+    .unwrap_or_default()
+}
+
+fn decode_timelocked_commit_entry(value: &Value) -> Option<(AccountId32, WeightCommitInfo)> {
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+
+    if fields.len() < 4 {
+        return None;
+    }
+
+    let hotkey = crate::utils::decoders::decode_account_id32(fields[0]).ok()?;
+    let block = decode_u64(fields[1]).ok()?;
+    let commit = decode_bytes(fields[2]).ok()?;
+    let reveal_round = decode_u64(fields[3]).ok()?;
+    Some((hotkey, WeightCommitInfo::new(block, commit, reveal_round)))
+}
+
 fn decode_vec_of_bytes(value: &Value) -> Vec<Vec<u8>> {
     decode_vec(value, |entry| {
         decode_bytes(entry).map_err(|e| anyhow!("{e}"))
@@ -461,6 +485,24 @@ pub async fn get_pending_weight_commits(
     }
 
     Ok(result)
+}
+
+/// Get CRv4 timelocked commits for a subnet mechanism.
+pub async fn get_timelocked_weight_commits_v4(
+    client: &BittensorClient,
+    netuid: u16,
+    mechanism_id: u8,
+) -> Result<Vec<(AccountId32, WeightCommitInfo)>> {
+    let netuid_index = crate::crv4::get_mechid_storage_index(netuid, mechanism_id);
+    let key = vec![Value::u128(netuid_index as u128)];
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "TimelockedWeightCommits", key)
+        .await?
+    {
+        let commits = decode_timelocked_weight_commit_info(&val);
+        return Ok(commits);
+    }
+    Ok(Vec::new())
 }
 
 /// Check if a hotkey has a pending weight commitment on a subnet

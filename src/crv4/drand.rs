@@ -107,6 +107,10 @@ pub fn calculate_reveal_round(
     let current_epoch = current_block.saturating_add(netuid_plus_one) / tempo_plus_one;
 
     // Reveal epoch = current_epoch + reveal_period
+    if subnet_reveal_period_epochs == 0 {
+        return chain_last_drand_round.saturating_add(1);
+    }
+
     let reveal_epoch = current_epoch.saturating_add(subnet_reveal_period_epochs);
 
     // First block of reveal epoch

@@ -18,12 +18,12 @@ This checklist captures parity gaps between the Rust SDK and the upstream Python
 - ⚠️ `transfer` and staking extrinsics operate in RAO amounts. Confirm docs avoid mixing TAO and RAO.
 
 ## Storage Indices & Keys
-- ⚠️ Commit-reveal uses `NetUidStorageIndex` (u16) computed as `mech_id * 4096 + netuid`. Rust implements this in `generate_subtensor_commit_hash`; ensure all related queries and extrinsics consistently use this index.
-- ⚠️ Storage reads for commitments use `SubtensorModule.CRV3WeightCommitsV2` and `TimelockedWeightCommits`. Validate parity with runtime storage names for current Subtensor version.
+- ✅ Commit-reveal uses `NetUidStorageIndex` (u16) computed as `mech_id * 4096 + netuid`. Rust uses this in commit hash generation and timelocked storage queries.
+- ✅ Storage reads for commitments use `SubtensorModule.CRV3WeightCommitsV2` and `TimelockedWeightCommits` with storage index keys.
 
 ## CRv4 Timelock (Commit-Reveal v4)
-- ⚠️ CRv4 flow is implemented (timelock encryption, drand reveal round). Ensure parity with Python SDK sequence: use chain `Drand.LastStoredRound`, tempo, reveal period, and commit-reveal version from chain.
-- ⚠️ Persistence of CRv4 commits exists; verify alignment with Python SDK persistence schema and rotation on epoch transitions.
+- ✅ CRv4 flow uses chain `Drand.LastStoredRound`, tempo, reveal period, and commit-reveal version for reveal rounds.
+- ✅ CRv4 persistence only tracks pending commits (auto-reveal on chain) and clears stale entries on epoch advances.
 - ⚠️ Ensure auto-reveal behavior is documented: CRv4 requires no manual reveal, and incorrect reveal rounds must be handled.
 
 ## Missing/Incomplete APIs (vs Python SDK)
