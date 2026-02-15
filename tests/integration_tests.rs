@@ -5,6 +5,11 @@ use bittensor_rs::crv4::{
 };
 use bittensor_rs::{get_commit_reveal_version, BittensorClient, Config, Metagraph, Subtensor};
 use bittensor_rs::{queries, utils::weights::normalize_weights};
+use bittensor_rs::{validator, ExtrinsicWait, DEFAULT_COMMIT_REVEAL_VERSION};
+use sp_core::{crypto::AccountId32, sr25519, Pair};
+use std::str::FromStr;
+use std::sync::OnceLock;
+use tokio::sync::Mutex;
 
 async fn connect_default_or_skip() -> Option<BittensorClient> {
     match BittensorClient::with_default().await {
@@ -15,10 +20,11 @@ async fn connect_default_or_skip() -> Option<BittensorClient> {
         }
     }
 }
-use bittensor_rs::{validator, ExtrinsicWait, DEFAULT_COMMIT_REVEAL_VERSION};
-use sp_core::{crypto::AccountId32, sr25519, Pair};
-use std::str::FromStr;
-use std::sync::{Mutex, OnceLock};
+
+async fn env_lock() -> tokio::sync::MutexGuard<'static, ()> {
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    ENV_LOCK.get_or_init(|| Mutex::new(())).lock().await
+}
 
 #[tokio::test]
 async fn test_client_connection() {
@@ -121,8 +127,7 @@ async fn test_finney_default_endpoint_config() {
 
 #[tokio::test]
 async fn test_bittensor_rpc_env_override() {
-    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    let _guard = ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+    let _guard = env_lock().await;
 
     let custom_endpoint = "ws://127.0.0.1:9944";
     std::env::set_var("BITTENSOR_RPC", custom_endpoint);
