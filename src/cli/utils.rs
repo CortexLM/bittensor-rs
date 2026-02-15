@@ -1,5 +1,6 @@
 //! CLI utility functions for terminal interaction and formatting.
 
+use crate::core::constants::RAOPERTAO;
 use comfy_table::{presets::UTF8_FULL, ContentArrangement, Table};
 use console::{style, Term};
 use dialoguer::{Confirm, Input, Password};
@@ -98,18 +99,16 @@ pub fn print_warning(message: &str) {
     let _ = term.write_line(&format!("{} {}", style("⚠").yellow().bold(), message));
 }
 
-/// Format RAO balance as TAO (1 TAO = 1e9 RAO).
+/// Format RAO balance as TAO (1 TAO = RAOPERTAO RAO).
 pub fn format_tao(rao: u128) -> String {
-    const RAO_PER_TAO: u128 = 1_000_000_000;
-    let whole = rao / RAO_PER_TAO;
-    let fraction = rao % RAO_PER_TAO;
+    let whole = rao / RAOPERTAO;
+    let fraction = rao % RAOPERTAO;
     format!("{}.{:09} τ", whole, fraction)
 }
 
 /// Format TAO as RAO for display (preserves decimal precision).
 pub fn tao_to_rao(tao: f64) -> u128 {
-    const RAO_PER_TAO: f64 = 1_000_000_000.0;
-    (tao * RAO_PER_TAO) as u128
+    (tao * RAOPERTAO as f64) as u128
 }
 
 /// Format SS58 address (truncated for display).
