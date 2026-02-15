@@ -45,11 +45,7 @@ pub async fn get_commitment(
     block: u64,
     uid: u64,
 ) -> Result<Option<String>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::u128(block as u128),
-        Value::u128(uid as u128),
-    ];
+    let keys = vec![Value::from(netuid), Value::from(block), Value::from(uid)];
     if let Some(val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "Commits", keys)
         .await?
@@ -65,10 +61,7 @@ pub async fn get_revealed_commitment_by_hotkey(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Vec<(u64, String)>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
         .await?
@@ -84,10 +77,7 @@ pub async fn get_revealed_commitment(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Option<(u64, String)>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
     if let Some(val) = client
         .storage_with_keys(COMMITMENTS_PALLET, "RevealedCommitments", keys)
         .await?
@@ -105,7 +95,7 @@ pub async fn get_current_weight_commit_info(
     client: &BittensorClient,
     netuid: u16,
 ) -> Result<Vec<Vec<u8>>> {
-    let key = vec![Value::u128(netuid as u128)];
+    let key = vec![Value::from(netuid)];
     if let Some(val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommitsV2", key)
         .await?
@@ -121,7 +111,7 @@ pub async fn get_timelocked_weight_commits(
     netuid: u16,
 ) -> Result<Vec<Vec<u8>>> {
     let storage_index = crate::crv4::get_mechid_storage_index(netuid, 0);
-    let key = vec![Value::u128(storage_index as u128)];
+    let key = vec![Value::from(storage_index)];
     if let Some(val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "TimelockedWeightCommits", key)
         .await?
@@ -137,11 +127,7 @@ pub async fn get_all_commitments(
     netuid: u16,
 ) -> Result<std::collections::HashMap<AccountId32, String>> {
     let n_val = client
-        .storage_with_keys(
-            "SubtensorModule",
-            "SubnetworkN",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys("SubtensorModule", "SubnetworkN", vec![Value::from(netuid)])
         .await?;
     let n = n_val
         .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
@@ -152,7 +138,7 @@ pub async fn get_all_commitments(
             .storage_with_keys(
                 "SubtensorModule",
                 "Keys",
-                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+                vec![Value::from(netuid), Value::from(uid)],
             )
             .await?
         {
@@ -161,7 +147,7 @@ pub async fn get_all_commitments(
                     .storage_with_keys(
                         COMMITMENTS_PALLET,
                         "CommitmentOf",
-                        vec![Value::u128(netuid as u128), Value::from_bytes(hk.encode())],
+                        vec![Value::from(netuid), Value::from_bytes(hk.encode())],
                     )
                     .await?
                 {
@@ -182,11 +168,7 @@ pub async fn get_all_revealed_commitments(
     netuid: u16,
 ) -> Result<std::collections::HashMap<AccountId32, Vec<(u64, String)>>> {
     let n_val = client
-        .storage_with_keys(
-            "SubtensorModule",
-            "SubnetworkN",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys("SubtensorModule", "SubnetworkN", vec![Value::from(netuid)])
         .await?;
     let n = n_val
         .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
@@ -197,7 +179,7 @@ pub async fn get_all_revealed_commitments(
             .storage_with_keys(
                 "SubtensorModule",
                 "Keys",
-                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+                vec![Value::from(netuid), Value::from(uid)],
             )
             .await?
         {
@@ -206,7 +188,7 @@ pub async fn get_all_revealed_commitments(
                     .storage_with_keys(
                         COMMITMENTS_PALLET,
                         "RevealedCommitments",
-                        vec![Value::u128(netuid as u128), Value::from_bytes(hk.encode())],
+                        vec![Value::from(netuid), Value::from_bytes(hk.encode())],
                     )
                     .await?
                 {
@@ -231,10 +213,7 @@ pub async fn get_last_commitment_bonds_reset_block(
         .storage_with_keys(
             COMMITMENTS_PALLET,
             "LastBondsReset",
-            vec![
-                Value::u128(netuid as u128),
-                Value::from_bytes(hotkey.encode()),
-            ],
+            vec![Value::from(netuid), Value::from_bytes(hotkey.encode())],
         )
         .await?
     {
@@ -252,7 +231,7 @@ pub async fn get_current_weight_commit_info_v2(
         .storage_with_keys(
             SUBTENSOR_MODULE,
             "CRV3WeightCommitsV2",
-            vec![Value::u128(netuid as u128)],
+            vec![Value::from(netuid)],
         )
         .await?
     {
@@ -363,10 +342,7 @@ pub async fn get_weight_commitment(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> BittensorResult<Option<WeightCommitInfo>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     match client
         .storage_with_keys(SUBTENSOR_MODULE, "CRV3WeightCommits", keys)
@@ -411,11 +387,7 @@ pub async fn get_all_weight_commitments(
     netuid: u16,
 ) -> BittensorResult<Vec<(AccountId32, WeightCommitInfo)>> {
     let n_val = client
-        .storage_with_keys(
-            SUBTENSOR_MODULE,
-            "SubnetworkN",
-            vec![Value::u128(netuid as u128)],
-        )
+        .storage_with_keys(SUBTENSOR_MODULE, "SubnetworkN", vec![Value::from(netuid)])
         .await
         .map_err(|e| {
             BittensorError::ChainQuery(ChainQueryError::with_storage(
@@ -436,7 +408,7 @@ pub async fn get_all_weight_commitments(
             .storage_with_keys(
                 SUBTENSOR_MODULE,
                 "Keys",
-                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+                vec![Value::from(netuid), Value::from(uid)],
             )
             .await
             .map_err(|e| {
@@ -494,7 +466,7 @@ pub async fn get_timelocked_weight_commits_v4(
     mechanism_id: u8,
 ) -> Result<Vec<(AccountId32, WeightCommitInfo)>> {
     let netuid_index = crate::crv4::get_mechid_storage_index(netuid, mechanism_id);
-    let key = vec![Value::u128(netuid_index as u128)];
+    let key = vec![Value::from(netuid_index)];
     if let Some(val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "TimelockedWeightCommits", key)
         .await?

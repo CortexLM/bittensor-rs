@@ -60,8 +60,8 @@ pub async fn transfer_stake(
     let args = vec![
         Value::from_bytes(destination_coldkey.encode()),
         Value::from_bytes(hotkey.encode()),
-        Value::u128(origin_netuid as u128),
-        Value::u128(destination_netuid as u128),
+        Value::from(origin_netuid),
+        Value::from(destination_netuid),
         Value::u128(amount),
     ];
 

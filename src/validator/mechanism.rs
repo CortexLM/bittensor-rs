@@ -107,13 +107,16 @@ pub async fn reveal_mechanism_weights(
         ));
     }
 
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|weight| Value::from(*weight)).collect();
+    let salt_values: Vec<Value> = _salt.iter().map(|s| Value::from(*s)).collect();
     let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(mechanism_id as u128),
         Value::from(netuid),
         Value::from(mechanism_id),
+        Value::unnamed_composite(uid_values),
+        Value::unnamed_composite(weight_values),
+        Value::unnamed_composite(salt_values),
         Value::from(version_key),
-        Value::u128(version_key as u128),
     ];
 
     client
@@ -147,11 +150,13 @@ pub async fn set_mechanism_weights(
         ));
     }
 
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|weight| Value::from(*weight)).collect();
     let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(mechanism_id as u128),
         Value::from(netuid),
         Value::from(mechanism_id),
+        Value::unnamed_composite(uid_values),
+        Value::unnamed_composite(weight_values),
         Value::from(version_key),
     ];
 

@@ -41,14 +41,14 @@ pub async fn serve_axon(
     };
 
     let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(version as u128),
+        Value::from(netuid),
+        Value::from(version),
         Value::u128(ip_u128),
-        Value::u128(port as u128),
-        Value::u128(ip_type as u128),
-        Value::u128(protocol as u128),
-        Value::u128(0), // placeholder1
-        Value::u128(0), // placeholder2
+        Value::from(port),
+        Value::from(ip_type),
+        Value::from(protocol),
+        Value::from(0u8),
+        Value::from(0u8),
     ];
 
     client
@@ -96,14 +96,14 @@ pub async fn serve_axon_tls(
     let cert_value = Value::from_bytes(certificate);
 
     let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(version as u128),
+        Value::from(netuid),
+        Value::from(version),
         Value::u128(ip_u128),
-        Value::u128(port as u128),
-        Value::u128(ip_type as u128),
-        Value::u128(protocol as u128),
-        Value::u128(0), // placeholder1
-        Value::u128(0), // placeholder2
+        Value::from(port),
+        Value::from(ip_type),
+        Value::from(protocol),
+        Value::from(0u8),
+        Value::from(0u8),
         cert_value,
     ];
 

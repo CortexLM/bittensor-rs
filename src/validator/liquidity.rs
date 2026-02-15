@@ -14,7 +14,7 @@ pub async fn add_liquidity(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::u128(amount_a),
         Value::u128(amount_b),
     ];
@@ -33,7 +33,7 @@ pub async fn remove_liquidity(
     liquidity_amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::u128(netuid as u128), Value::u128(liquidity_amount)];
+    let args = vec![Value::from(netuid), Value::u128(liquidity_amount)];
 
     client
         .submit_extrinsic(SUBTENSOR_MODULE, "remove_liquidity", args, signer, wait_for)
@@ -52,7 +52,7 @@ pub async fn modify_liquidity(
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     let args = vec![
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::i128(tick_lower as i128),
         Value::i128(tick_upper as i128),
         Value::i128(liquidity_delta),
@@ -72,7 +72,7 @@ pub async fn toggle_user_liquidity(
     enabled: bool,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::u128(netuid as u128), Value::bool(enabled)];
+    let args = vec![Value::from(netuid), Value::bool(enabled)];
 
     client
         .submit_extrinsic(

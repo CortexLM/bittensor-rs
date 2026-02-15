@@ -127,7 +127,7 @@ pub async fn vote(
 ) -> BittensorResult<String> {
     let args = vec![
         Value::from_bytes(proposal_hash),
-        Value::u128(proposal_index as u128),
+        Value::from(proposal_index),
         Value::bool(approve),
     ];
 

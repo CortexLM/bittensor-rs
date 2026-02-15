@@ -124,7 +124,7 @@ pub async fn add_proxy(
     let args = vec![
         Value::from_bytes(delegate.encode()),
         proxy_type.to_value(),
-        Value::u128(delay as u128),
+        Value::from(delay),
     ];
 
     client
@@ -164,7 +164,7 @@ pub async fn remove_proxy(
     let args = vec![
         Value::from_bytes(delegate.encode()),
         proxy_type.to_value(),
-        Value::u128(delay as u128),
+        Value::from(delay),
     ];
 
     client
@@ -277,8 +277,8 @@ pub async fn create_pure(
 ) -> BittensorResult<String> {
     let args = vec![
         proxy_type.to_value(),
-        Value::u128(delay as u128),
-        Value::u128(index as u128),
+        Value::from(delay),
+        Value::from(index),
     ];
 
     client
@@ -324,9 +324,9 @@ pub async fn kill_pure(
     let args = vec![
         Value::from_bytes(spawner.encode()),
         proxy_type.to_value(),
-        Value::u128(index as u128),
-        Value::u128(height as u128),
-        Value::u128(ext_index as u128),
+        Value::from(index),
+        Value::from(height),
+        Value::from(ext_index),
     ];
 
     client

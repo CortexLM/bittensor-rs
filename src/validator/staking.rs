@@ -24,7 +24,7 @@ pub async fn add_stake(
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::u128(amount),
     ];
 
@@ -52,7 +52,7 @@ pub async fn unstake(
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::u128(amount),
     ];
 
@@ -201,8 +201,8 @@ pub async fn move_stake(
     let args = vec![
         Value::from_bytes(from_hotkey.encode()),
         Value::from_bytes(to_hotkey.encode()),
-        Value::u128(origin_netuid as u128),
-        Value::u128(destination_netuid as u128),
+        Value::from(origin_netuid),
+        Value::from(destination_netuid),
         Value::u128(amount),
     ];
 
@@ -231,8 +231,8 @@ pub async fn swap_stake(
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
-        Value::u128(origin_netuid as u128),
-        Value::u128(destination_netuid as u128),
+        Value::from(origin_netuid),
+        Value::from(destination_netuid),
         Value::u128(amount),
     ];
 
