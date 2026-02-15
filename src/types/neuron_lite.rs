@@ -1,4 +1,5 @@
 use crate::types::{AxonInfo, PrometheusInfo};
+use crate::utils::balance_newtypes::Rao;
 use serde::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 
@@ -15,13 +16,13 @@ pub struct NeuronInfoLite {
     /// Coldkey (SS58 address)
     #[serde(with = "crate::utils::ss58::serde_account")]
     pub coldkey: AccountId32,
-    /// Neuron's stake amount
-    pub stake: u128,
+    /// Neuron's stake amount (RAO)
+    pub stake: Rao,
     /// Dictionary mapping coldkey to amount staked to this neuron
     #[serde(with = "crate::utils::ss58::serde_account_map")]
     pub stake_dict: std::collections::HashMap<AccountId32, u128>,
     /// Total stake
-    pub total_stake: u128,
+    pub total_stake: Rao,
     /// Neuron's rank score (normalized)
     pub rank: f64,
     /// Neuron's trust score (normalized)
@@ -33,7 +34,7 @@ pub struct NeuronInfoLite {
     /// Incentive score (normalized)
     pub incentive: f64,
     /// Emission amount (RAO)
-    pub emission: u128,
+    pub emission: Rao,
     /// Dividends received (normalized)
     pub dividends: f64,
     /// Whether the neuron is active
@@ -59,15 +60,15 @@ impl NeuronInfoLite {
             netuid,
             hotkey: AccountId32::from([0u8; 32]),
             coldkey: AccountId32::from([0u8; 32]),
-            stake: 0,
+            stake: Rao::ZERO,
             stake_dict: std::collections::HashMap::new(),
-            total_stake: 0,
+            total_stake: Rao::ZERO,
             rank: 0.0,
             trust: 0.0,
             consensus: 0.0,
             validator_trust: 0.0,
             incentive: 0.0,
-            emission: 0,
+            emission: Rao::ZERO,
             dividends: 0.0,
             active: false,
             last_update: 0,
@@ -86,15 +87,15 @@ impl NeuronInfoLite {
             netuid: 0,
             hotkey: AccountId32::from([0u8; 32]),
             coldkey: AccountId32::from([0u8; 32]),
-            stake: 0,
+            stake: Rao::ZERO,
             stake_dict: std::collections::HashMap::new(),
-            total_stake: 0,
+            total_stake: Rao::ZERO,
             rank: 0.0,
             trust: 0.0,
             consensus: 0.0,
             validator_trust: 0.0,
             incentive: 0.0,
-            emission: 0,
+            emission: Rao::ZERO,
             dividends: 0.0,
             active: false,
             last_update: 0,

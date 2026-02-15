@@ -55,8 +55,8 @@ async fn main() -> Result<()> {
 
     let price_rao = subnets::get_subnet_price(&client, netuid)
         .await
-        .unwrap_or(0);
-    println!("subnet_price_rao={}", price_rao);
+        .unwrap_or(bittensor_rs::Rao::ZERO);
+    println!("subnet_price_rao={}", price_rao.as_u128());
 
     let next_epoch = subnets::get_next_epoch_start_block(&client, netuid, None).await?;
     println!("next_epoch_start_block={:?}", next_epoch);

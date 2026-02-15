@@ -447,16 +447,16 @@ async fn overview(name: Option<&str>, _all: bool, cli: &Cli) -> anyhow::Result<(
         let stake_result = get_stake_info_for_coldkey(&client, &account).await;
         sp.finish_and_clear();
 
-        let free = balance_result.unwrap_or(0);
-        let staked: u128 = stake_result
+        let free = balance_result.unwrap_or(crate::utils::balance_newtypes::Rao::ZERO);
+        let staked: crate::utils::balance_newtypes::Rao = stake_result
             .map(|stakes| stakes.iter().map(|s| s.stake).sum())
-            .unwrap_or(0);
+            .unwrap_or(crate::utils::balance_newtypes::Rao::ZERO);
 
         table.add_row(vec![
             wallet.name.to_string(),
             format_address(&coldkey_addr),
-            format_tao(free),
-            format_tao(staked),
+            format_tao(free.as_u128()),
+            format_tao(staked.as_u128()),
         ]);
     }
 
@@ -539,17 +539,17 @@ async fn balance(name: Option<&str>, all: bool, cli: &Cli) -> anyhow::Result<()>
         let stake_result = get_stake_info_for_coldkey(&client, &account).await;
         sp.finish_and_clear();
 
-        let free = balance_result.unwrap_or(0);
-        let staked: u128 = stake_result
+        let free = balance_result.unwrap_or(crate::utils::balance_newtypes::Rao::ZERO);
+        let staked: crate::utils::balance_newtypes::Rao = stake_result
             .map(|stakes| stakes.iter().map(|s| s.stake).sum())
-            .unwrap_or(0);
-        let total = free + staked;
+            .unwrap_or(crate::utils::balance_newtypes::Rao::ZERO);
+        let total = free.as_u128() + staked.as_u128();
 
         table.add_row(vec![
             wallet.name.to_string(),
             format_address(&coldkey_addr),
-            format_tao(free),
-            format_tao(staked),
+            format_tao(free.as_u128()),
+            format_tao(staked.as_u128()),
             format_tao(total),
         ]);
     }

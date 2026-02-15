@@ -1,6 +1,7 @@
 use crate::chain::BittensorClient;
 use crate::types::delegate::DelegateInfoBase;
 use crate::types::{DelegateInfo, DelegatedInfo};
+use crate::utils::balance_newtypes::Rao;
 use crate::utils::decoders::{decode_account_id32, decode_u16};
 use anyhow::Result;
 use parity_scale_codec::{Compact, Decode, Encode};
@@ -73,7 +74,7 @@ pub async fn get_delegate_by_hotkey(
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0);
 
-    let mut total_stake: HashMap<u16, u128> = HashMap::new();
+    let mut total_stake: HashMap<u16, Rao> = HashMap::new();
     let mut nominators: HashMap<AccountId32, HashMap<u16, u128>> = HashMap::new();
     let mut validator_permits: Vec<u16> = Vec::new();
     let mut registrations: Vec<u16> = Vec::new();
@@ -140,7 +141,7 @@ pub async fn get_delegate_by_hotkey(
                     .await?
                 {
                     if let Ok(ts) = crate::utils::decoders::decode_u128(&alpha_val) {
-                        total_stake.insert(netuid, ts);
+                        total_stake.insert(netuid, Rao::from(ts));
                     }
                 }
             }
@@ -155,8 +156,8 @@ pub async fn get_delegate_by_hotkey(
             validator_permits,
             registrations,
             // These fields are not stored on-chain explicitly; set to 0 if not derivable
-            return_per_1000: 0,
-            total_daily_return: 0,
+            return_per_1000: Rao::ZERO,
+            total_daily_return: Rao::ZERO,
         },
         total_stake,
         nominators,
@@ -225,11 +226,11 @@ pub async fn get_delegated(
     for hotkey in hotkeys.iter() {
         if let Some(delegate) = get_delegate_by_hotkey(client, hotkey).await? {
             if let Some(nets) = delegate.nominators.get(coldkey) {
-                let stake_sum: u128 = nets.values().cloned().sum();
+                let stake_sum: u128 = nets.values().copied().sum();
                 out.push(DelegatedInfo {
                     base: delegate.base.clone(),
                     netuid: 0,
-                    stake: stake_sum,
+                    stake: Rao::from(stake_sum),
                 });
             }
         }
@@ -261,7 +262,7 @@ pub async fn get_delegates(client: &BittensorClient) -> Result<Vec<DelegateInfo>
         .map(|raw| {
             // Convert nominators: Vec<(AccountId32, Vec<(netuid, stake)>)> to HashMap
             let mut nominators: HashMap<AccountId32, HashMap<u16, u128>> = HashMap::new();
-            let mut total_stake: HashMap<u16, u128> = HashMap::new();
+            let mut total_stake: HashMap<u16, Rao> = HashMap::new();
 
             for (nominator, stakes) in raw.nominators {
                 let mut stake_map: HashMap<u16, u128> = HashMap::new();
@@ -270,8 +271,8 @@ pub async fn get_delegates(client: &BittensorClient) -> Result<Vec<DelegateInfo>
                     let stake_val = stake.0 as u128;
                     stake_map.insert(netuid_val, stake_val);
 
-                    // Accumulate total stake per netuid
-                    *total_stake.entry(netuid_val).or_insert(0) += stake_val;
+                    let entry = total_stake.entry(netuid_val).or_insert(Rao::ZERO);
+                    *entry = entry.saturating_add(Rao::from(stake_val));
                 }
                 nominators.insert(nominator, stake_map);
             }
@@ -283,8 +284,8 @@ pub async fn get_delegates(client: &BittensorClient) -> Result<Vec<DelegateInfo>
                     take: raw.take.0 as f64 / u16::MAX as f64,
                     validator_permits: raw.validator_permits.iter().map(|c| c.0).collect(),
                     registrations: raw.registrations.iter().map(|c| c.0).collect(),
-                    return_per_1000: raw.return_per_1000.0 as u128,
-                    total_daily_return: raw.total_daily_return.0 as u128,
+                    return_per_1000: Rao::from(raw.return_per_1000.0 as u128),
+                    total_daily_return: Rao::from(raw.total_daily_return.0 as u128),
                 },
                 total_stake,
                 nominators,
@@ -398,7 +399,7 @@ pub async fn get_delegate_info_optimized(
 
     let mut registrations: Vec<u16> = Vec::new();
     let validator_permits: Vec<u16> = Vec::new();
-    let mut total_stake: HashMap<u16, u128> = HashMap::new();
+    let mut total_stake: HashMap<u16, Rao> = HashMap::new();
 
     for netuid in 0u16..total_networks {
         let uid_val = client
@@ -428,7 +429,7 @@ pub async fn get_delegate_info_optimized(
                     .await?
                 {
                     if let Ok(ts) = crate::utils::decoders::decode_u128(&alpha_val) {
-                        total_stake.insert(netuid, ts);
+                        total_stake.insert(netuid, Rao::from(ts));
                     }
                 }
             }
@@ -444,8 +445,8 @@ pub async fn get_delegate_info_optimized(
             take: take_raw as f64 / u16::MAX as f64,
             validator_permits,
             registrations,
-            return_per_1000: 0,
-            total_daily_return: 0,
+            return_per_1000: Rao::ZERO,
+            total_daily_return: Rao::ZERO,
         },
         total_stake,
         nominators: HashMap::new(),

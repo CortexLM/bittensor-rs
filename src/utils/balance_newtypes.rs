@@ -23,7 +23,9 @@
 //! Use the RAO (u128) representation for exact arithmetic on large values.
 
 use crate::core::constants::RAOPERTAO;
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::iter::Sum;
 use std::ops::{Add, Div, Mul, Sub};
 
 /// Maximum exact integer value in f64 (2^53)
@@ -48,7 +50,7 @@ const DEFAULT_MAX_TRANSFER_AMOUNT: u128 = u64::MAX as u128;
 /// let one_tao = Rao::PER_TAO;
 /// assert_eq!(one_tao.as_u128(), 1_000_000_000);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Rao(pub u128);
 
 impl Rao {
@@ -222,6 +224,24 @@ impl From<u128> for Rao {
 impl From<Rao> for u128 {
     fn from(rao: Rao) -> Self {
         rao.0
+    }
+}
+
+impl From<u64> for Rao {
+    fn from(value: u64) -> Self {
+        Self(value as u128)
+    }
+}
+
+impl Sum for Rao {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Rao::ZERO, |acc, x| acc.saturating_add(x))
+    }
+}
+
+impl<'a> Sum<&'a Rao> for Rao {
+    fn sum<I: Iterator<Item = &'a Rao>>(iter: I) -> Self {
+        iter.fold(Rao::ZERO, |acc, x| acc.saturating_add(*x))
     }
 }
 

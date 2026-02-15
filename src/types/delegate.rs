@@ -1,3 +1,4 @@
+use crate::utils::balance_newtypes::Rao;
 use serde::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 
@@ -17,9 +18,9 @@ pub struct DelegateInfoBase {
     /// List of subnets that the delegate is registered on
     pub registrations: Vec<u16>,
     /// Return per 1000 TAO of the delegate over a day (RAO)
-    pub return_per_1000: u128,
-    /// Total daily return of the delegate
-    pub total_daily_return: u128,
+    pub return_per_1000: Rao,
+    /// Total daily return of the delegate (RAO)
+    pub total_daily_return: Rao,
 }
 
 /// Complete delegate information with stake details
@@ -28,9 +29,9 @@ pub struct DelegateInfo {
     /// Base delegate information
     #[serde(flatten)]
     pub base: DelegateInfoBase,
-    /// Total stake of the delegate mapped by netuid
-    pub total_stake: std::collections::HashMap<u16, u128>,
-    /// Mapping of nominator SS58 addresses to their stakes per subnet
+    /// Total stake of the delegate mapped by netuid (RAO)
+    pub total_stake: std::collections::HashMap<u16, Rao>,
+    /// Mapping of nominator SS58 addresses to their stakes per subnet (RAO)
     #[serde(with = "crate::utils::ss58::serde_account_map")]
     pub nominators: std::collections::HashMap<AccountId32, std::collections::HashMap<u16, u128>>,
 }
@@ -43,8 +44,8 @@ pub struct DelegatedInfo {
     pub base: DelegateInfoBase,
     /// Network ID of the subnet
     pub netuid: u16,
-    /// Stake amount for this specific delegation
-    pub stake: u128,
+    /// Stake amount for this specific delegation (RAO)
+    pub stake: Rao,
 }
 
 impl DelegateInfo {
@@ -56,8 +57,8 @@ impl DelegateInfo {
                 take,
                 validator_permits: vec![],
                 registrations: vec![],
-                return_per_1000: 0,
-                total_daily_return: 0,
+                return_per_1000: Rao::ZERO,
+                total_daily_return: Rao::ZERO,
             },
             total_stake: std::collections::HashMap::new(),
             nominators: std::collections::HashMap::new(),

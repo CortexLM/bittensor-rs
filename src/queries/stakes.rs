@@ -1,4 +1,5 @@
 use crate::chain::BittensorClient;
+use crate::utils::balance_newtypes::Rao;
 use crate::utils::decoders::{decode_u128, decode_u64, decode_vec_account_id32};
 use anyhow::Result;
 use parity_scale_codec::Encode;
@@ -14,7 +15,7 @@ pub async fn get_stake(
     coldkey: &AccountId32,
     hotkey: &AccountId32,
     netuid: u16,
-) -> Result<u128> {
+) -> Result<Rao> {
     // Use query_module for Alpha storage (same as Bittensor Python: query_module("SubtensorModule", "Alpha", ...))
     // Alpha storage: (hotkey, coldkey, netuid) -> stake amount
     let keys = vec![
@@ -30,14 +31,16 @@ pub async fn get_stake(
             anyhow::anyhow!("Alpha not found for hotkey, coldkey, and netuid {}", netuid)
         })?;
 
-    decode_u128(&alpha_val).map_err(|e| anyhow::anyhow!("Failed to decode Alpha stake: {}", e))
+    decode_u128(&alpha_val)
+        .map(Rao::from)
+        .map_err(|e| anyhow::anyhow!("Failed to decode Alpha stake: {}", e))
 }
 
 /// Get total stake for a coldkey across all hotkeys
 pub async fn get_stake_for_coldkey(
     client: &BittensorClient,
     coldkey: &AccountId32,
-) -> Result<Vec<(u16, u128)>> {
+) -> Result<Vec<(u16, Rao)>> {
     // Strategy without relying on runtime API:
     // 1) Get list of owned hotkeys for this coldkey
     // 2) For each netuid, sum Alpha[(hotkey, coldkey, netuid)] across all owned hotkeys
@@ -63,9 +66,9 @@ pub async fn get_stake_for_coldkey(
         .and_then(|n| u16::try_from(n).ok())
         .unwrap_or(0u16);
 
-    let mut result: Vec<(u16, u128)> = Vec::new();
+    let mut result: Vec<(u16, Rao)> = Vec::new();
     for netuid in 0u16..total_networks {
-        let mut total: u128 = 0;
+        let mut total = Rao::ZERO;
         for hotkey in &owned_hotkeys {
             let alpha_keys = vec![
                 Value::from_bytes(hotkey.encode()),
@@ -77,11 +80,11 @@ pub async fn get_stake_for_coldkey(
                 .await?
             {
                 if let Ok(stake) = decode_u128(&alpha_val) {
-                    total = total.saturating_add(stake);
+                    total = total.saturating_add(Rao::from(stake));
                 }
             }
         }
-        if total > 0 {
+        if total > Rao::ZERO {
             result.push((netuid, total));
         }
     }
@@ -94,8 +97,7 @@ pub async fn get_stake_for_hotkey(
     client: &BittensorClient,
     hotkey: &AccountId32,
     netuid: u16,
-) -> Result<u128> {
-    // Use query_subtensor for TotalHotkeyAlpha (same as Bittensor Python)
+) -> Result<Rao> {
     let keys = vec![
         Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
@@ -111,7 +113,9 @@ pub async fn get_stake_for_hotkey(
             )
         })?;
 
-    decode_u128(&alpha_val).map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))
+    decode_u128(&alpha_val)
+        .map(Rao::from)
+        .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))
 }
 
 /// Get stake for specific coldkey-hotkey pair across multiple subnets
@@ -121,7 +125,7 @@ pub async fn get_stake_for_coldkey_and_hotkey(
     coldkey: &AccountId32,
     hotkey: &AccountId32,
     netuids: Option<Vec<u16>>,
-) -> Result<std::collections::HashMap<u16, u128>> {
+) -> Result<std::collections::HashMap<u16, Rao>> {
     let all_netuids = if let Some(nets) = netuids {
         nets
     } else {
@@ -138,7 +142,7 @@ pub async fn get_stake_for_coldkey_and_hotkey(
     for netuid in all_netuids {
         match get_stake(client, coldkey, hotkey, netuid).await {
             Ok(stake) => {
-                if stake > 0 {
+                if stake > Rao::ZERO {
                     stakes.insert(netuid, stake);
                 }
             }
@@ -207,13 +211,14 @@ pub async fn get_stake_weight(
 }
 
 /// Get minimum required stake
-pub async fn get_minimum_required_stake(client: &BittensorClient) -> Result<u128> {
+pub async fn get_minimum_required_stake(client: &BittensorClient) -> Result<Rao> {
     let min_stake_val = client
         .storage(SUBTENSOR_MODULE, "NominatorMinRequiredStake", None)
         .await?
         .ok_or_else(|| anyhow::anyhow!("NominatorMinRequiredStake storage entry not found"))?;
 
     decode_u128(&min_stake_val)
+        .map(Rao::from)
         .map_err(|e| anyhow::anyhow!("Failed to decode NominatorMinRequiredStake: {}", e))
 }
 
@@ -222,7 +227,7 @@ pub async fn get_hotkey_stake(
     client: &BittensorClient,
     hotkey: &AccountId32,
     netuid: u16,
-) -> Result<u128> {
+) -> Result<Rao> {
     get_stake_for_hotkey(client, hotkey, netuid).await
 }
 
@@ -278,7 +283,7 @@ pub async fn get_stake_info_for_coldkey(
     for (netuid, _total_stake) in stakes {
         for hotkey in &owned_hotkeys {
             if let Ok(stake) = get_stake(client, coldkey, hotkey, netuid).await {
-                if stake > 0 {
+                if stake > Rao::ZERO {
                     result.push(StakeInfo {
                         hotkey: hotkey.clone(),
                         coldkey: coldkey.clone(),
@@ -299,7 +304,7 @@ pub struct StakeInfo {
     pub hotkey: AccountId32,
     pub coldkey: AccountId32,
     pub netuid: u16,
-    pub stake: u128,
+    pub stake: Rao,
 }
 
 /// Get total stake for a hotkey across all subnets

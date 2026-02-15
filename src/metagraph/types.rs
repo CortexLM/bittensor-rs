@@ -1,4 +1,5 @@
 use crate::types::{AxonInfo, NeuronInfo};
+use crate::utils::balance_newtypes::Rao;
 use sp_core::crypto::AccountId32;
 use std::collections::HashMap;
 
@@ -72,7 +73,7 @@ impl Metagraph {
     }
 
     /// Get total stake in the subnet
-    pub fn total_stake(&self) -> u128 {
+    pub fn total_stake(&self) -> Rao {
         self.neurons.values().map(|n| n.stake).sum()
     }
 }

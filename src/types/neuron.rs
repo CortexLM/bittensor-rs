@@ -1,4 +1,5 @@
 use crate::types::{AxonInfo, PrometheusInfo};
+use crate::utils::balance_newtypes::Rao;
 use serde::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 
@@ -15,15 +16,15 @@ pub struct NeuronInfo {
     /// Coldkey (SS58 address)
     #[serde(with = "crate::utils::ss58::serde_account")]
     pub coldkey: AccountId32,
-    /// Neuron's stake amount
-    pub stake: u128,
+    /// Neuron's stake amount (RAO)
+    pub stake: Rao,
     /// Dictionary mapping coldkey to amount staked to this neuron
     #[serde(with = "crate::utils::ss58::serde_account_map")]
     pub stake_dict: std::collections::HashMap<AccountId32, u128>,
     /// Total stake on this subnet (alpha)
-    pub total_stake: u128,
+    pub total_stake: Rao,
     /// Total stake on root subnet (TAO) - used for dividend calculations
-    pub root_stake: u128,
+    pub root_stake: Rao,
     /// Stake weight (normalized u16, includes parent inheritance + TAO weight)
     /// This is the actual weight used in Yuma Consensus calculations
     pub stake_weight: u16,
@@ -38,7 +39,7 @@ pub struct NeuronInfo {
     /// Incentive score (normalized)
     pub incentive: f64,
     /// Emission amount (RAO)
-    pub emission: u128,
+    pub emission: Rao,
     /// Dividends received (normalized)
     pub dividends: f64,
     /// Whether the neuron is active

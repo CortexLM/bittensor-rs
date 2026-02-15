@@ -1,6 +1,7 @@
 use bittensor_rs::{
     metagraph::Metagraph,
     types::{AxonInfo, DelegateInfo, NeuronInfo, PrometheusInfo, SubnetInfo},
+    Rao,
 };
 use sp_core::crypto::AccountId32;
 use std::collections::HashMap;
@@ -59,13 +60,13 @@ fn test_neuron_info_structure() {
         active: true,
         axon_info: None,
         prometheus_info: None,
-        stake: 1000000u128,
+        stake: Rao::from(1000000u128),
         stake_dict: stake_dict.clone(),
-        total_stake: 1000000u128,
-        root_stake: 0u128,
+        total_stake: Rao::from(1000000u128),
+        root_stake: Rao::ZERO,
         stake_weight: 0,
         rank: 100.0,
-        emission: 1000,
+        emission: Rao::from(1000u128),
         incentive: 50.0,
         consensus: 80.0,
         trust: 90.0,
@@ -80,7 +81,7 @@ fn test_neuron_info_structure() {
         version: 100,
     };
 
-    assert_eq!(neuron.total_stake, 1000000);
+    assert_eq!(neuron.total_stake, Rao::from(1000000u128));
     assert_eq!(neuron.version, 100);
     assert!(!neuron.is_null);
     assert_eq!(neuron.stake_dict.len(), 1);
@@ -99,16 +100,16 @@ fn test_subnet_info_creation() {
     let subnet = SubnetInfo {
         netuid: 1,
         neuron_count: 256,
-        total_stake: 1000000,
-        emission: 500000,
+        total_stake: Rao::from(1000000u128),
+        emission: Rao::from(500000u128),
         name: Some("Test Subnet".to_string()),
         description: Some("A test subnet".to_string()),
     };
 
     assert_eq!(subnet.netuid, 1);
     assert_eq!(subnet.neuron_count, 256);
-    assert_eq!(subnet.total_stake, 1000000);
-    assert_eq!(subnet.emission, 500000);
+    assert_eq!(subnet.total_stake, Rao::from(1000000u128));
+    assert_eq!(subnet.emission, Rao::from(500000u128));
     assert_eq!(subnet.name.as_ref().unwrap(), "Test Subnet");
 }
 
@@ -165,13 +166,13 @@ fn test_metagraph_neuron_access() {
         active: true,
         axon_info: None,
         prometheus_info: None,
-        stake: 1000u128,
+        stake: Rao::from(1000u128),
         stake_dict: HashMap::new(),
-        total_stake: 1000u128,
-        root_stake: 0u128,
+        total_stake: Rao::from(1000u128),
+        root_stake: Rao::ZERO,
         stake_weight: 0,
         rank: 100.0,
-        emission: 1000,
+        emission: Rao::from(1000u128),
         incentive: 50.0,
         consensus: 80.0,
         trust: 90.0,
@@ -191,5 +192,8 @@ fn test_metagraph_neuron_access() {
 
     assert_eq!(metagraph.neurons.len(), 1);
     assert_eq!(metagraph.n, 1);
-    assert_eq!(metagraph.neurons.get(&0).unwrap().total_stake, 1000);
+    assert_eq!(
+        metagraph.neurons.get(&0).unwrap().total_stake,
+        Rao::from(1000u128)
+    );
 }
