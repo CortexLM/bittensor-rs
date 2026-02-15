@@ -287,7 +287,7 @@ pub async fn min_allowed_weights(client: &BittensorClient, netuid: u16) -> Resul
     }
     Ok(None)
 }
-pub async fn max_weight_limit(client: &BittensorClient, netuid: u16) -> Result<Option<f64>> {
+pub async fn max_weight_limit(client: &BittensorClient, netuid: u16) -> Result<Option<u16>> {
     if let Some(val) = client
         .storage_with_keys(
             SUBTENSOR_MODULE,
@@ -297,7 +297,7 @@ pub async fn max_weight_limit(client: &BittensorClient, netuid: u16) -> Result<O
         .await?
     {
         if let Ok(v) = decode_u64(&val) {
-            return Ok(Some(v as f64 / u16::MAX as f64));
+            return Ok(Some(v as u16));
         }
     }
     Ok(None)

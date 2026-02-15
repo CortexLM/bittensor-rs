@@ -24,7 +24,7 @@ pub use neuron::NeuronInfo;
 pub use neuron_lite::NeuronInfoLite;
 pub use prometheus::PrometheusInfo;
 pub use proposal_vote::ProposalVoteData;
-pub use subnet::{SubnetHyperparameters, SubnetIdentity, SubnetInfo};
+pub use subnet::{SubnetIdentity, SubnetInfo};
 pub use synapse::{
     headers, Message, StreamingSynapse, StreamingTextPromptSynapse, Synapse, SynapseHeaders,
     SynapseType, TerminalInfo, TextPromptSynapse,

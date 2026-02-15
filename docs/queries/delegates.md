@@ -47,6 +47,7 @@ Get all registered delegates:
 
 ```rust
 use bittensor_rs::queries::delegates;
+use bittensor_rs::format_rao_as_tao;
 
 // Get all delegate addresses
 let delegate_addresses = delegates::get_delegates(&client).await?;
@@ -70,7 +71,7 @@ match delegate_info {
     Some(info) => {
         println!("Delegate: {}", info.delegate_address.to_ss58check());
         println!("Take: {}%", info.take * 100.0);
-        println!("Total stake: {} TAO", info.total_stake as f64 / 1e9);
+        println!("Total stake: {} TAO", format_rao_as_tao(info.total_stake));
         println!("Nominators: {}", info.nominators.len());
     },
     None => println!("Delegate not found"),
@@ -99,7 +100,7 @@ let nominators = delegates::get_nominators_for_delegate(&client, &delegate_addre
 for (nominator, stake) in nominators {
     println!("Nominator: {} - Stake: {} TAO", 
         nominator.to_ss58check(), 
-        stake as f64 / 1e9
+        format_rao_as_tao(stake)
     );
 }
 ```
@@ -133,10 +134,10 @@ async fn display_top_delegates(client: &BittensorClient, top_n: usize) -> Result
     println!("{}", "-".repeat(90));
     
     for (i, delegate) in delegates.iter().enumerate() {
-        println!("{:<6} {:<48} {:>12.2} {:>6.2} {:>10}",
+        println!("{:<6} {:<48} {:>12} {:>6.2} {:>10}",
             i + 1,
             delegate.delegate_address.to_ss58check(),
-            delegate.total_stake as f64 / 1e9,
+            format_rao_as_tao(delegate.total_stake),
             delegate.take * 100.0,
             delegate.nominators.len()
         );
@@ -179,13 +180,13 @@ async fn monitor_delegate_performance(
         
         if info.total_stake != last_stake {
             let change = if info.total_stake > last_stake {
-                format!("+{}", (info.total_stake - last_stake) as f64 / 1e9)
+                format!("+{}", format_rao_as_tao(info.total_stake - last_stake))
             } else {
-                format!("-{}", (last_stake - info.total_stake) as f64 / 1e9)
+                format!("-{}", format_rao_as_tao(last_stake - info.total_stake))
             };
             
             println!("Delegate stake changed: {} TAO (total: {} TAO)",
-                change, info.total_stake as f64 / 1e9
+                change, format_rao_as_tao(info.total_stake)
             );
             
             last_stake = info.total_stake;
@@ -212,7 +213,7 @@ async fn analyze_delegation_distribution(client: &BittensorClient) -> Result<()>
     
     println!("Delegation Statistics:");
     println!("  Total delegates: {}", delegates.len());
-    println!("  Total delegated: {} TAO", total_delegated as f64 / 1e9);
+    println!("  Total delegated: {} TAO", format_rao_as_tao(total_delegated));
     println!("  Average nominators per delegate: {:.2}", avg_nominators);
     
     // Find concentration

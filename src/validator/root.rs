@@ -17,9 +17,9 @@ pub async fn root_register(
 pub async fn root_set_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
-    uids: &[u64],
-    weights: &[f32],
-    version_key: Option<u64>,
+    uids: &[u16],
+    weights: &[u16],
+    version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     crate::validator::weights::set_weights(

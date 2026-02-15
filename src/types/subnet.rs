@@ -32,7 +32,7 @@ impl SubnetInfo {
 
 /// Subnet hyperparameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SubnetHyperparameters {
+pub struct SubnetConfigInfo {
     pub min_allowed_weights: u64,
     pub max_weight_limit: u64,
     pub weights_version: u64,

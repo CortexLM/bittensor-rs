@@ -1,6 +1,7 @@
 use bittensor_rs::{
     delegate::DelegateInfoBase,
-    types::{DelegateInfo, DelegatedInfo, SubnetHyperparameters, SubnetInfo},
+    queries::SubnetHyperparameters,
+    types::{DelegateInfo, DelegatedInfo, SubnetInfo},
 };
 use sp_core::crypto::AccountId32;
 use std::collections::HashMap;

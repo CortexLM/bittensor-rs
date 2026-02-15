@@ -14,7 +14,8 @@ pub async fn set_weights(
     signer: &PairSigner<DefaultConfig, Pair>,
     netuid: u16,
     uids: Vec<u16>,
-    weights: Vec<u16>
+    weights: Vec<u16>,
+    version_key: u64
 ) -> Result<()>
 ```
 
@@ -34,7 +35,7 @@ use bittensor_rs::validator::set_weights;
 use bittensor_rs::utils::normalize_weights;
 
 let (uid_vals, weight_vals) = normalize_weights(&uids, &weights)?;
-set_weights(&client, &signer, netuid, uid_vals, weight_vals).await?;
+set_weights(&client, &signer, netuid, uid_vals, weight_vals, version_key).await?;
 ```
 
 ### commit_weights
@@ -371,7 +372,7 @@ See the `children` module for detailed child subnet operations.
 All validator operations return `Result<()>` types. Handle errors appropriately:
 
 ```rust
-match set_weights(&client, &signer, netuid, uid_vals, weight_vals).await {
+match set_weights(&client, &signer, netuid, uid_vals, weight_vals, version_key).await {
     Ok(()) => println!("Weights set successfully"),
     Err(e) => eprintln!("Error setting weights: {}", e),
 }

@@ -321,7 +321,7 @@ async fn set_weights(
         return Err(anyhow::anyhow!("Mismatched UIDs and weights"));
     }
 
-    // Normalize and convert weights to f32 for the API
+    // Normalize and convert weights to u16 for the API
     let sum: f64 = weight_values.iter().sum();
     if sum <= 0.0 {
         print_error("Weights must sum to a positive value");
@@ -329,6 +329,10 @@ async fn set_weights(
     }
 
     let normalized_f32: Vec<f32> = weight_values.iter().map(|w| (*w / sum) as f32).collect();
+    let normalized_weights: Vec<u16> = normalized_f32
+        .iter()
+        .map(|w| crate::utils::weights::float_to_u16(*w as f64))
+        .collect();
 
     let wallet = match Wallet::new(wallet_name, hotkey_name, None) {
         Ok(w) => w,
@@ -353,13 +357,10 @@ async fn set_weights(
         .map_err(|e| anyhow::anyhow!("Failed to unlock hotkey: {}", e))?;
     let signer = keypair_to_signer(&hotkey);
 
-    // Convert UIDs to u64
-    let uids_u64: Vec<u64> = uids.iter().map(|u| *u as u64).collect();
-
     print_info(&format!("Setting weights for subnet {}", netuid));
     print_info(&format!("Hotkey: {}", hotkey.ss58_address()));
     print_info(&format!("UIDs: {:?}", uids));
-    print_info(&format!("Weights (normalized): {:?}", normalized_f32));
+    print_info(&format!("Weights (normalized): {:?}", normalized_weights));
 
     if !confirm("Proceed with setting weights?", cli.no_prompt) {
         print_info("Weight setting cancelled");
@@ -377,9 +378,9 @@ async fn set_weights(
         &client,
         &signer,
         netuid,
-        &uids_u64,
-        &normalized_f32,
-        Some(0), // version_key
+        &uids,
+        &normalized_weights,
+        0,
         ExtrinsicWait::Finalized,
     )
     .await;

@@ -52,7 +52,7 @@ All query functions are optimized for performance using bulk operations and conc
 The `types` module defines all data structures:
 
 - **neuron.rs** - `NeuronInfo`, `NeuronInfoLite`
-- **subnet.rs** - `SubnetInfo`, `SubnetHyperparameters`, `SubnetIdentity`
+- **subnet.rs** - `SubnetInfo`, `SubnetConfigInfo`, `SubnetIdentity`
 - **delegate.rs** - `DelegateInfo`, `DelegatedInfo`
 - **axon.rs** - `AxonInfo`
 - **prometheus.rs** - `PrometheusInfo`
@@ -72,7 +72,7 @@ The `utils` module provides helper functions:
 - **scale_decode.rs** - SCALE decoding utilities
 - **decoders.rs** - Value type decoding from subxt
 - **crypto.rs** - Cryptographic utilities (commitment hashing)
-- **balance.rs** - RAO/TAO conversion
+- **balance_newtypes.rs** - RAO/TAO conversion
 
 #### validator
 

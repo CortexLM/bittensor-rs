@@ -25,7 +25,7 @@ use crate::crv4::{
     get_mechid_storage_index, prepare_crv4_commit, DEFAULT_COMMIT_REVEAL_VERSION,
 };
 use crate::queries::subnets::{commit_reveal_enabled, tempo, weights_rate_limit};
-use crate::utils::weights::{normalize_weights, U16_MAX};
+use crate::utils::weights::normalize_weights;
 use crate::validator::weights::{
     commit_weights as raw_commit_weights, reveal_weights as raw_reveal_weights,
     set_weights as raw_set_weights,
@@ -701,15 +701,13 @@ impl Subtensor {
             pending.mechanism_id
         );
 
-        let uids_u64: Vec<u64> = pending.uids.iter().map(|u| *u as u64).collect();
-
         let tx_hash = match pending.mechanism_id {
             None | Some(0) => {
                 raw_reveal_weights(
                     &self.client,
                     signer,
                     pending.netuid,
-                    &uids_u64,
+                    &pending.uids,
                     &pending.weights,
                     &pending.salt,
                     pending.version_key,
@@ -770,25 +768,14 @@ impl Subtensor {
         version_key: u64,
         wait_for: ExtrinsicWait,
     ) -> Result<WeightResponse> {
-        // Convert to formats expected by raw functions
-        let uids_u64: Vec<u64> = uids.iter().map(|u| *u as u64).collect();
-        let weights_f32: Vec<f32> = weights.iter().map(|w| *w as f32 / U16_MAX as f32).collect();
-
-        info!(
-            "Setting weights directly: netuid={}, mechanism={}, uids={}",
-            netuid,
-            mechanism_id,
-            uids.len()
-        );
-
         let tx_hash = if mechanism_id == 0 {
             raw_set_weights(
                 &self.client,
                 signer,
                 netuid,
-                &uids_u64,
-                &weights_f32,
-                Some(version_key),
+                uids,
+                weights,
+                version_key,
                 wait_for,
             )
             .await?
@@ -798,9 +785,9 @@ impl Subtensor {
                 signer,
                 netuid,
                 mechanism_id,
-                &uids_u64,
-                &weights_f32,
-                Some(version_key),
+                uids,
+                weights,
+                version_key,
                 wait_for,
             )
             .await?

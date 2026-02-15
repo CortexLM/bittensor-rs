@@ -218,14 +218,18 @@ async fn set_weights(
         return Err(anyhow::anyhow!("Mismatched netuids and weights"));
     }
 
-    // Normalize weights to f32 for the API
+    // Normalize weights to u16 for the API
     let sum: f64 = weight_values.iter().sum();
     if sum <= 0.0 {
         print_error("Weights must sum to a positive value");
         return Err(anyhow::anyhow!("Invalid weights"));
     }
 
-    let normalized: Vec<f32> = weight_values.iter().map(|w| (*w / sum) as f32).collect();
+    let normalized_f32: Vec<f32> = weight_values.iter().map(|w| (*w / sum) as f32).collect();
+    let normalized_weights: Vec<u16> = normalized_f32
+        .iter()
+        .map(|w| crate::utils::weights::float_to_u16(*w as f64))
+        .collect();
 
     let wallet = match Wallet::new(wallet_name, hotkey_name, None) {
         Ok(w) => w,
@@ -253,7 +257,7 @@ async fn set_weights(
     print_info("Setting root network weights");
     print_info(&format!("Coldkey: {}", coldkey.ss58_address()));
     print_info(&format!("Netuids: {:?}", netuids));
-    print_info(&format!("Weights (normalized): {:?}", normalized));
+    print_info(&format!("Weights (normalized): {:?}", normalized_weights));
 
     if !confirm("Proceed with setting weights?", cli.no_prompt) {
         print_info("Weights setting cancelled");
@@ -266,16 +270,12 @@ async fn set_weights(
         .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
     sp.finish_and_clear();
 
-    // Convert netuids to u64 for the API
-    let netuids_u64: Vec<u64> = netuids.iter().map(|n| *n as u64).collect();
-
-    let sp = spinner("Submitting root weights...");
     let result = root_set_weights(
         &client,
         &signer,
-        &netuids_u64,
-        &normalized,
-        Some(0),
+        &netuids,
+        &normalized_weights,
+        0,
         ExtrinsicWait::Finalized,
     )
     .await;

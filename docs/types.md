@@ -118,22 +118,23 @@ pub struct SubnetInfo {
 }
 ```
 
-### SubnetHyperparameters
+### SubnetConfigInfo
 
 Subnet configuration parameters.
 
 ```rust
-pub struct SubnetHyperparameters {
-    pub rho: u16,
-    pub kappa: u16,
-    pub difficulty: u64,
-    pub immunity_period: u64,
+pub struct SubnetConfigInfo {
     pub min_allowed_weights: u64,
-    pub max_allowed_weights: u64,
     pub max_weight_limit: u64,
-    pub scaling_law_power: u64,
+    pub weights_version: u64,
     pub tempo: u64,
-    pub modality: u8,
+    pub max_allowed_uids: u64,
+    pub min_stake: u128,
+    pub immunity_period: u64,
+    pub min_burn: u128,
+    pub max_burn: u128,
+    pub adjustment_alpha: u64,
+    pub target_regs_per_interval: u64,
 }
 ```
 
