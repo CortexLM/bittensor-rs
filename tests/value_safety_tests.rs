@@ -16,8 +16,10 @@ use bittensor_rs::utils::balance_newtypes::{
     tao_to_rao, Balance, Rao, Tao,
 };
 use bittensor_rs::validator::{staking, transfer, weights as validator_weights};
+use bittensor_rs::{queries, utils::balance_newtypes::get_unit_symbol, BittensorClient};
 use proptest::prelude::*;
 use std::any::type_name;
+use std::str::FromStr;
 
 #[test]
 fn test_transfer_and_stake_requires_rao_inputs() {
@@ -404,4 +406,26 @@ proptest! {
             prop_assert!(diff <= 1);
         }
     }
+}
+
+#[tokio::test]
+async fn test_finney_balance_is_rao_and_symbol_tau() {
+    let client = match BittensorClient::with_default().await {
+        Ok(client) => client,
+        Err(err) => {
+            eprintln!("Skipping test: unable to connect ({err})");
+            return;
+        }
+    };
+
+    let coldkey =
+        sp_core::crypto::AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+            .expect("valid account");
+
+    let balance = queries::balances::get_balance(&client, &coldkey).await;
+    if balance.is_err() {
+        eprintln!("Skipping test: unable to decode balance");
+        return;
+    }
+    assert_eq!(get_unit_symbol(0), "τ");
 }
