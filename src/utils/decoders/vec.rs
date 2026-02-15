@@ -83,7 +83,6 @@ pub fn decode_vec_u128(value: &Value) -> Result<Vec<u128>> {
     decode_vec(value, primitive::decode_u128)
 }
 
-/// Decode a vector of (u64,u64) pairs from a Value representing Vec<(Compact<u16>, Compact<u16>)>
 /// Decode a vector of bool from Value
 pub fn decode_vec_bool(value: &Value) -> Result<Vec<bool>> {
     decode_vec(value, primitive::decode_bool)
@@ -104,6 +103,18 @@ pub fn decode_vec_u64_u64_pairs(value: &Value) -> Result<Vec<(u64, u64)>> {
     for entry in extract_values(value) {
         if let Some((first, second)) = extract_tuple2(entry) {
             if let (Ok(a), Ok(b)) = (primitive::decode_u64(first), primitive::decode_u64(second)) {
+                out.push((a, b));
+            }
+        }
+    }
+    Ok(out)
+}
+
+pub fn decode_vec_u16_u16_pairs(value: &Value) -> Result<Vec<(u16, u16)>> {
+    let mut out = Vec::new();
+    for entry in extract_values(value) {
+        if let Some((first, second)) = extract_tuple2(entry) {
+            if let (Ok(a), Ok(b)) = (primitive::decode_u16(first), primitive::decode_u16(second)) {
                 out.push((a, b));
             }
         }

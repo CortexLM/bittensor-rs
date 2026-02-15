@@ -5,6 +5,7 @@ use sp_core::crypto::AccountId32;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeightCommitInfo {
     /// Hotkey that made the commitment
+    #[serde(with = "crate::utils::ss58::serde_account")]
     pub hotkey: AccountId32,
     /// Block number when commitment was made
     pub block: u64,

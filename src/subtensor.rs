@@ -18,7 +18,6 @@
 //!     version_key,
 //! ).await?;
 //! ```
-
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::crv4::{
     calculate_reveal_round, commit_timelocked_mechanism_weights, commit_timelocked_weights,
@@ -165,9 +164,38 @@ impl Subtensor {
         })
     }
 
+    /// Create a new Subtensor connection using the default endpoint
+    pub async fn with_default() -> Result<Self> {
+        let client = BittensorClient::with_default()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
+        Ok(Self {
+            client: Arc::new(client),
+            crv_version: RwLock::new(None),
+            state: RwLock::new(SubtensorState::default()),
+            state_path: None,
+            block_time: 12.0,
+        })
+    }
+
     /// Create with persistence for pending commits
     pub async fn with_persistence(endpoint: &str, state_path: PathBuf) -> Result<Self> {
         let client = BittensorClient::new(endpoint)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
+        let state = SubtensorState::load(&state_path);
+        Ok(Self {
+            client: Arc::new(client),
+            crv_version: RwLock::new(None),
+            state: RwLock::new(state),
+            state_path: Some(state_path),
+            block_time: 12.0,
+        })
+    }
+
+    /// Create with persistence using the default endpoint
+    pub async fn with_default_persistence(state_path: PathBuf) -> Result<Self> {
+        let client = BittensorClient::with_default()
             .await
             .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
         let state = SubtensorState::load(&state_path);
@@ -190,7 +218,10 @@ impl Subtensor {
             block_time: 12.0,
         }
     }
-
+    /// Get current RPC endpoint
+    pub fn endpoint(&self) -> &str {
+        self.client.rpc_url()
+    }
     /// Get the underlying client
     pub fn client(&self) -> &BittensorClient {
         &self.client
@@ -313,6 +344,11 @@ impl Subtensor {
     /// Get mechanism count for a subnet
     pub async fn get_mechanism_count(&self, netuid: u16) -> Result<u8> {
         crate::get_mechanism_count(&self.client, netuid).await
+    }
+
+    /// Resolve mechanism storage index
+    pub fn mechanism_storage_index(netuid: u16, mechanism_id: u8) -> u16 {
+        get_mechid_storage_index(netuid, mechanism_id)
     }
 
     /// Get current epoch phase for a subnet
@@ -802,6 +838,16 @@ impl Subtensor {
     // Utility Methods
     // ==========================================================================
 
+    /// Get pending commit for subnet/mechanism
+    pub async fn pending_commit(
+        &self,
+        netuid: u16,
+        mechanism_id: Option<u8>,
+    ) -> Option<PendingCommit> {
+        let key = (netuid, mechanism_id.filter(|&m| m != 0));
+        let state = self.state.read().await;
+        state.pending_commits.get(&key).cloned()
+    }
     /// Check if there are pending commits to reveal
     pub async fn has_pending_commits(&self) -> bool {
         let state = self.state.read().await;
@@ -885,6 +931,10 @@ impl SubtensorBuilder {
             state_path: None,
             block_time: 12.0,
         }
+    }
+
+    pub fn default() -> Self {
+        Self::new(crate::chain::DEFAULT_RPC_URL)
     }
 
     pub fn with_persistence(mut self, path: PathBuf) -> Self {

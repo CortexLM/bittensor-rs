@@ -5,8 +5,10 @@ use sp_core::crypto::AccountId32;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DelegateInfoBase {
     /// Hotkey of delegate (SS58)
+    #[serde(with = "crate::utils::ss58::serde_account")]
     pub hotkey_ss58: AccountId32,
     /// Coldkey of owner (SS58)
+    #[serde(with = "crate::utils::ss58::serde_account")]
     pub owner_ss58: AccountId32,
     /// Take of the delegate as a percentage (normalized)
     pub take: f64,
@@ -29,6 +31,7 @@ pub struct DelegateInfo {
     /// Total stake of the delegate mapped by netuid
     pub total_stake: std::collections::HashMap<u16, u128>,
     /// Mapping of nominator SS58 addresses to their stakes per subnet
+    #[serde(with = "crate::utils::ss58::serde_account_map")]
     pub nominators: std::collections::HashMap<AccountId32, std::collections::HashMap<u16, u128>>,
 }
 
