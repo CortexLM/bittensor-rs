@@ -1,9 +1,12 @@
 use crate::chain::BittensorClient;
 use crate::errors::{BittensorError, BittensorResult, ChainQueryError};
-use anyhow::Result;
+use crate::utils::decoders::vec::decode_vec;
+use crate::utils::decoders::{decode_bytes, decode_u64};
+use anyhow::{anyhow, Result};
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const COMMITMENTS_PALLET: &str = "Commitments";
@@ -110,7 +113,7 @@ pub async fn get_current_weight_commit_info(
         )
         .await?
     {
-        return Ok(extract_vec_of_bytes(&val));
+        return Ok(decode_vec_of_bytes(&val));
     }
     Ok(Vec::new())
 }
@@ -128,7 +131,7 @@ pub async fn get_timelocked_weight_commits(
         )
         .await?
     {
-        return Ok(extract_vec_of_bytes(&val));
+        return Ok(decode_vec_of_bytes(&val));
     }
     Ok(Vec::new())
 }
@@ -138,7 +141,6 @@ pub async fn get_all_commitments(
     client: &BittensorClient,
     netuid: u16,
 ) -> Result<std::collections::HashMap<AccountId32, String>> {
-    // Gather all hotkeys from subnet, then read each commitment entry
     let n_val = client
         .storage_with_keys(
             "SubtensorModule",
@@ -241,8 +243,7 @@ pub async fn get_last_commitment_bonds_reset_block(
         )
         .await?
     {
-        let s = format!("{:?}", val);
-        return Ok(extract_last_u64_from_str(&s));
+        return Ok(decode_u64(&val).ok());
     }
     Ok(None)
 }
@@ -260,176 +261,79 @@ pub async fn get_current_weight_commit_info_v2(
         )
         .await?
     {
-        let s = format!("{:?}", val);
-        // Split into commit-like chunks; heuristic using ")})," boundary
-        let mut out = Vec::new();
-        for part in s.split(")}),") {
-            if let Some(hk) = extract_first_account_from_str(part) {
-                let block_first = extract_first_u64_from_str(part);
-                let reveal_last = extract_last_u64_from_str(part);
-                let msg = decode_bytes_as_utf8_from_str(part);
-                if block_first.is_some() || !msg.is_empty() || reveal_last.is_some() {
-                    out.push((hk, block_first.unwrap_or(0), msg, reveal_last.unwrap_or(0)));
-                }
-            }
-        }
-        return Ok(out);
+        return Ok(decode_commit_info_v2(&val));
     }
     Ok(Vec::new())
 }
 
-// helper decoders unchanged below
 fn decode_metadata_like(value: &Value) -> String {
     decode_bytes_as_utf8(value)
 }
 
 fn decode_bytes_as_utf8(value: &Value) -> String {
-    let s = format!("{:?}", value);
-    let mut bytes = Vec::new();
-    let mut rem = s.as_str();
-    while let Some(pos) = rem.find("U128(") {
-        let after = &rem[pos + 5..];
-        if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() {
-                if n <= 255 {
-                    bytes.push(n as u8);
-                }
-            }
-            rem = &after[end + 1..];
-        } else {
-            break;
-        }
-    }
-    String::from_utf8_lossy(&bytes).to_string()
-}
-
-#[allow(dead_code)]
-fn decode_revealed_tuple(value: &Value) -> Result<(u64, String)> {
-    let s = format!("{:?}", value);
-    let mut block: u64 = 0;
-    if let Some(pos) = s.rfind("U64(") {
-        let after = &s[pos + 4..];
-        if let Some(end) = after.find(')') {
-            block = after[..end].trim().parse::<u64>().unwrap_or(0);
-        }
-    }
-    Ok((block, decode_bytes_as_utf8(value)))
+    crate::utils::decoders::decode_string(value).unwrap_or_default()
 }
 
 fn decode_revealed_vec(value: &Value) -> Vec<(u64, String)> {
-    let s = format!("{:?}", value);
-    let mut out = Vec::new();
-    for part in s.split(")),") {
-        if part.contains("U128(") && part.contains("U64(") {
-            let msg = decode_bytes_as_utf8_from_str(part);
-            let block = extract_last_u64_from_str(part);
-            if block.is_some() || !msg.is_empty() {
-                out.push((block.unwrap_or(0), msg));
-            }
-        }
-    }
-    out
+    decode_vec(value, |entry| {
+        decode_revealed_entry(entry).ok_or_else(|| anyhow!("invalid"))
+    })
+    .unwrap_or_default()
 }
 
-fn decode_bytes_as_utf8_from_str(s: &str) -> String {
-    let mut bytes = Vec::new();
-    let mut rem = s;
-    while let Some(pos) = rem.find("U128(") {
-        let after = &rem[pos + 5..];
-        if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() {
-                if n <= 255 {
-                    bytes.push(n as u8);
-                }
-            }
-            rem = &after[end + 1..];
-        } else {
-            break;
-        }
+fn decode_revealed_entry(value: &Value) -> Option<(u64, String)> {
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+    if fields.len() < 2 {
+        return None;
     }
-    String::from_utf8_lossy(&bytes).to_string()
+    let block = decode_u64(fields[0]).ok()?;
+    let message = decode_bytes_as_utf8(fields[1]);
+    Some((block, message))
 }
 
-fn extract_last_u64_from_str(s: &str) -> Option<u64> {
-    if let Some(pos) = s.rfind("U64(") {
-        let after = &s[pos + 4..];
-        if let Some(end) = after.find(')') {
-            return after[..end].trim().parse::<u64>().ok();
-        }
-    }
-    None
+fn decode_commit_info_v2(value: &Value) -> Vec<(AccountId32, u64, String, u64)> {
+    decode_vec(value, |entry| {
+        decode_commit_info_v2_entry(entry).ok_or_else(|| anyhow!("invalid"))
+    })
+    .unwrap_or_default()
 }
 
-fn extract_first_u64_from_str(s: &str) -> Option<u64> {
-    if let Some(pos) = s.find("U64(") {
-        let after = &s[pos + 4..];
-        if let Some(end) = after.find(')') {
-            return after[..end].trim().parse::<u64>().ok();
-        }
+fn decode_commit_info_v2_entry(value: &Value) -> Option<(AccountId32, u64, String, u64)> {
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+    if fields.len() < 4 {
+        return None;
     }
-    None
+    let hotkey = crate::utils::decoders::decode_account_id32(fields[0]).ok()?;
+    let block = decode_u64(fields[1]).ok()?;
+    let message = decode_bytes_as_utf8(fields[2]);
+    let reveal_round = decode_u64(fields[3]).ok()?;
+    Some((hotkey, block, message, reveal_round))
 }
 
-fn extract_vec_of_bytes(value: &Value) -> Vec<Vec<u8>> {
-    let s = format!("{:?}", value);
-    let mut groups: Vec<Vec<u8>> = Vec::new();
-    let mut current: Vec<u8> = Vec::new();
-    let mut rem = s.as_str();
-    while let Some(pos) = rem.find("U128(") {
-        let after = &rem[pos + 5..];
-        if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() {
-                if n <= 255 {
-                    current.push(n as u8);
-                }
-            }
-            if let Some(close) = after[end..].find(")") {
-                if close > 0 && !current.is_empty() {
-                    groups.push(std::mem::take(&mut current));
-                }
-            }
-            rem = &after[end + 1..];
-        } else {
-            break;
-        }
-    }
-    if !current.is_empty() {
-        groups.push(current);
-    }
-    groups
-}
-
-fn extract_first_account_from_str(s: &str) -> Option<AccountId32> {
-    if let Some(pos) = s.find("0x") {
-        let hexstr: String = s[pos + 2..]
-            .chars()
-            .take_while(|c| c.is_ascii_hexdigit())
-            .collect();
-        if hexstr.len() >= 64 {
-            if let Ok(bytes) = hex::decode(&hexstr[0..64]) {
-                if bytes.len() == 32 {
-                    if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
-                        return Some(AccountId32::from(arr));
-                    }
-                }
-            }
-        }
-    }
-    None
+fn decode_vec_of_bytes(value: &Value) -> Vec<Vec<u8>> {
+    decode_vec(value, |entry| {
+        decode_bytes(entry).map_err(|e| anyhow!("{e}"))
+    })
+    .unwrap_or_default()
 }
 
 /// Get weight commitment for a hotkey on a subnet
-///
-/// Queries the CRV3WeightCommits storage to get the weight commitment
-/// information for a specific hotkey on a subnet.
-///
-/// # Arguments
-/// * `client` - The Bittensor client
-/// * `netuid` - The subnet ID
-/// * `hotkey` - The hotkey account to query
-///
-/// # Returns
-/// The WeightCommitInfo if found, None otherwise
 pub async fn get_weight_commitment(
     client: &BittensorClient,
     netuid: u16,
@@ -459,52 +363,29 @@ pub async fn get_weight_commitment(
 
 /// Decode WeightCommitInfo from a Value
 fn decode_weight_commit_info(value: &Value) -> Option<WeightCommitInfo> {
-    let s = format!("{:?}", value);
-
-    // Extract block (u64), commit_hash (bytes), reveal_round (u64)
-    let block = extract_first_u64_from_str(&s).unwrap_or(0);
-
-    // Extract bytes for commit_hash
-    let mut commit_hash = Vec::new();
-    let mut rem = s.as_str();
-    while let Some(pos) = rem.find("U128(") {
-        let after = &rem[pos + 5..];
-        if let Some(end) = after.find(')') {
-            if let Ok(n) = after[..end].trim().parse::<u128>() {
-                if n <= 255 {
-                    commit_hash.push(n as u8);
-                }
-            }
-            rem = &after[end + 1..];
-        } else {
-            break;
-        }
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+    if fields.len() < 3 {
+        return None;
     }
-
-    let reveal_round = extract_last_u64_from_str(&s).unwrap_or(0);
-
-    if block > 0 || !commit_hash.is_empty() || reveal_round > 0 {
-        Some(WeightCommitInfo::new(block, commit_hash, reveal_round))
-    } else {
-        None
-    }
+    let block = decode_u64(fields[0]).ok()?;
+    let commit_hash = decode_bytes(fields[1]).ok()?;
+    let reveal_round = decode_u64(fields[2]).ok()?;
+    Some(WeightCommitInfo::new(block, commit_hash, reveal_round))
 }
 
 /// Get all weight commitments for a subnet
-///
-/// Queries all weight commitments from all neurons registered on the subnet.
-///
-/// # Arguments
-/// * `client` - The Bittensor client
-/// * `netuid` - The subnet ID
-///
-/// # Returns
-/// A vector of (AccountId32, WeightCommitInfo) tuples for all commitments
 pub async fn get_all_weight_commitments(
     client: &BittensorClient,
     netuid: u16,
 ) -> BittensorResult<Vec<(AccountId32, WeightCommitInfo)>> {
-    // Get the number of neurons in the subnet
     let n_val = client
         .storage_with_keys(
             SUBTENSOR_MODULE,
@@ -527,7 +408,6 @@ pub async fn get_all_weight_commitments(
     let mut commitments = Vec::new();
 
     for uid in 0..n {
-        // Get the hotkey for this UID
         let hk_val = client
             .storage_with_keys(
                 SUBTENSOR_MODULE,
@@ -545,7 +425,6 @@ pub async fn get_all_weight_commitments(
 
         if let Some(hk_val) = hk_val {
             if let Ok(hotkey) = crate::utils::decoders::decode_account_id32(&hk_val) {
-                // Get the commitment for this hotkey
                 if let Ok(Some(commit_info)) = get_weight_commitment(client, netuid, &hotkey).await
                 {
                     commitments.push((hotkey, commit_info));
@@ -558,20 +437,10 @@ pub async fn get_all_weight_commitments(
 }
 
 /// Get pending weight commits for a subnet
-///
-/// Returns weight commits that have been submitted but not yet revealed.
-///
-/// # Arguments
-/// * `client` - The Bittensor client
-/// * `netuid` - The subnet ID
-///
-/// # Returns
-/// A vector of (AccountId32, WeightCommitInfo) for pending commits
 pub async fn get_pending_weight_commits(
     client: &BittensorClient,
     netuid: u16,
 ) -> BittensorResult<Vec<(AccountId32, WeightCommitInfo)>> {
-    // Query the V2 commits storage which contains pending commits
     let commits_v2 = get_current_weight_commit_info_v2(client, netuid)
         .await
         .map_err(|e| {
@@ -595,14 +464,6 @@ pub async fn get_pending_weight_commits(
 }
 
 /// Check if a hotkey has a pending weight commitment on a subnet
-///
-/// # Arguments
-/// * `client` - The Bittensor client
-/// * `netuid` - The subnet ID
-/// * `hotkey` - The hotkey to check
-///
-/// # Returns
-/// true if the hotkey has a pending commitment
 pub async fn has_pending_commitment(
     client: &BittensorClient,
     netuid: u16,
@@ -613,14 +474,6 @@ pub async fn has_pending_commitment(
 }
 
 /// Get the last commit block for a hotkey on a subnet
-///
-/// # Arguments
-/// * `client` - The Bittensor client
-/// * `netuid` - The subnet ID
-/// * `hotkey` - The hotkey to query
-///
-/// # Returns
-/// The block number of the last commitment, or None if no commitment exists
 pub async fn get_last_commit_block(
     client: &BittensorClient,
     netuid: u16,

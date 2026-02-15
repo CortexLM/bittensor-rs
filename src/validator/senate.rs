@@ -3,10 +3,13 @@
 
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::errors::{BittensorError, BittensorResult, ChainQueryError, ExtrinsicError};
-use crate::utils::decoders::decode_vec_account_id32;
-
+use crate::utils::decoders::{
+    decode_account_id32, decode_bytes, decode_u64, decode_vec, decode_vec_account_id32,
+};
+use anyhow::anyhow;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const SENATE_MODULE: &str = "SenateMembers";
@@ -318,27 +321,7 @@ pub async fn get_vote_data(
         })?;
 
     match voting_val {
-        Some(val) => {
-            let s = format!("{:?}", val);
-
-            let index = extract_first_u64_after_key(&s, "index")
-                .map(|v| v as u32)
-                .unwrap_or(0);
-            let threshold = extract_first_u64_after_key(&s, "threshold")
-                .map(|v| v as u32)
-                .unwrap_or(0);
-            let end = extract_first_u64_after_key(&s, "end").unwrap_or(0);
-            let ayes = extract_accounts_array_after_key(&s, "ayes");
-            let nays = extract_accounts_array_after_key(&s, "nays");
-
-            Ok(Some(VoteData {
-                index,
-                threshold,
-                ayes,
-                nays,
-                end,
-            }))
-        }
+        Some(val) => Ok(decode_vote_data(&val)),
         None => Ok(None),
     }
 }
@@ -358,15 +341,7 @@ pub async fn get_proposal_count(client: &BittensorClient) -> BittensorResult<u32
         })?;
 
     match count_val {
-        Some(val) => {
-            let s = format!("{:?}", val);
-            // Try to extract U32 or U64 value
-            if let Some(count) = extract_u32_from_value(&s) {
-                Ok(count)
-            } else {
-                Ok(0)
-            }
-        }
+        Some(val) => Ok(decode_u64(&val).unwrap_or(0) as u32),
         None => Ok(0),
     }
 }
@@ -389,28 +364,9 @@ async fn get_triumvirate_prime(client: &BittensorClient) -> BittensorResult<Acco
         })?;
 
     match prime_val {
-        Some(val) => {
-            let s = format!("{:?}", val);
-            // Extract AccountId32 from the value
-            if let Some(hx_pos) = s.find("0x") {
-                let hex_str: String = s[hx_pos + 2..]
-                    .chars()
-                    .take_while(|c| c.is_ascii_hexdigit())
-                    .collect();
-                if hex_str.len() >= 64 {
-                    if let Ok(bytes) = hex::decode(&hex_str[..64]) {
-                        if bytes.len() == 32 {
-                            let mut arr = [0u8; 32];
-                            arr.copy_from_slice(&bytes);
-                            return Ok(AccountId32::from(arr));
-                        }
-                    }
-                }
-            }
-            Err(BittensorError::ChainQuery(ChainQueryError::new(
-                "Failed to decode triumvirate prime",
-            )))
-        }
+        Some(val) => decode_account_id32(&val).map_err(|_| {
+            BittensorError::ChainQuery(ChainQueryError::new("Failed to decode triumvirate prime"))
+        }),
         None => Err(BittensorError::ChainQuery(ChainQueryError::new(
             "Triumvirate prime not set",
         ))),
@@ -424,188 +380,160 @@ async fn get_triumvirate_prime(client: &BittensorClient) -> BittensorResult<Acco
 /// This function parses Rust's Debug format output. The Debug format is not stable
 /// and may change between versions of subxt. This approach is used because the
 /// Value API doesn't provide direct typed access for all storage values.
-fn extract_u32_from_value(s: &str) -> Option<u32> {
-    // Try U32( first
-    if let Some(pos) = s.find("U32(") {
-        let aft = &s[pos + 4..];
-        if let Some(end) = aft.find(')') {
-            return aft[..end].trim().parse::<u32>().ok();
-        }
+fn decode_vote_data(value: &Value) -> Option<VoteData> {
+    if let Ok(fields) = crate::utils::decoders::decode_named_composite(value) {
+        let index = fields
+            .get("index")
+            .and_then(|v| decode_u64(v).ok())
+            .map(|v| v as u32)
+            .unwrap_or(0);
+        let threshold = fields
+            .get("threshold")
+            .and_then(|v| decode_u64(v).ok())
+            .map(|v| v as u32)
+            .unwrap_or(0);
+        let end = fields
+            .get("end")
+            .and_then(|v| decode_u64(v).ok())
+            .unwrap_or(0);
+        let ayes = fields
+            .get("ayes")
+            .and_then(|v| decode_vec_account_id32(v).ok())
+            .unwrap_or_default();
+        let nays = fields
+            .get("nays")
+            .and_then(|v| decode_vec_account_id32(v).ok())
+            .unwrap_or_default();
+        return Some(VoteData {
+            index,
+            threshold,
+            ayes,
+            nays,
+            end,
+        });
     }
-    // Try U64( next
-    if let Some(pos) = s.find("U64(") {
-        let aft = &s[pos + 4..];
-        if let Some(end) = aft.find(')') {
-            return aft[..end].trim().parse::<u64>().ok().map(|v| v as u32);
-        }
+
+    let values = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+
+    if values.len() < 5 {
+        return None;
     }
-    // Try U128( last
-    if let Some(pos) = s.find("U128(") {
-        let aft = &s[pos + 5..];
-        if let Some(end) = aft.find(')') {
-            return aft[..end].trim().parse::<u128>().ok().map(|v| v as u32);
-        }
-    }
-    None
-}
 
-/// Extract the first u64 value after a key in a debug string.
-///
-/// # Note on Debug String Parsing
-///
-/// This function parses Rust's Debug format output. The Debug format is not stable
-/// and may change between versions of subxt. Supports U32, U64, and U128 patterns,
-/// returning the value as u64 (with potential truncation for U128 values).
-fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
-    if let Some(kp) = s.find(key) {
-        let subs = &s[kp..];
-
-        // Find which pattern appears first after the key
-        let u64_pos = subs.find("U64(");
-        let u32_pos = subs.find("U32(");
-        let u128_pos = subs.find("U128(");
-
-        // Collect all found patterns with their positions
-        let mut candidates: Vec<(usize, &str, usize)> = vec![];
-        if let Some(p) = u64_pos {
-            candidates.push((p, "U64(", 4));
-        }
-        if let Some(p) = u32_pos {
-            candidates.push((p, "U32(", 4));
-        }
-        if let Some(p) = u128_pos {
-            candidates.push((p, "U128(", 5));
-        }
-
-        // Sort by position to find the first one
-        candidates.sort_by_key(|c| c.0);
-
-        if let Some((pos, _pattern, skip)) = candidates.first() {
-            let aft = &subs[pos + skip..];
-            if let Some(end) = aft.find(')') {
-                // Parse as u128 to handle all cases, then convert to u64
-                return aft[..end].trim().parse::<u128>().ok().map(|v| v as u64);
-            }
-        }
-    }
-    None
-}
-
-/// Extract AccountId32 array after a key in a debug string.
-///
-/// # Note on Debug String Parsing
-///
-/// This function parses Rust's Debug format output (via `format!("{:?}", value)`).
-/// This is inherently fragile as Debug format is not guaranteed to be stable.
-/// However, it's necessary because the Value API from subxt doesn't provide
-/// direct access to nested composite fields. The function tries to be defensive
-/// by properly tracking bracket nesting depth to correctly identify array boundaries.
-///
-/// If the Debug format changes in future versions of subxt, this parser may need updates.
-fn extract_accounts_array_after_key(s: &str, key: &str) -> Vec<AccountId32> {
-    let mut accounts = Vec::new();
-    if let Some(kp) = s.find(key) {
-        let subs = &s[kp..];
-        // Find the opening bracket of the array
-        let array_start = match subs.find('[') {
-            Some(p) => p,
-            None => return accounts,
-        };
-        let array_content = &subs[array_start..];
-
-        // Find the matching closing bracket by tracking nesting depth
-        let mut depth = 0;
-        let mut end_pos = 0;
-        for (i, c) in array_content.char_indices() {
-            match c {
-                '[' => depth += 1,
-                ']' => {
-                    depth -= 1;
-                    if depth == 0 {
-                        end_pos = i;
-                        break;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // If we didn't find a matching bracket, use the rest of the string
-        let bounded = if end_pos > 0 {
-            &array_content[..=end_pos]
-        } else {
-            array_content
-        };
-
-        // Now extract accounts only within this bounded array
-        let mut rem = bounded;
-        while let Some(pos) = rem.find("0x") {
-            let hexstr: String = rem[pos + 2..]
-                .chars()
-                .take_while(|c| c.is_ascii_hexdigit())
-                .collect();
-            if hexstr.len() >= 64 {
-                if let Ok(bytes) = hex::decode(&hexstr[..64]) {
-                    if bytes.len() == 32 {
-                        if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
-                            accounts.push(AccountId32::from(arr));
-                        }
-                    }
-                }
-            }
-            // Move past this hex string
-            let advance = pos + 2 + hexstr.len();
-            if advance >= rem.len() {
-                break;
-            }
-            rem = &rem[advance..];
-        }
-    }
-    accounts
+    let index = decode_u64(values[0]).ok().map(|v| v as u32).unwrap_or(0);
+    let threshold = decode_u64(values[1]).ok().map(|v| v as u32).unwrap_or(0);
+    let end = decode_u64(values[2]).ok().unwrap_or(0);
+    let ayes = decode_vec_account_id32(values[3]).unwrap_or_default();
+    let nays = decode_vec_account_id32(values[4]).unwrap_or_default();
+    Some(VoteData {
+        index,
+        threshold,
+        ayes,
+        nays,
+        end,
+    })
 }
 
 /// Extract proposal hashes from the Proposals storage value
 fn extract_proposal_hashes(val: &Value) -> Vec<[u8; 32]> {
-    let s = format!("{:?}", val);
-    let mut hashes = Vec::new();
-    let mut rem = s.as_str();
-
-    while let Some(pos) = rem.find("0x") {
-        let hex_str: String = rem[pos + 2..]
-            .chars()
-            .take_while(|c| c.is_ascii_hexdigit())
-            .collect();
-        if hex_str.len() >= 64 {
-            if let Ok(bytes) = hex::decode(&hex_str[..64]) {
-                if bytes.len() == 32 {
-                    let mut arr = [0u8; 32];
-                    arr.copy_from_slice(&bytes);
-                    hashes.push(arr);
-                }
-            }
+    decode_vec(val, |entry| {
+        let bytes = decode_bytes(entry)?;
+        if bytes.len() == 32 {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes);
+            Ok(arr)
+        } else {
+            Err(anyhow!("invalid proposal hash"))
         }
-        rem = &rem[pos + 2 + hex_str.len()..];
-    }
-
-    hashes
+    })
+    .unwrap_or_default()
 }
 
 /// Extract call data from a proposal value
-fn extract_call_data(val: &Value) -> Vec<u8> {
-    let s = format!("{:?}", val);
-    // Call data is typically stored as bytes, look for 0x prefixed hex
-    if let Some(pos) = s.find("0x") {
-        let hex_str: String = s[pos + 2..]
-            .chars()
-            .take_while(|c| c.is_ascii_hexdigit())
-            .collect();
-        if !hex_str.is_empty() {
-            if let Ok(bytes) = hex::decode(&hex_str) {
-                return bytes;
+
+fn extract_u32_from_value(s: &str) -> Option<u32> {
+    let s = s.trim();
+    let (prefix, base) = if let Some(rest) = s.strip_prefix("U32(") {
+        (rest, 32)
+    } else if let Some(rest) = s.strip_prefix("U64(") {
+        (rest, 64)
+    } else if let Some(rest) = s.strip_prefix("U128(") {
+        (rest, 128)
+    } else {
+        return None;
+    };
+    let end = prefix.find(')')?;
+    let value = prefix[..end].trim().parse::<u64>().ok()?;
+    if base == 128 && value > u32::MAX as u64 {
+        return None;
+    }
+    Some(value as u32)
+}
+
+fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
+    let key_pos = s.find(key)?;
+    let mut slice = &s[key_pos + key.len()..];
+    if let Some(colon_pos) = slice.find(':') {
+        slice = &slice[colon_pos + 1..];
+    }
+
+    let prefixes = ["U64(", "U32(", "U128("];
+    let mut best: Option<(usize, &str)> = None;
+    for prefix in prefixes {
+        if let Some(pos) = slice.find(prefix) {
+            if best.map_or(true, |(best_pos, _)| pos < best_pos) {
+                best = Some((pos, prefix));
             }
         }
     }
-    Vec::new()
+    let (pos, prefix) = best?;
+    let number_start = pos + prefix.len();
+    let after_prefix = &slice[number_start..];
+    let end = after_prefix.find(')')?;
+    after_prefix[..end].trim().parse::<u64>().ok()
+}
+
+fn extract_accounts_array_after_key(s: &str, key: &str) -> Vec<AccountId32> {
+    let key_pos = match s.find(key) {
+        Some(pos) => pos,
+        None => return Vec::new(),
+    };
+    let after_key = &s[key_pos + key.len()..];
+    let start = match after_key.find('[') {
+        Some(pos) => pos,
+        None => return Vec::new(),
+    };
+    let after_bracket = &after_key[start + 1..];
+    let end = match after_bracket.find(']') {
+        Some(pos) => pos,
+        None => return Vec::new(),
+    };
+    let content = &after_bracket[..end];
+
+    content
+        .split(',')
+        .filter_map(|entry| {
+            let trimmed = entry.trim();
+            let hex_str = trimmed.strip_prefix("0x").unwrap_or(trimmed);
+            let decoded = hex::decode(hex_str).ok()?;
+            if decoded.len() != 32 {
+                return None;
+            }
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(&decoded);
+            Some(AccountId32::from(bytes))
+        })
+        .collect()
+}
+fn extract_call_data(val: &Value) -> Vec<u8> {
+    decode_bytes(val).unwrap_or_default()
 }
 
 // =============================================================================

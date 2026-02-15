@@ -208,7 +208,6 @@ pub async fn get_current_subnet_price_rao(client: &BittensorClient, netuid: u16)
 }
 
 fn parse_position_fields(value: &Value) -> (Option<u64>, i32, i32, u128, Option<u64>) {
-    // Use proper SCALE decoding for position fields
     if let Ok(fields) = decode_named_composite(value) {
         let id = fields.get("id").and_then(|v| decode_u64(v).ok());
         let tick_low = fields
@@ -226,15 +225,7 @@ fn parse_position_fields(value: &Value) -> (Option<u64>, i32, i32, u128, Option<
         let netuid = fields.get("netuid").and_then(|v| decode_u64(v).ok());
         return (id, tick_low, tick_high, liquidity, netuid);
     }
-
-    // Fallback to old method if proper decoding fails
-    let s = format!("{:?}", value);
-    let id = extract_first_u64_after_key(&s, "id");
-    let tick_low = extract_first_i32_after_key(&s, "tick_low").unwrap_or(0);
-    let tick_high = extract_first_i32_after_key(&s, "tick_high").unwrap_or(0);
-    let liquidity = extract_first_u128_after_key(&s, "liquidity").unwrap_or(0);
-    let netuid = extract_first_u64_after_key(&s, "netuid");
-    (id, tick_low, tick_high, liquidity, netuid)
+    (None, 0, 0, 0, None)
 }
 
 async fn read_fixed_u64f64(
@@ -345,71 +336,6 @@ fn calculate_fees_for_position(
     (fees_tao, fees_alpha)
 }
 
-#[allow(dead_code)]
-fn extract_first_u128(s: &str) -> Option<u128> {
-    if let Some(pos) = s.find("U128(") {
-        let aft = &s[pos + 5..];
-        if let Some(end) = aft.find(')') {
-            return aft[..end].trim().parse::<u128>().ok();
-        }
-    }
-    None
-}
-fn extract_first_u128_after_key(s: &str, key: &str) -> Option<u128> {
-    if let Some(kp) = s.find(key) {
-        let subs = &s[kp..];
-        if let Some(p) = subs.find("U128(") {
-            let aft = &subs[p + 5..];
-            if let Some(end) = aft.find(')') {
-                return aft[..end].trim().parse::<u128>().ok();
-            }
-        }
-    }
-    None
-}
-fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
-    if let Some(kp) = s.find(key) {
-        let subs = &s[kp..];
-        if let Some(p) = subs.find("U64(") {
-            let aft = &subs[p + 4..];
-            if let Some(end) = aft.find(')') {
-                return aft[..end].trim().parse::<u64>().ok();
-            }
-        }
-        if let Some(p) = subs.find("I64(") {
-            let aft = &subs[p + 4..];
-            if let Some(end) = aft.find(')') {
-                return aft[..end].trim().parse::<i64>().ok().and_then(|v| {
-                    if v >= 0 {
-                        Some(v as u64)
-                    } else {
-                        None
-                    }
-                });
-            }
-        }
-    }
-    None
-}
-fn extract_first_i32_after_key(s: &str, key: &str) -> Option<i32> {
-    if let Some(kp) = s.find(key) {
-        let subs = &s[kp..];
-        if let Some(p) = subs.find("I32(") {
-            let aft = &subs[p + 4..];
-            if let Some(end) = aft.find(')') {
-                return aft[..end].trim().parse::<i32>().ok();
-            }
-        }
-        if let Some(p) = subs.find("U32(") {
-            let aft = &subs[p + 4..];
-            if let Some(end) = aft.find(')') {
-                return aft[..end].trim().parse::<u32>().ok().map(|v| v as i32);
-            }
-        }
-    }
-    None
-}
-
 fn extract_fixed_field(value: &Value, key: &str) -> Option<f64> {
     // Try proper SCALE decoding first
     if let Ok(fields) = decode_named_composite(value) {
@@ -417,22 +343,7 @@ fn extract_fixed_field(value: &Value, key: &str) -> Option<f64> {
             return decode_fixed_u64f64(field_val).ok();
         }
     }
-
-    // Fallback to string parsing if needed
-    let s = format!("{:?}", value);
-    let p = s.find(key)?;
-    let subs = &s[p..];
-    // find next U128 after key
-    let p2 = subs.find("U128(")?;
-    let aft = &subs[p2 + 5..];
-    let end = aft.find(')')?;
-    let bits = aft[..end].trim().parse::<u128>().ok()?;
-    let frac_bits: u32 = 64;
-    let fractional_mask: u128 = (1u128 << frac_bits) - 1u128;
-    let fractional_part: u128 = bits & fractional_mask;
-    let integer_part: u128 = bits >> frac_bits;
-    let frac_float = (fractional_part as f64) / ((1u128 << frac_bits) as f64);
-    Some((integer_part as f64) + frac_float)
+    None
 }
 
 fn price_to_tick(price: f64) -> i32 {

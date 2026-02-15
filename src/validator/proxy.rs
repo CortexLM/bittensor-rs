@@ -3,10 +3,12 @@
 
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::errors::{BittensorError, BittensorResult, ChainQueryError, ExtrinsicError};
+use crate::utils::decoders::vec::decode_vec;
 use crate::utils::decoders::{decode_account_id32, decode_u128};
 use parity_scale_codec::{Decode, Encode};
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 const PROXY_MODULE: &str = "Proxy";
 
@@ -417,178 +419,55 @@ pub async fn is_proxy(
 /// The Proxies storage returns a tuple of (BoundedVec<ProxyDefinition>, Balance)
 /// We parse this by examining the debug representation of the Value
 fn parse_proxies_storage(value: &Value) -> BittensorResult<Vec<ProxyInfo>> {
-    let mut proxies = Vec::new();
-    let value_str = format!("{:?}", value);
+    let list_value = match &value.value {
+        ValueDef::Composite(Composite::Unnamed(values)) => values.first(),
+        ValueDef::Composite(Composite::Named(fields)) => fields.first().map(|(_, v)| v),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Unnamed(values) => values.first(),
+            Composite::Named(fields) => fields.first().map(|(_, v)| v),
+        },
+        _ => None,
+    };
+    let Some(list_value) = list_value else {
+        return Ok(Vec::new());
+    };
 
-    // Parse proxy definitions from the storage value
-    // Each ProxyDefinition has format: { delegate: AccountId, proxy_type: ProxyType, delay: u32 }
-    // The storage format is a tuple: ((proxy_list), deposit)
-
-    // Extract account IDs from the value string
-    let account_ids = extract_account_ids_from_debug(&value_str);
-
-    // Extract proxy types from the value string
-    let proxy_types = extract_proxy_types_from_debug(&value_str);
-
-    // Extract delays from the value string
-    let delays = extract_delays_from_debug(&value_str);
-
-    // Match up the extracted values into ProxyInfo structs
-    // The first account ID in the tuple is usually followed by proxy type and delay
-    let num_proxies = account_ids.len().min(proxy_types.len()).min(delays.len());
-
-    for i in 0..num_proxies {
-        proxies.push(ProxyInfo {
-            delegate: account_ids[i].clone(),
-            proxy_type: proxy_types[i],
-            delay: delays[i],
-        });
-    }
-
-    Ok(proxies)
+    decode_vec(list_value, |entry| {
+        decode_proxy_info(entry).ok_or_else(|| {
+            anyhow::anyhow!(
+                "{}",
+                BittensorError::ChainQuery(ChainQueryError::with_storage(
+                    "Invalid proxy entry".to_string(),
+                    PROXY_MODULE,
+                    "Proxies",
+                ))
+            )
+        })
+    })
+    .map_err(|err| BittensorError::ChainQuery(ChainQueryError::new(err.to_string())))
 }
 
-/// Extract AccountId32 values from a debug string representation
-fn extract_account_ids_from_debug(s: &str) -> Vec<AccountId32> {
-    let mut accounts = Vec::new();
-
-    // Look for 0x-prefixed hex strings that are 64 characters (32 bytes)
-    let mut search_start = 0;
-    while let Some(start) = s[search_start..].find("0x") {
-        let abs_start = search_start + start;
-        let hex_start = abs_start + 2;
-
-        if hex_start < s.len() {
-            let hex_chars: String = s[hex_start..]
-                .chars()
-                .take_while(|c| c.is_ascii_hexdigit())
-                .take(64)
-                .collect();
-
-            if hex_chars.len() == 64 {
-                if let Ok(bytes) = hex::decode(&hex_chars) {
-                    if bytes.len() == 32 {
-                        let mut arr = [0u8; 32];
-                        arr.copy_from_slice(&bytes);
-                        accounts.push(AccountId32::from(arr));
-                    }
-                }
-            }
-
-            search_start = hex_start + hex_chars.len();
-        } else {
-            break;
-        }
+fn decode_proxy_info(value: &Value) -> Option<ProxyInfo> {
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields.iter().map(|(_, v)| v).collect(),
+        ValueDef::Composite(Composite::Unnamed(values)) => values.iter().collect(),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    };
+    if fields.len() < 3 {
+        return None;
     }
-
-    accounts
-}
-
-/// Extract ProxyType values from a debug string representation
-fn extract_proxy_types_from_debug(s: &str) -> Vec<ProxyType> {
-    let mut types = Vec::new();
-
-    // Look for variant names in the debug output
-    let variant_names = [
-        "Any",
-        "NonTransfer",
-        "Governance",
-        "Staking",
-        "Registration",
-        "Transfer",
-        "Owner",
-        "NonCritical",
-        "Triumvirate",
-        "Subnet",
-        "Childkey",
-        "Senate",
-    ];
-
-    // Find all variant patterns like Variant("TypeName" or name: "TypeName"
-    for variant_name in variant_names {
-        let mut search_start = 0;
-        while search_start < s.len() {
-            // Check for Variant("TypeName" pattern
-            let pattern1 = format!("Variant(\"{}", variant_name);
-            let pattern2 = format!("\"{}\"", variant_name);
-
-            if let Some(pos) = s[search_start..].find(&pattern1) {
-                if let Some(pt) = ProxyType::from_str(variant_name) {
-                    types.push(pt);
-                }
-                search_start = search_start + pos + pattern1.len();
-            } else if let Some(pos) = s[search_start..].find(&pattern2) {
-                // Only count if it looks like a variant context
-                let context_start = pos.saturating_sub(10);
-                let context = &s[search_start + context_start..search_start + pos + pattern2.len()];
-                if context.contains("Variant") || context.contains("name:") {
-                    if let Some(pt) = ProxyType::from_str(variant_name) {
-                        types.push(pt);
-                    }
-                }
-                search_start = search_start + pos + pattern2.len();
-            } else {
-                break;
-            }
-        }
-    }
-
-    // If no variants found, try numeric parsing
-    if types.is_empty() {
-        // Look for U8/U16/U32 patterns that could be proxy type indices
-        let mut search_start = 0;
-        while let Some(pos) = s[search_start..].find("U8(") {
-            let abs_pos = search_start + pos;
-            let num_start = abs_pos + 3;
-            if let Some(end) = s[num_start..].find(')') {
-                if let Ok(num) = s[num_start..num_start + end].trim().parse::<u8>() {
-                    if num <= 11 {
-                        if let Some(pt) = proxy_type_from_u8(num) {
-                            types.push(pt);
-                        }
-                    }
-                }
-            }
-            search_start = num_start;
-        }
-    }
-
-    types
-}
-
-/// Extract delay values (u32) from a debug string representation
-fn extract_delays_from_debug(s: &str) -> Vec<u32> {
-    let mut delays = Vec::new();
-
-    // Look for U32 patterns
-    let mut search_start = 0;
-    while let Some(pos) = s[search_start..].find("U32(") {
-        let abs_pos = search_start + pos;
-        let num_start = abs_pos + 4;
-        if let Some(end) = s[num_start..].find(')') {
-            if let Ok(num) = s[num_start..num_start + end].trim().parse::<u32>() {
-                delays.push(num);
-            }
-        }
-        search_start = num_start;
-    }
-
-    // Also try U64 in case delays are stored as larger integers
-    if delays.is_empty() {
-        search_start = 0;
-        while let Some(pos) = s[search_start..].find("U64(") {
-            let abs_pos = search_start + pos;
-            let num_start = abs_pos + 4;
-            if let Some(end) = s[num_start..].find(')') {
-                if let Ok(num) = s[num_start..num_start + end].trim().parse::<u64>() {
-                    delays.push(num as u32);
-                }
-            }
-            search_start = num_start;
-        }
-    }
-
-    delays
+    let delegate = decode_account_id32(fields[0]).ok()?;
+    let proxy_type = parse_proxy_type(fields[1])?;
+    let delay = decode_u128(fields[2]).ok()? as u32;
+    Some(ProxyInfo {
+        delegate,
+        proxy_type,
+        delay,
+    })
 }
 
 /// Convert a u8 value to ProxyType
@@ -613,34 +492,14 @@ fn proxy_type_from_u8(value: u8) -> Option<ProxyType> {
 /// Parse a ProxyType from a Value using debug string parsing
 #[allow(dead_code)]
 fn parse_proxy_type(value: &Value) -> Option<ProxyType> {
-    let s = format!("{:?}", value);
-
-    // Try variant pattern first
-    for (variant_name, pt) in [
-        ("Any", ProxyType::Any),
-        ("NonTransfer", ProxyType::NonTransfer),
-        ("Governance", ProxyType::Governance),
-        ("Staking", ProxyType::Staking),
-        ("Registration", ProxyType::Registration),
-        ("Transfer", ProxyType::Transfer),
-        ("Owner", ProxyType::Owner),
-        ("NonCritical", ProxyType::NonCritical),
-        ("Triumvirate", ProxyType::Triumvirate),
-        ("Subnet", ProxyType::Subnet),
-        ("Childkey", ProxyType::Childkey),
-        ("Senate", ProxyType::Senate),
-    ] {
-        if s.contains(&format!("\"{}\"", variant_name)) {
-            return Some(pt);
+    match &value.value {
+        ValueDef::Variant(variant) => ProxyType::from_str(&variant.name),
+        ValueDef::Primitive(_) | ValueDef::Composite(_) | ValueDef::BitSequence(_) => {
+            decode_u128(value)
+                .ok()
+                .and_then(|num| proxy_type_from_u8(num as u8))
         }
     }
-
-    // Try numeric parsing
-    if let Ok(num) = decode_u128(value) {
-        return proxy_type_from_u8(num as u8);
-    }
-
-    None
 }
 
 /// Parse a u32 from a Value
@@ -726,25 +585,6 @@ mod tests {
         assert_eq!(proxy_type_from_u8(3), Some(ProxyType::Staking));
         assert_eq!(proxy_type_from_u8(11), Some(ProxyType::Senate));
         assert_eq!(proxy_type_from_u8(255), None);
-    }
-
-    #[test]
-    fn test_extract_account_ids_from_debug() {
-        // Test with a known hex AccountId
-        let hex_account = "0x0101010101010101010101010101010101010101010101010101010101010101";
-        let test_str = format!("Some data {} more data", hex_account);
-        let accounts = extract_account_ids_from_debug(&test_str);
-        assert_eq!(accounts.len(), 1);
-        assert_eq!(accounts[0], AccountId32::from([1u8; 32]));
-    }
-
-    #[test]
-    fn test_extract_delays_from_debug() {
-        let test_str = "Composite { values: [U32(100), U32(200)] }";
-        let delays = extract_delays_from_debug(test_str);
-        assert_eq!(delays.len(), 2);
-        assert_eq!(delays[0], 100);
-        assert_eq!(delays[1], 200);
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use super::primitive;
 use super::utils;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
@@ -14,65 +15,36 @@ fn get_identity_regex() -> &'static regex::Regex {
     })
 }
 
-/// Extract a u128 primitive from a Value using the proper API
-fn extract_u128_from_value(value: &Value) -> Option<u128> {
-    value.as_u128()
-}
+const MAX_DECODE_DEPTH: usize = 32;
 
 /// Decode PrometheusInfo from Value
 /// Subtensor PrometheusInfo: { block: u64, version: u32, ip: u128, port: u16, ip_type: u8 }
 pub fn decode_prometheus_info(value: &Value) -> Result<crate::types::PrometheusInfo> {
     // Try using Value's .at() API first for named/unnamed composite access
     // PrometheusInfo fields in order: block, version, ip, port, ip_type
-    if let (Some(block_val), Some(version_val), Some(ip_val), Some(port_val), Some(ip_type_val)) = (
-        value.at(0),
-        value.at(1),
-        value.at(2),
-        value.at(3),
-        value.at(4),
-    ) {
-        if let (Some(block), Some(version), Some(ip_u128), Some(port), Some(ip_type)) = (
-            extract_u128_from_value(block_val),
-            extract_u128_from_value(version_val),
-            extract_u128_from_value(ip_val),
-            extract_u128_from_value(port_val),
-            extract_u128_from_value(ip_type_val),
-        ) {
-            let ip = utils::parse_ip_addr(ip_u128, ip_type as u8);
-            return Ok(crate::types::PrometheusInfo::from_chain_data(
-                block as u64,
-                version as u32,
-                ip.to_string(),
-                port as u16,
-                ip_type as u8,
-            ));
-        }
+    let values = collect_composite_values(value);
+    if values.len() >= 5 {
+        let block = primitive::extract_u128(values[0])
+            .ok_or_else(|| anyhow!("PrometheusInfo: missing block"))?;
+        let version = primitive::extract_u128(values[1])
+            .ok_or_else(|| anyhow!("PrometheusInfo: missing version"))?;
+        let ip_u128 = primitive::extract_u128(values[2])
+            .ok_or_else(|| anyhow!("PrometheusInfo: missing ip"))?;
+        let port = primitive::extract_u128(values[3])
+            .ok_or_else(|| anyhow!("PrometheusInfo: missing port"))?;
+        let ip_type = primitive::extract_u128(values[4])
+            .ok_or_else(|| anyhow!("PrometheusInfo: missing ip_type"))?;
+        let ip = utils::parse_ip_addr(ip_u128, ip_type as u8);
+        return Ok(crate::types::PrometheusInfo::from_chain_data(
+            block as u64,
+            version as u32,
+            ip.to_string(),
+            port as u16,
+            ip_type as u8,
+        ));
     }
 
-    // Fall back to debug string parsing for compatibility with older formats
-    let s = format!("{:?}", value);
-
-    // Extract exactly: U64, U32, U128, U16, U8
-    let block = utils::extract_u64(&s, 0)
-        .ok_or_else(|| anyhow!("PrometheusInfo: missing block (u64) in value: {}", s))?;
-    let version = utils::extract_u32(&s, block.1)
-        .ok_or_else(|| anyhow!("PrometheusInfo: missing version (u32) in value: {}", s))?;
-    let ip_u128 = utils::extract_u128(&s, version.1)
-        .ok_or_else(|| anyhow!("PrometheusInfo: missing ip (u128) in value: {}", s))?;
-    let port = utils::extract_u16(&s, ip_u128.1)
-        .ok_or_else(|| anyhow!("PrometheusInfo: missing port (u16) in value: {}", s))?;
-    let ip_type = utils::extract_u8(&s, port.1)
-        .ok_or_else(|| anyhow!("PrometheusInfo: missing ip_type (u8) in value: {}", s))?;
-
-    let ip = utils::parse_ip_addr(ip_u128.0, ip_type.0);
-
-    Ok(crate::types::PrometheusInfo::from_chain_data(
-        block.0,
-        version.0,
-        ip.to_string(),
-        port.0,
-        ip_type.0,
-    ))
+    Err(anyhow!("PrometheusInfo: invalid value"))
 }
 
 /// Decode AxonInfo from a Value
@@ -80,91 +52,38 @@ pub fn decode_prometheus_info(value: &Value) -> Result<crate::types::PrometheusI
 pub fn decode_axon_info(value: &Value) -> Result<crate::types::AxonInfo> {
     // Try using Value's .at() API first for composite access
     // AxonInfo fields in order: block, version, ip, port, ip_type, protocol, placeholder1, placeholder2
-    if let (
-        Some(block_val),
-        Some(version_val),
-        Some(ip_val),
-        Some(port_val),
-        Some(ip_type_val),
-        Some(protocol_val),
-        Some(placeholder1_val),
-        Some(placeholder2_val),
-    ) = (
-        value.at(0),
-        value.at(1),
-        value.at(2),
-        value.at(3),
-        value.at(4),
-        value.at(5),
-        value.at(6),
-        value.at(7),
-    ) {
-        if let (
-            Some(block),
-            Some(version),
-            Some(ip_u128),
-            Some(port),
-            Some(ip_type),
-            Some(protocol),
-            Some(placeholder1),
-            Some(placeholder2),
-        ) = (
-            extract_u128_from_value(block_val),
-            extract_u128_from_value(version_val),
-            extract_u128_from_value(ip_val),
-            extract_u128_from_value(port_val),
-            extract_u128_from_value(ip_type_val),
-            extract_u128_from_value(protocol_val),
-            extract_u128_from_value(placeholder1_val),
-            extract_u128_from_value(placeholder2_val),
-        ) {
-            let ip = utils::parse_ip_addr(ip_u128, ip_type as u8);
-            return Ok(crate::types::AxonInfo::from_chain_data(
-                block as u64,
-                version as u32,
-                ip,
-                port as u16,
-                ip_type as u8,
-                protocol as u8,
-                placeholder1 as u8,
-                placeholder2 as u8,
-            ));
-        }
+    let values = collect_composite_values(value);
+    if values.len() >= 8 {
+        let block =
+            primitive::extract_u128(values[0]).ok_or_else(|| anyhow!("AxonInfo: missing block"))?;
+        let version = primitive::extract_u128(values[1])
+            .ok_or_else(|| anyhow!("AxonInfo: missing version"))?;
+        let ip_u128 =
+            primitive::extract_u128(values[2]).ok_or_else(|| anyhow!("AxonInfo: missing ip"))?;
+        let port =
+            primitive::extract_u128(values[3]).ok_or_else(|| anyhow!("AxonInfo: missing port"))?;
+        let ip_type = primitive::extract_u128(values[4])
+            .ok_or_else(|| anyhow!("AxonInfo: missing ip_type"))?;
+        let protocol = primitive::extract_u128(values[5])
+            .ok_or_else(|| anyhow!("AxonInfo: missing protocol"))?;
+        let placeholder1 = primitive::extract_u128(values[6])
+            .ok_or_else(|| anyhow!("AxonInfo: missing placeholder1"))?;
+        let placeholder2 = primitive::extract_u128(values[7])
+            .ok_or_else(|| anyhow!("AxonInfo: missing placeholder2"))?;
+        let ip = utils::parse_ip_addr(ip_u128, ip_type as u8);
+        return Ok(crate::types::AxonInfo::from_chain_data(
+            block as u64,
+            version as u32,
+            ip,
+            port as u16,
+            ip_type as u8,
+            protocol as u8,
+            placeholder1 as u8,
+            placeholder2 as u8,
+        ));
     }
 
-    // Fall back to debug string parsing for compatibility
-    let s = format!("{:?}", value);
-
-    // Extract exactly: U64, U32, U128, U16, U8, U8, U8, U8
-    let block = utils::extract_u64(&s, 0)
-        .ok_or_else(|| anyhow!("AxonInfo: missing block (u64) in value: {}", s))?;
-    let version = utils::extract_u32(&s, block.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing version (u32) in value: {}", s))?;
-    let ip_u128 = utils::extract_u128(&s, version.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing ip (u128) in value: {}", s))?;
-    let port = utils::extract_u16(&s, ip_u128.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing port (u16) in value: {}", s))?;
-    let ip_type = utils::extract_u8(&s, port.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing ip_type (u8) in value: {}", s))?;
-    let protocol = utils::extract_u8(&s, ip_type.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing protocol (u8) in value: {}", s))?;
-    let placeholder1 = utils::extract_u8(&s, protocol.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing placeholder1 (u8) in value: {}", s))?;
-    let placeholder2 = utils::extract_u8(&s, placeholder1.1)
-        .ok_or_else(|| anyhow!("AxonInfo: missing placeholder2 (u8) in value: {}", s))?;
-
-    let ip = utils::parse_ip_addr(ip_u128.0, ip_type.0);
-
-    Ok(crate::types::AxonInfo::from_chain_data(
-        block.0,
-        version.0,
-        ip,
-        port.0,
-        ip_type.0,
-        protocol.0,
-        placeholder1.0,
-        placeholder2.0,
-    ))
+    Err(anyhow!("AxonInfo: invalid value"))
 }
 
 /// Helper to decode identity data from a map structure
@@ -211,14 +130,15 @@ pub fn decode_identity_map(value: &Value) -> Result<HashMap<String, String>> {
     }
 
     // Fall back to regex parsing for compatibility with debug format
-    let value_str = format!("{:?}", value);
-    let re = get_identity_regex();
+    if let Some(map) = collect_named_string_fields(value) {
+        return Ok(map);
+    }
 
-    for cap in re.captures_iter(&value_str) {
+    let re = get_identity_regex();
+    for cap in re.captures_iter(&value.to_string()) {
         if let (Some(key), Some(val)) = (cap.get(1), cap.get(2)) {
             let key_str = key.as_str().to_string();
             let val_str = val.as_str().to_string();
-            // Only insert non-empty values
             if !val_str.is_empty() {
                 result.insert(key_str, val_str);
             }
@@ -228,6 +148,72 @@ pub fn decode_identity_map(value: &Value) -> Result<HashMap<String, String>> {
     Ok(result)
 }
 
+fn collect_composite_values<'a>(value: &'a Value) -> Vec<&'a Value> {
+    match &value.value {
+        ValueDef::Composite(composite) => match composite {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
+            Composite::Unnamed(values) => values.iter().collect(),
+        },
+        _ => Vec::new(),
+    }
+}
+
+fn collect_named_string_fields(value: &Value) -> Option<HashMap<String, String>> {
+    let mut stack = vec![(value, 0usize)];
+    let mut map = HashMap::new();
+    while let Some((current, depth)) = stack.pop() {
+        if depth > MAX_DECODE_DEPTH {
+            continue;
+        }
+        match &current.value {
+            ValueDef::Composite(Composite::Named(fields)) => {
+                for (name, val) in fields {
+                    if let Some(s) = val.as_str() {
+                        if !s.is_empty() {
+                            map.insert(name.clone(), s.to_string());
+                        }
+                    } else {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            }
+            ValueDef::Composite(Composite::Unnamed(values)) => {
+                for val in values.iter().rev() {
+                    stack.push((val, depth + 1));
+                }
+            }
+            ValueDef::Variant(variant) => match &variant.values {
+                Composite::Named(fields) => {
+                    for (name, val) in fields {
+                        if let Some(s) = val.as_str() {
+                            if !s.is_empty() {
+                                map.insert(name.clone(), s.to_string());
+                            }
+                        } else {
+                            stack.push((val, depth + 1));
+                        }
+                    }
+                }
+                Composite::Unnamed(values) => {
+                    for val in values.iter().rev() {
+                        stack.push((val, depth + 1));
+                    }
+                }
+            },
+            ValueDef::Primitive(_) | ValueDef::BitSequence(_) => {}
+        }
+    }
+
+    if map.is_empty() {
+        None
+    } else {
+        Some(map)
+    }
+}
 /// Decode a named composite (struct) from a Value
 /// Extracts field names and values from composite structures
 /// For named composites: returns HashMap of field_name -> cloned Value

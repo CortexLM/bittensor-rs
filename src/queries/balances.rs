@@ -3,6 +3,7 @@ use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 /// Get balance for an account
 pub async fn get_balance(client: &BittensorClient, account: &AccountId32) -> Result<u128> {
@@ -22,7 +23,6 @@ pub async fn get_balances(client: &BittensorClient, accounts: &[AccountId32]) ->
         })
         .collect();
 
-    // No fetch_many in current subxt version; perform sequential fetches
     let mut out = Vec::with_capacity(accounts.len());
     for acc in accounts.iter() {
         let addr =
@@ -33,23 +33,7 @@ pub async fn get_balances(client: &BittensorClient, accounts: &[AccountId32]) ->
                 .to_value()
                 .map_err(|e| anyhow::anyhow!("decode: {}", e))?
                 .remove_context();
-            let s = format!("{:?}", value);
-            let mut free: u128 = 0;
-            if let Some(pos) = s.find("free") {
-                let after = &s[pos + 4..];
-                let trimmed = after.trim_start_matches(':').trim_start();
-                let mut num = String::new();
-                for ch in trimmed.chars() {
-                    if ch.is_ascii_digit() {
-                        num.push(ch);
-                    } else {
-                        break;
-                    }
-                }
-                if !num.is_empty() {
-                    free = num.parse::<u128>().unwrap_or(0);
-                }
-            }
+            let free = extract_free_balance(&value).unwrap_or(0);
             out.push(free);
         } else {
             out.push(0);
@@ -60,13 +44,36 @@ pub async fn get_balances(client: &BittensorClient, accounts: &[AccountId32]) ->
 
 /// Get existential deposit
 pub async fn get_existential_deposit(client: &BittensorClient) -> Result<u128> {
-    // Query constant from metadata (same as Bittensor Python)
     let value = client
         .query_constant("Balances", "ExistentialDeposit")
         .await?
         .ok_or_else(|| anyhow::anyhow!("Unable to retrieve existential deposit amount."))?;
 
-    // Decode the constant value as u128
     crate::utils::decoders::decode_u128(&value)
         .map_err(|e| anyhow::anyhow!("Failed to decode existential deposit: {}", e))
+}
+
+fn extract_free_balance(value: &Value) -> Option<u128> {
+    let fields = match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => Some(fields.as_slice()),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => Some(fields.as_slice()),
+            _ => None,
+        },
+        _ => None,
+    }?;
+
+    for (name, val) in fields {
+        if name == "data" {
+            if let Some(free) = extract_free_balance(val) {
+                return Some(free);
+            }
+        }
+        if name == "free" {
+            if let Some(amount) = crate::utils::decoders::primitive::extract_u128(val) {
+                return Some(amount);
+            }
+        }
+    }
+    None
 }

@@ -1,32 +1,39 @@
 use crate::utils::primitive;
 use anyhow::{anyhow, Result};
 use subxt::dynamic::Value;
+use subxt::ext::scale_value::{Composite, ValueDef};
 
 /// Decode a fixed-point number (U64F64) from a Value
 pub fn decode_fixed_u64f64(value: &Value) -> Result<f64> {
-    let s = format!("{:?}", value);
-
-    // Look for pattern Composite { bits: U128(n) }
-    // Try to extract bits field
-    if let Some(pos) = s.find("bits") {
-        let after = &s[pos..];
-        if let Some(u128_pos) = after.find("U128(") {
-            let start = u128_pos + 5;
-            if let Some(end) = after[start..].find(')') {
-                let num_str = &after[start..start + end];
-                if let Ok(bits) = num_str.trim().parse::<u128>() {
-                    return Ok(fixed_u128_to_f64(bits, 64));
-                }
-            }
-        }
+    if let Some(bits) = extract_bits(value) {
+        return Ok(fixed_u128_to_f64(bits, 64));
     }
 
-    // Fallback: try direct u128
     if let Ok(bits) = primitive::decode_u128(value) {
         return Ok(fixed_u128_to_f64(bits, 64));
     }
 
     Err(anyhow!("Cannot decode fixed-point number from value"))
+}
+
+fn extract_bits(value: &Value) -> Option<u128> {
+    match &value.value {
+        ValueDef::Composite(Composite::Named(fields)) => fields
+            .iter()
+            .find(|(name, _)| name == "bits")
+            .and_then(|(_, val)| primitive::extract_u128(val)),
+        ValueDef::Variant(variant) => match &variant.values {
+            Composite::Named(fields) => fields
+                .iter()
+                .find(|(name, _)| name == "bits")
+                .and_then(|(_, val)| primitive::extract_u128(val)),
+            Composite::Unnamed(values) => values.first().and_then(primitive::extract_u128),
+        },
+        ValueDef::Composite(Composite::Unnamed(values)) => {
+            values.first().and_then(primitive::extract_u128)
+        }
+        ValueDef::Primitive(_) | ValueDef::BitSequence(_) => None,
+    }
 }
 
 /// Convert a fixed-point u128 to f64
@@ -44,11 +51,10 @@ mod tests {
 
     #[test]
     fn test_fixed_point_conversion() {
-        // Test some known values
-        let one = 1u128 << 64; // 1.0 in U64F64
+        let one = 1u128 << 64;
         assert_eq!(fixed_u128_to_f64(one, 64), 1.0);
 
-        let half = 1u128 << 63; // 0.5 in U64F64
+        let half = 1u128 << 63;
         assert_eq!(fixed_u128_to_f64(half, 64), 0.5);
     }
 }
