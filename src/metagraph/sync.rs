@@ -17,7 +17,21 @@ pub async fn sync_metagraph(client: &BittensorClient, netuid: u16) -> Result<Met
         .await
         .context("Failed to query neurons via runtime API")?;
 
+    let mut neurons_list = neurons_list;
+    neurons_list.sort_by_key(|n| n.uid);
+
+    metagraph.n = neurons_list.len() as u64;
+    metagraph.hotkeys = Vec::with_capacity(neurons_list.len());
+    metagraph.coldkeys = Vec::with_capacity(neurons_list.len());
+    metagraph.validator_permit = Vec::with_capacity(neurons_list.len());
+    metagraph.active = Vec::with_capacity(neurons_list.len());
+
     for neuron in neurons_list {
+        metagraph.hotkeys.push(neuron.hotkey.clone());
+        metagraph.coldkeys.push(neuron.coldkey.clone());
+        metagraph.validator_permit.push(neuron.validator_permit);
+        metagraph.active.push(neuron.active);
+
         metagraph.neurons.insert(neuron.uid, neuron.clone());
 
         // Extract axon info if available
@@ -25,8 +39,6 @@ pub async fn sync_metagraph(client: &BittensorClient, netuid: u16) -> Result<Met
             metagraph.axons.insert(neuron.uid, axon.clone());
         }
     }
-
-    metagraph.n = metagraph.neurons.len() as u64;
 
     Ok(metagraph)
 }

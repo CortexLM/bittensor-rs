@@ -276,3 +276,7 @@ match wallets::get_balance(&client, &account).await {
 - [Staking Queries](staking.md) - Detailed staking information
 - [Delegate Queries](delegates.md) - Delegation management
 - [Chain Operations](../chain.md) - Transaction submission
+- [Runtime Queries](runtime.md) - Hotkey ownership helper
+- [Staking Queries](staking.md) - Detailed staking information
+- [Delegate Queries](delegates.md) - Delegation management
+- [Chain Operations](../chain.md) - Transaction submission

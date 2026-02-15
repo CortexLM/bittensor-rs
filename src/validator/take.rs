@@ -51,3 +51,23 @@ pub async fn decrease_take(
         .await
         .map_err(|e| anyhow::anyhow!("Failed to decrease take: {}", e))
 }
+
+/// Become a delegate (enable delegate take > 0)
+/// Subtensor expects: (hotkey, take: u16)
+pub async fn become_delegate(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    hotkey: &AccountId32,
+    take: u16,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    let args = vec![
+        Value::from_bytes(hotkey.encode()),
+        Value::u128(take as u128),
+    ];
+
+    client
+        .submit_extrinsic(SUBTENSOR_MODULE, "become_delegate", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to become delegate: {}", e))
+}

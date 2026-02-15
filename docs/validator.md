@@ -396,10 +396,59 @@ pub async fn increase_take(
 ```
 
 ### decrease_take
+### decrease_take
 
 Decrease delegate take percentage.
 
 ```rust
+pub async fn decrease_take(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    hotkey: &AccountId32,
+    take: u16
+) -> Result<()>
+```
+
+### become_delegate
+
+Enable delegate status by setting an initial take.
+
+```rust
+pub async fn become_delegate(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    hotkey: &AccountId32,
+    take: u16
+) -> Result<()>
+```
+
+## Governance Operations
+
+### propose
+
+Submit a governance proposal via the Triumvirate.
+
+```rust
+pub async fn propose(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    call_data: Vec<u8>
+) -> Result<()>
+```
+
+### close_proposal
+
+Close a governance proposal with a weight bound.
+
+```rust
+pub async fn close_proposal(
+    client: &BittensorClient,
+    signer: &PairSigner<DefaultConfig, Pair>,
+    proposal_hash: &[u8; 32],
+    proposal_index: u32,
+    weight_bound: u64
+) -> Result<()>
+```
 pub async fn decrease_take(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,
@@ -445,7 +494,8 @@ use bittensor_rs::validator::{
     add_stake, unstake, move_stake,
     register, is_registered,
     serve_axon, serve_axon_tls,
-    increase_take, decrease_take
+    increase_take, decrease_take, become_delegate,
+    propose, close_proposal
 };
 ```
 

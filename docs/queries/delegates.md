@@ -280,4 +280,7 @@ match delegates::get_delegate(&client, &address).await {
 
 - [Staking Queries](staking.md) - Detailed stake and delegation queries
 - [Wallet Queries](wallets.md) - Account balance information
+- [Runtime Queries](runtime.md) - Commit-reveal and ownership helpers
+- [Metagraph Queries](metagraph.md) - Subnet snapshot data
+- [Wallet Queries](wallets.md) - Account balance information
 - [Neuron Queries](neurons.md) - Validator information

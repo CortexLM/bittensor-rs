@@ -300,6 +300,19 @@ impl Keypair {
     /// keyfile format. The private key is 64 bytes (32 bytes seed + 32 bytes public key).
     ///
     /// WARNING: This exposes the private key. Handle with care.
+    /// Get the 32-byte secret seed for this keypair.
+    ///
+    /// This derives the seed from the underlying keypair bytes.
+    pub fn secret_seed(&self) -> Result<[u8; 32], KeypairError> {
+        let mut raw = self.pair.to_raw_vec();
+        if raw.len() < 32 {
+            return Err(KeypairError::InvalidSeedLength(raw.len()));
+        }
+        let mut seed = [0u8; 32];
+        seed.copy_from_slice(&raw[..32]);
+        raw.zeroize();
+        Ok(seed)
+    }
     pub fn to_full_bytes(&self) -> Vec<u8> {
         // SR25519 stores private key as 64 bytes: 32-byte seed + 32-byte public key
         // The to_raw_vec() returns this format

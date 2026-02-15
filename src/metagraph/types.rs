@@ -17,6 +17,14 @@ pub struct Metagraph {
     pub axons: HashMap<u64, AxonInfo>,
     /// Version
     pub version: u64,
+    /// Hotkey list indexed by UID
+    pub hotkeys: Vec<AccountId32>,
+    /// Coldkey list indexed by UID
+    pub coldkeys: Vec<AccountId32>,
+    /// Validator permit list indexed by UID
+    pub validator_permit: Vec<bool>,
+    /// Active list indexed by UID
+    pub active: Vec<bool>,
 }
 
 impl Metagraph {
@@ -28,6 +36,10 @@ impl Metagraph {
             neurons: HashMap::new(),
             axons: HashMap::new(),
             version: 0,
+            hotkeys: Vec::new(),
+            coldkeys: Vec::new(),
+            validator_permit: Vec::new(),
+            active: Vec::new(),
         }
     }
 
