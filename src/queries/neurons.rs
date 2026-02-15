@@ -472,23 +472,30 @@ pub async fn query_neuron_from_storage(
 
     let storage_index: u64 = (netuid as u64) << 16;
     let weights_keys = vec![Value::u128(storage_index as u128), Value::u128(uid as u128)];
-    let weights = match client
+    let weights_pairs = match client
         .storage_with_keys(SUBTENSOR_MODULE, "Weights", weights_keys)
         .await
     {
-        Ok(Some(w_val)) => decode_vec_u64_u64_pairs(&w_val).unwrap_or_else(|_| Vec::new()),
+        Ok(Some(w_val)) => decode_vec_u16_u16_pairs(&w_val).unwrap_or_else(|_| Vec::new()),
         _ => Vec::new(),
     };
+    let weights: Vec<(u64, u64)> = weights_pairs
+        .into_iter()
+        .map(|(a, b)| (a as u64, b as u64))
+        .collect();
 
     let bonds_keys = vec![Value::u128(storage_index as u128), Value::u128(uid as u128)];
-    let bonds_pairs: Vec<(u64, u64)> = match client
+    let bonds_pairs: Vec<(u16, u16)> = match client
         .storage_with_keys(SUBTENSOR_MODULE, "Bonds", bonds_keys)
         .await
     {
-        Ok(Some(b_val)) => decode_vec_u64_u64_pairs(&b_val).unwrap_or_else(|_| Vec::new()),
+        Ok(Some(b_val)) => decode_vec_u16_u16_pairs(&b_val).unwrap_or_else(|_| Vec::new()),
         _ => Vec::new(),
     };
-    let bonds: Vec<Vec<u64>> = bonds_pairs.into_iter().map(|(a, b)| vec![a, b]).collect();
+    let bonds: Vec<Vec<u64>> = bonds_pairs
+        .into_iter()
+        .map(|(a, b)| vec![a as u64, b as u64])
+        .collect();
 
     // Stake weight from StakeWeight storage - includes parent inheritance + TAO weight
     let stake_weight = stake_weight_vec.get(idx).copied().unwrap_or(0);

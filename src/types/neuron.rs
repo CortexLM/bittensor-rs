@@ -10,12 +10,15 @@ pub struct NeuronInfo {
     /// Network unique identifier
     pub netuid: u16,
     /// Hotkey (SS58 address)
+    #[serde(with = "crate::utils::ss58::serde_account")]
     pub hotkey: AccountId32,
     /// Coldkey (SS58 address)
+    #[serde(with = "crate::utils::ss58::serde_account")]
     pub coldkey: AccountId32,
     /// Neuron's stake amount
     pub stake: u128,
     /// Dictionary mapping coldkey to amount staked to this neuron
+    #[serde(with = "crate::utils::ss58::serde_account_map")]
     pub stake_dict: std::collections::HashMap<AccountId32, u128>,
     /// Total stake on this subnet (alpha)
     pub total_stake: u128,
