@@ -6,6 +6,13 @@ Documentation for the core blockchain client and connection management in the Bi
 
 The `BittensorClient` is the primary interface for connecting to and interacting with the Bittensor blockchain. It provides methods for queries, transactions, and event monitoring.
 
+## Parity Notes (Python SDK)
+
+- All on-chain values are in RAO (u128). Use TAO conversion helpers only for display.
+- Extrinsic arguments and storage indices must match Subtensor runtime metadata. In particular, commit-reveal uses `NetUidStorageIndex` (`u16`, computed as `mechanism_id * 4096 + netuid`).
+- CRv4 commit-reveal uses drand timelock encryption and requires `Drand.LastStoredRound` from chain state.
+- See `docs/parity_checklist.md` for full parity checklist.
+
 ## Client Initialization
 
 ### Basic Connection
@@ -312,3 +319,4 @@ let client = BittensorClient::builder()
 - [Query Operations](queries.md) - Using the client for queries
 - [Validator Operations](validator.md) - Transaction examples
 - [Type Definitions](types.md) - Data structures used with the client
+- [Parity Checklist](parity_checklist.md) - Python SDK parity worklist

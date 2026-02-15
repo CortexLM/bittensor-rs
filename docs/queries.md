@@ -6,6 +6,13 @@ The Bittensor Rust SDK provides comprehensive query capabilities for interacting
 
 Query operations are the primary interface for retrieving data from the Bittensor blockchain. These operations are read-only and do not require transaction signing.
 
+## Parity Notes (Python SDK)
+
+- Storage key names and indices must match Subtensor runtime metadata. `NetUidStorageIndex` is `u16`, computed as `mechanism_id * 4096 + netuid`.
+- Emission, stake, and balances are RAO on-chain; TAO formatting is for display only.
+- Commit-reveal and CRv4 queries depend on runtime storage entries (e.g., `CRV3WeightCommitsV2`, `TimelockedWeightCommits`). Validate against runtime metadata.
+- See `docs/parity_checklist.md` for detailed parity gaps.
+
 ## Query Categories
 
 ### Network Queries
@@ -15,6 +22,7 @@ Query operations are the primary interface for retrieving data from the Bittenso
 - **[Delegates](queries/delegates.md)** - Access delegate information and voting power
 - **[Staking](queries/staking.md)** - Query stake distributions and delegations
 - **[Wallets](queries/wallets.md)** - Check account balances and information
+- **[Commitments](queries/commitments.md)** - Commit-reveal and timelocked commitment queries
 
 ### System Queries
 
@@ -134,3 +142,4 @@ let vec_u16 = decoders::decode_vec_u16(&value)?;
 - Review specific query documentation for detailed API references
 - See the examples directory for working code samples
 - Consult type definitions for data structure details
+- Track parity updates in [Parity Checklist](parity_checklist.md)
