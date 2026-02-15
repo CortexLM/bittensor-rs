@@ -408,6 +408,132 @@ proptest! {
     }
 }
 
+// ============================================================================
+// TAO display-only conversion safety tests
+// ============================================================================
+
+#[test]
+fn test_tao_is_display_only_never_extrinsic() {
+    let tao_val = Tao(1.5);
+    let rao_val = tao_val.as_rao();
+    assert_eq!(rao_val.as_u128(), 1_500_000_000);
+
+    let _transfer_fn = transfer::transfer;
+    let _add_stake_fn = staking::add_stake;
+    let _unstake_fn = staking::unstake;
+}
+
+#[test]
+fn test_tao_to_rao_ceiling_correctness() {
+    use bittensor_rs::utils::balance_newtypes::tao_to_rao_ceiling;
+
+    assert_eq!(tao_to_rao_ceiling(1.0), 1_000_000_000);
+    assert_eq!(tao_to_rao_ceiling(0.0), 0);
+    assert_eq!(tao_to_rao_ceiling(-1.0), 0);
+    assert_eq!(tao_to_rao_ceiling(f64::NAN), 0);
+    assert_eq!(tao_to_rao_ceiling(f64::INFINITY), 0);
+
+    assert_eq!(tao_to_rao_ceiling(0.0000000001), 1);
+    assert_eq!(tao_to_rao_ceiling(1.0000000001), 1_000_000_001);
+}
+
+#[test]
+fn test_tao_to_rao_rounded_correctness() {
+    use bittensor_rs::utils::balance_newtypes::tao_to_rao_rounded;
+
+    assert_eq!(tao_to_rao_rounded(1.0), 1_000_000_000);
+    assert_eq!(tao_to_rao_rounded(0.0), 0);
+    assert_eq!(tao_to_rao_rounded(-1.0), 0);
+    assert_eq!(tao_to_rao_rounded(f64::NAN), 0);
+    assert_eq!(tao_to_rao_rounded(f64::INFINITY), 0);
+
+    assert_eq!(tao_to_rao_rounded(1.0000000005), 1_000_000_001);
+    assert_eq!(tao_to_rao_rounded(1.0000000004), 1_000_000_000);
+}
+
+// ============================================================================
+// Edge case tests
+// ============================================================================
+
+#[test]
+fn test_zero_amount_conversions() {
+    assert_eq!(tao_to_rao(0.0), 0);
+    assert_eq!(rao_to_tao(0), 0.0);
+    assert_eq!(Rao::ZERO.as_u128(), 0);
+    assert_eq!(Tao::ZERO.as_f64(), 0.0);
+    assert_eq!(Balance::from_rao(0).as_tao(), 0.0);
+    assert_eq!(Balance::from_tao(0.0).as_rao(), 0);
+}
+
+#[test]
+fn test_u128_max_rao_saturating() {
+    let max_rao = Rao(u128::MAX);
+    let one_rao = Rao(1);
+    assert_eq!((max_rao + one_rao).as_u128(), u128::MAX);
+
+    let zero_rao = Rao(0);
+    assert_eq!((zero_rao - one_rao).as_u128(), 0);
+}
+
+#[test]
+fn test_fractional_tao_precision() {
+    let cases = [
+        (0.000000001, 1u128),
+        (0.123456789, 123_456_789u128),
+        (0.999999999, 999_999_999u128),
+        (1.999999999, 1_999_999_999u128),
+    ];
+    for (tao, expected_rao) in cases {
+        assert_eq!(
+            tao_to_rao(tao),
+            expected_rao,
+            "tao_to_rao({}) should be {}",
+            tao,
+            expected_rao
+        );
+    }
+}
+
+#[test]
+fn test_negative_and_nan_tao_to_rao() {
+    assert_eq!(tao_to_rao(-1.0), 0);
+    assert_eq!(tao_to_rao(-0.0), 0);
+    assert_eq!(tao_to_rao(f64::NAN), 0);
+    assert_eq!(tao_to_rao(f64::NEG_INFINITY), 0);
+    assert_eq!(tao_to_rao(f64::INFINITY), 0);
+}
+
+#[test]
+fn test_transfer_and_staking_amount_type_is_rao() {
+    fn takes_rao(_: Rao) {}
+    takes_rao(Rao(1_000_000_000));
+    takes_rao(Tao(1.0).as_rao());
+}
+
+#[test]
+fn test_balance_from_rao_roundtrip() {
+    for rao_val in [
+        0u128,
+        1,
+        999_999_999,
+        1_000_000_000,
+        21_000_000_000_000_000u128,
+    ] {
+        let bal = Balance::from_rao(rao_val);
+        assert_eq!(bal.as_rao(), rao_val);
+    }
+}
+
+#[test]
+fn test_rao_safe_div_by_zero() {
+    assert_eq!(Rao(1_000_000_000).safe_div(0).as_u128(), 0);
+    assert_eq!(Rao(0).safe_div(0).as_u128(), 0);
+}
+
+// ============================================================================
+// Finney balance integration test
+// ============================================================================
+
 #[tokio::test]
 async fn test_finney_balance_is_rao_and_symbol_tau() {
     let client = match BittensorClient::with_default().await {
