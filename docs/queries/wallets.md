@@ -14,17 +14,18 @@ Wallet queries provide access to account balances, transaction history, and stak
 
 ```rust
 use bittensor_rs::queries::wallets;
+use bittensor_rs::format_rao_as_tao;
 
 // Get total balance
 let balance = wallets::get_balance(&client, &account_id).await?;
-println!("Balance: {} TAO", balance as f64 / 1e9);
+println!("Balance: {} TAO", format_rao_as_tao(balance));
 
 // Get detailed balance info
 let account_info = wallets::get_account_info(&client, &account_id).await?;
 if let Some(info) = account_info {
-    println!("Free: {} TAO", info.data.free as f64 / 1e9);
-    println!("Reserved: {} TAO", info.data.reserved as f64 / 1e9);
-    println!("Frozen: {} TAO", info.data.frozen as f64 / 1e9);
+    println!("Free: {} TAO", format_rao_as_tao(info.data.free));
+    println!("Reserved: {} TAO", format_rao_as_tao(info.data.reserved));
+    println!("Frozen: {} TAO", format_rao_as_tao(info.data.frozen));
 }
 ```
 
@@ -38,7 +39,7 @@ let balances = wallets::get_balances(&client, &addresses).await?;
 for (account, balance) in addresses.iter().zip(balances.iter()) {
     println!("{}: {} TAO", 
         account.to_ss58check(), 
-        balance.as_ref().map(|b| b as f64 / 1e9).unwrap_or(0.0)
+        balance.as_ref().map(|b| format_rao_as_tao(*b)).unwrap_or_else(|| "0.000000000".to_string())
     );
 }
 ```
@@ -82,7 +83,7 @@ use bittensor_rs::queries::stakes;
 
 // Get total stake for a hotkey
 let total_stake = stakes::get_total_stake(&client, &hotkey).await?;
-println!("Total stake: {} TAO", total_stake as f64 / 1e9);
+println!("Total stake: {} TAO", format_rao_as_tao(total_stake));
 
 // Get stake for specific subnet
 let stake = stakes::get_stake(&client, netuid, &hotkey).await?;
@@ -95,7 +96,7 @@ let stake = stakes::get_stake(&client, netuid, &hotkey).await?;
 let all_stakes = stakes::get_all_stakes_for_hotkey(&client, &hotkey).await?;
 
 for (subnet, stake) in all_stakes {
-    println!("Subnet {}: {} TAO", subnet, stake as f64 / 1e9);
+    println!("Subnet {}: {} TAO", subnet, format_rao_as_tao(stake));
 }
 
 // Get delegators for a hotkey
@@ -103,7 +104,7 @@ let delegators = stakes::get_delegators(&client, &hotkey).await?;
 for (delegator, amount) in delegators {
     println!("Delegator {}: {} TAO", 
         delegator.to_ss58check(), 
-        amount as f64 / 1e9
+        format_rao_as_tao(amount)
     );
 }
 ```
@@ -122,13 +123,13 @@ async fn monitor_account(client: &BittensorClient, account: &AccountId32) -> Res
         
         if balance != last_balance {
             let change = if balance > last_balance {
-                format!("+{} TAO", (balance - last_balance) as f64 / 1e9)
+                format!("+{} TAO", format_rao_as_tao(balance - last_balance))
             } else {
-                format!("-{} TAO", (last_balance - balance) as f64 / 1e9)
+                format!("-{} TAO", format_rao_as_tao(last_balance - balance))
             };
             
             println!("Balance changed: {} (new total: {} TAO)", 
-                change, balance as f64 / 1e9
+                change, format_rao_as_tao(balance)
             );
             
             last_balance = balance;
@@ -184,16 +185,16 @@ async fn calculate_portfolio(
         let account_total = balance + stake;
         total += account_total;
         
-        println!("{:<20} {:>15.6} TAO (Balance: {:.6}, Stake: {:.6})",
+        println!("{:<20} {:>15} TAO (Balance: {}, Stake: {})",
             name,
-            account_total as f64 / 1e9,
-            balance as f64 / 1e9,
-            stake as f64 / 1e9
+            format_rao_as_tao(account_total),
+            format_rao_as_tao(balance),
+            format_rao_as_tao(stake)
         );
     }
     
     println!("{:-<50}", "");
-    println!("{:<20} {:>15.6} TAO", "Total", total as f64 / 1e9);
+    println!("{:<20} {:>15} TAO", "Total", format_rao_as_tao(total));
     
     Ok(())
 }
@@ -256,7 +257,7 @@ async fn export_account_data(
 use bittensor_rs::Error;
 
 match wallets::get_balance(&client, &account).await {
-    Ok(Some(balance)) => println!("Balance: {} TAO", balance as f64 / 1e9),
+    Ok(Some(balance)) => println!("Balance: {} TAO", format_rao_as_tao(balance)),
     Ok(None) => println!("Account not found or zero balance"),
     Err(Error::DecodingError(e)) => println!("Failed to decode balance: {}", e),
     Err(e) => println!("Query failed: {}", e),

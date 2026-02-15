@@ -1,4 +1,3 @@
-pub mod balance;
 pub mod balance_newtypes;
 pub mod crypto;
 pub mod decoders;
@@ -7,7 +6,6 @@ pub mod scale;
 pub mod ss58;
 pub mod weights;
 
-// Re-export newtypes types for compile-time type safety
 pub use balance_newtypes::{
     balance_from_rao, balance_from_rao_with_netuid, balance_from_tao, balance_from_tao_with_netuid,
     format_rao_as_tao, get_unit_symbol, is_lossless_conversion, is_valid_rao_amount,
@@ -16,7 +14,7 @@ pub use balance_newtypes::{
     tao_to_rao_rounded, tao_with_netuid as new_tao_with_netuid, Balance, Rao, Tao,
 };
 
-pub use balance::*;
+pub use balance_newtypes as balance;
 pub use crypto::*;
 pub use decoders::*;
 pub use encode::*;

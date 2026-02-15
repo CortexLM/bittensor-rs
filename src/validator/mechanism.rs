@@ -132,33 +132,27 @@ pub async fn set_mechanism_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    mechanism_id: u8, // Changed from u64 to u8 (MechId)
-    uids: &[u64],
-    weights: &[f32],
-    version_key: Option<u64>,
+    mechanism_id: u8,
+    uids: &[u16],
+    weights: &[u16],
+    version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    // Normalize weights first (returns Vec<u16>)
-    let (weight_uids, weight_vals) = crate::utils::normalize_weights(uids, weights)?;
+    if uids.len() != weights.len() {
+        return Err(anyhow::anyhow!(
+            "UIDS and weights must have the same length"
+        ));
+    }
 
-    let uid_values: Vec<Value> = weight_uids
-        .iter()
-        .map(|uid| Value::u128(*uid as u128))
-        .collect();
-    let weight_values: Vec<Value> = weight_vals
-        .iter()
-        .map(|w| Value::u128(*w as u128))
-        .collect();
-
-    let version = version_key
-        .ok_or_else(|| anyhow::anyhow!("Version key is required for set_mechanism_weights"))?;
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
         Value::u128(mechanism_id as u128),
         Value::unnamed_composite(uid_values),
         Value::unnamed_composite(weight_values),
-        Value::u128(version as u128),
+        Value::u128(version_key as u128),
     ];
 
     client

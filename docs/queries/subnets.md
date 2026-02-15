@@ -27,7 +27,7 @@ pub struct SubnetInfo {
     pub network_pow_allowed: bool,
     pub network_immunity_period: u16,
     pub emission_ratio: u16,
-    pub max_weight_limit: f32,
+    pub max_weight_limit: u16,
     pub min_difficulty: u64,
     pub max_difficulty: u64,
     pub difficulty: u64,
@@ -38,9 +38,9 @@ pub struct SubnetInfo {
 }
 ```
 
-### SubnetParameters
+### SubnetHyperparameters
 
-Subnet hyperparameters:
+Subnet hyperparameters (from `queries::hyperparameters`):
 
 ```rust
 pub struct SubnetHyperparameters {
@@ -48,27 +48,28 @@ pub struct SubnetHyperparameters {
     pub kappa: u16,
     pub immunity_period: u16,
     pub min_allowed_weights: u16,
-    pub max_weight_limit: f32,
+    pub max_weights_limit: u16,
     pub tempo: u16,
     pub min_difficulty: u64,
     pub max_difficulty: u64,
-    pub weights_version_key: u64,
+    pub weights_version: u64,
     pub weights_rate_limit: u64,
     pub adjustment_interval: u16,
     pub activity_cutoff: u16,
     pub registration_allowed: bool,
     pub target_regs_per_interval: u16,
-    pub min_burn: u128,
-    pub max_burn: u128,
+    pub min_burn: u64,
+    pub max_burn: u64,
     pub bonds_moving_avg: u64,
     pub max_regs_per_block: u16,
     pub serving_rate_limit: u64,
     pub max_validators: u16,
     pub adjustment_alpha: u64,
     pub difficulty: u64,
-    pub commit_reveal_period: u16,
-    pub commit_reveal_enabled: bool,
-    pub alpha_values: (u16, u16),
+    pub commit_reveal_weights_interval: u64,
+    pub commit_reveal_weights_enabled: bool,
+    pub alpha_high: u16,
+    pub alpha_low: u16,
     pub liquid_alpha_enabled: bool,
 }
 ```

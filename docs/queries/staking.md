@@ -14,6 +14,7 @@ Staking is central to Bittensor's security and consensus mechanism. These querie
 
 ```rust
 use bittensor_rs::queries::stakes;
+use bittensor_rs::format_rao_as_tao;
 
 // Get total stake for a hotkey across all subnets
 let total_stake = stakes::get_total_stake(&client, &hotkey).await?;
@@ -31,7 +32,7 @@ let stake_distribution = stakes::get_stake_distribution(&client, &hotkey).await?
 for (coldkey, amount) in stake_distribution {
     println!("Staker: {} - Amount: {} TAO", 
         coldkey.to_ss58check(), 
-        amount as f64 / 1e9
+        format_rao_as_tao(amount)
     );
 }
 ```
@@ -57,7 +58,7 @@ let delegations = stakes::get_delegations_for_coldkey(&client, &coldkey).await?;
 for (hotkey, amount) in delegations {
     println!("Delegating to: {} - Amount: {} TAO",
         hotkey.to_ss58check(),
-        amount as f64 / 1e9
+        format_rao_as_tao(amount)
     );
 }
 ```
@@ -142,13 +143,13 @@ async fn monitor_stake_changes(
         
         if current_stake != last_stake {
             let change = if current_stake > last_stake {
-                format!("+{}", (current_stake - last_stake) as f64 / 1e9)
+                format!("+{}", format_rao_as_tao(current_stake - last_stake))
             } else {
-                format!("-{}", (last_stake - current_stake) as f64 / 1e9)
+                format!("-{}", format_rao_as_tao(last_stake - current_stake))
             };
             
             println!("Stake changed: {} TAO (total: {} TAO)",
-                change, current_stake as f64 / 1e9
+                change, format_rao_as_tao(current_stake)
             );
             
             last_stake = current_stake;
@@ -180,10 +181,11 @@ async fn calculate_staking_yield(
     // Calculate yield from emissions
     let emission_per_block = neuron.emission;
     let total_emissions = emission_per_block * period_blocks as f64;
-    let stake = neuron.stake as f64 / 1e9;
+    let stake = format_rao_as_tao(neuron.stake);
+    let stake_value: f64 = stake.parse().unwrap_or(0.0);
     
-    if stake > 0.0 {
-        let apy = (total_emissions / stake) * (365.0 * 24.0 * 3600.0 / 12.0) / period_blocks as f64;
+    if stake_value > 0.0 {
+        let apy = (total_emissions / stake_value) * (365.0 * 24.0 * 3600.0 / 12.0) / period_blocks as f64;
         Ok(apy * 100.0)
     } else {
         Ok(0.0)
@@ -205,9 +207,9 @@ async fn analyze_delegation_distribution(
     let average = total / count as u128;
     
     println!("Delegation Analysis for {}", delegate.to_ss58check());
-    println!("Total delegated: {} TAO", total as f64 / 1e9);
+    println!("Total delegated: {} TAO", format_rao_as_tao(total));
     println!("Number of delegators: {}", count);
-    println!("Average delegation: {} TAO", average as f64 / 1e9);
+    println!("Average delegation: {} TAO", format_rao_as_tao(average));
     
     // Find concentration
     let mut sorted: Vec<_> = delegations.values().copied().collect();
@@ -249,10 +251,10 @@ async fn track_stake_migrations(
                 let change = current as i128 - last as i128;
                 println!("{}: {} TAO", 
                     addr.to_ss58check(),
-                    if change > 0 { 
-                        format!("+{}", change as f64 / 1e9) 
-                    } else { 
-                        format!("{}", change as f64 / 1e9) 
+                    if change > 0 {
+                        format!("+{}", format_rao_as_tao(change as u128))
+                    } else {
+                        format!("-{}", format_rao_as_tao((-change) as u128))
                     }
                 );
                 
@@ -312,7 +314,7 @@ impl StakeCache {
 use bittensor_rs::Error;
 
 match stakes::get_stake(&client, netuid, &hotkey).await {
-    Ok(Some(stake)) => println!("Stake: {} TAO", stake as f64 / 1e9),
+    Ok(Some(stake)) => println!("Stake: {} TAO", format_rao_as_tao(stake)),
     Ok(None) => println!("No stake found"),
     Err(Error::StorageNotFound) => println!("Storage not initialized"),
     Err(e) => println!("Query error: {}", e),

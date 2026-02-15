@@ -108,7 +108,7 @@ pub fn format_tao(rao: u128) -> String {
 
 /// Format TAO as RAO for display (preserves decimal precision).
 pub fn tao_to_rao(tao: f64) -> u128 {
-    (tao * RAOPERTAO as f64) as u128
+    crate::utils::balance_newtypes::tao_to_rao(tao)
 }
 
 /// Format SS58 address (truncated for display).

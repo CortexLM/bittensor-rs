@@ -359,7 +359,8 @@ async fn show_hyperparams(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
         .await
         .ok()
         .flatten()
-        .unwrap_or(0.0);
+        .unwrap_or(0);
+    let max_weights_ratio = crate::utils::weights::u16_normalized_float(max_weights);
     let min_weights = min_allowed_weights(&client, netuid)
         .await
         .ok()
@@ -380,7 +381,10 @@ async fn show_hyperparams(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
     table.add_row(vec!["Tempo", &tempo_val.to_string()]);
     table.add_row(vec!["Difficulty", &difficulty_val.to_string()]);
     table.add_row(vec!["Immunity Period", &immunity_val.to_string()]);
-    table.add_row(vec!["Max Weight Limit", &format!("{:.4}", max_weights)]);
+    table.add_row(vec![
+        "Max Weight Limit",
+        &format!("{:.4}", max_weights_ratio),
+    ]);
     table.add_row(vec!["Min Allowed Weights", &min_weights.to_string()]);
     table.add_row(vec!["Weights Rate Limit", &weights_rate.to_string()]);
 

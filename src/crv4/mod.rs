@@ -61,11 +61,9 @@ pub async fn commit_timelocked_weights(
     commit_reveal_version: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let commit_values: Vec<Value> = commit.iter().map(|b| Value::u128(*b as u128)).collect();
-
     let args = vec![
         Value::u128(netuid as u128),
-        Value::unnamed_composite(commit_values),
+        Value::from_bytes(commit),
         Value::u128(reveal_round as u128),
         Value::u128(commit_reveal_version as u128),
     ];
@@ -96,12 +94,10 @@ pub async fn commit_timelocked_mechanism_weights(
     commit_reveal_version: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let commit_values: Vec<Value> = commit.iter().map(|b| Value::u128(*b as u128)).collect();
-
     let args = vec![
         Value::u128(netuid as u128),
         Value::u128(mechanism_id as u128),
-        Value::unnamed_composite(commit_values),
+        Value::from_bytes(commit),
         Value::u128(reveal_round as u128),
         Value::u128(commit_reveal_version as u128),
     ];

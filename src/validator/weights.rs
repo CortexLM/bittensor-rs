@@ -1,7 +1,6 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
 use crate::utils::{
-    commit_hash_to_hex, generate_salt, generate_subtensor_commit_hash, normalize_weights,
-    salt_u8_to_u16,
+    commit_hash_to_hex, generate_salt, generate_subtensor_commit_hash, salt_u8_to_u16,
 };
 use anyhow::Result;
 use subxt::dynamic::Value;
@@ -16,37 +15,29 @@ pub async fn set_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    uids: &[u64],
-    weights: &[f32],
-    version_key: Option<u64>,
+    uids: &[u16],
+    weights: &[u16],
+    version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    // Normalize weights
-    let (weight_uids, weight_vals) = normalize_weights(uids, weights)?;
+    if uids.len() != weights.len() {
+        return Err(anyhow::anyhow!(
+            "UIDS and weights must have the same length"
+        ));
+    }
 
-    if weight_uids.is_empty() {
+    if uids.is_empty() {
         return Err(anyhow::anyhow!("No valid weights to set"));
     }
 
-    let version =
-        version_key.ok_or_else(|| anyhow::anyhow!("Version key is required for set_weights"))?;
-
-    // Build call arguments - set_weights takes (netuid, dests: Vec<u16>, weights: Vec<u16>, version_key)
-    // Subtensor expects Vec<u16> for both uids (dests) and weights
-    let uid_values: Vec<Value> = weight_uids
-        .iter()
-        .map(|uid| Value::u128(*uid as u128))
-        .collect();
-    let weight_values: Vec<Value> = weight_vals
-        .iter()
-        .map(|w| Value::u128(*w as u128))
-        .collect();
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
         Value::unnamed_composite(uid_values),
         Value::unnamed_composite(weight_values),
-        Value::u128(version as u128),
+        Value::u128(version_key as u128),
     ];
 
     let tx_hash = client
@@ -98,9 +89,9 @@ pub async fn reveal_weights(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
-    uids: &[u64],
+    uids: &[u16],
     weights: &[u16],
-    salt: &[u16], // Changed from &[u8] to &[u16] to match Subtensor format
+    salt: &[u16],
     version_key: u64,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
@@ -110,19 +101,7 @@ pub async fn reveal_weights(
         ));
     }
 
-    // Convert uids from u64 to u16 (Subtensor expects Vec<u16>)
-    let uid_u16: Vec<u16> = uids
-        .iter()
-        .map(|uid| {
-            u16::try_from(*uid)
-                .map_err(|_| anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX))
-        })
-        .collect::<Result<Vec<u16>>>()?;
-
-    let uid_values: Vec<Value> = uid_u16
-        .iter()
-        .map(|uid| Value::u128(*uid as u128))
-        .collect();
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
     let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
     let salt_values: Vec<Value> = salt.iter().map(|s| Value::u128(*s as u128)).collect();
 
@@ -150,7 +129,7 @@ pub async fn reveal_weights(
 
 /// Generate commit hash from weights for commit-reveal pattern (LEGACY)
 ///
-/// NOTE: This function uses a legacy hash format. For proper subtensor compatibility,
+/// This function uses a legacy hash format. For proper subtensor compatibility,
 /// use `generate_commit_hash_v2` which matches subtensor's exact hash format.
 pub fn generate_commit_hash(uids: &[u64], weights: &[u16], salt: &[u8]) -> Result<String> {
     // Convert to u16 format

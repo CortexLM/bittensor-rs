@@ -160,6 +160,8 @@ let emissions = neurons_storage::get_emissions(&client, netuid).await?;
 ### Display Neuron Information
 
 ```rust
+use bittensor_rs::format_rao_as_tao;
+
 async fn display_neuron_info(client: &BittensorClient, netuid: u16, uid: u64) -> Result<()> {
     let neuron = neurons::get_neuron(client, netuid, uid).await?
         .ok_or_else(|| anyhow::anyhow!("Neuron not found"))?;
@@ -167,7 +169,7 @@ async fn display_neuron_info(client: &BittensorClient, netuid: u16, uid: u64) ->
     println!("Neuron {} Information:", uid);
     println!("  Hotkey: {}", neuron.hotkey.to_ss58check());
     println!("  Coldkey: {}", neuron.coldkey.to_ss58check());
-    println!("  Stake: {} TAO", neuron.stake as f64 / 1e9);
+    println!("  Stake: {} TAO", format_rao_as_tao(neuron.stake));
     println!("  Rank: {:.4}", neuron.rank);
     println!("  Trust: {:.4}", neuron.trust);
     println!("  Consensus: {:.4}", neuron.consensus);
