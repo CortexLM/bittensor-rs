@@ -17,7 +17,11 @@ pub mod validator;
 pub mod wallet;
 
 pub use chain::ExtrinsicWait;
-pub use chain::{BittensorClient, Error as ChainError};
+pub use chain::{
+    create_client_rate_limiter, BittensorClient, ChainEvent, DispatchResult, Error as ChainError,
+    ExtrinsicResult, RetryPolicy, FALLBACK_ENDPOINTS,
+};
+pub use chain::{ManagedSigner, NonceManager, SharedNonceManager};
 pub use config::{AxonConfig, Config, LoggingConfig as ConfigLoggingConfig, SubtensorConfig};
 pub use metagraph::{sync_metagraph, Metagraph};
 
@@ -143,6 +147,8 @@ pub use errors::{
     ChainConnectionError,
     ChainQueryError,
     DendriteError,
+    // Chain interaction error types
+    ExtrinsicDispatchError,
     ExtrinsicError,
     // Stake Errors
     InsufficientBalance,
@@ -158,10 +164,12 @@ pub use errors::{
     KeyfileNotFound,
     KeyfilePermissionError,
     MetadataError,
+    NonceError as NonceErrorType,
     NotRegistered,
     NotSenateMember,
     PowFailed,
     ProposalNotFound,
+    RateLimitedError,
     RegistrationFailed,
     // Synapse/Communication Errors
     SerializationError,

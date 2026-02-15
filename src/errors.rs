@@ -1363,6 +1363,108 @@ impl ProposalNotFound {
 }
 
 // =============================================================================
+// Extrinsic Dispatch Errors (decoded from chain events/metadata)
+// =============================================================================
+
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
+#[error("Extrinsic dispatch error: {description} (pallet: {pallet_name}, error: {error_name})")]
+pub struct ExtrinsicDispatchError {
+    pub pallet_name: String,
+    pub error_name: String,
+    pub pallet_index: u8,
+    pub error_index: u8,
+    pub description: String,
+}
+
+impl ExtrinsicDispatchError {
+    pub fn new(
+        pallet_name: impl Into<String>,
+        error_name: impl Into<String>,
+        pallet_index: u8,
+        error_index: u8,
+        description: impl Into<String>,
+    ) -> Self {
+        Self {
+            pallet_name: pallet_name.into(),
+            error_name: error_name.into(),
+            pallet_index,
+            error_index,
+            description: description.into(),
+        }
+    }
+
+    pub fn from_indices(pallet_index: u8, error_index: u8) -> Self {
+        Self {
+            pallet_name: format!("Pallet({})", pallet_index),
+            error_name: format!("Error({})", error_index),
+            pallet_index,
+            error_index,
+            description: format!(
+                "Module error: pallet_index={}, error_index={}",
+                pallet_index, error_index
+            ),
+        }
+    }
+}
+
+// =============================================================================
+// Nonce Errors
+// =============================================================================
+
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
+#[error("Nonce error: {message}")]
+pub struct NonceError {
+    pub message: String,
+    pub expected_nonce: Option<u64>,
+    pub actual_nonce: Option<u64>,
+}
+
+impl NonceError {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            expected_nonce: None,
+            actual_nonce: None,
+        }
+    }
+
+    pub fn stale(expected: u64, actual: u64) -> Self {
+        Self {
+            message: format!("Nonce too low: expected >= {}, got {}", expected, actual),
+            expected_nonce: Some(expected),
+            actual_nonce: Some(actual),
+        }
+    }
+}
+
+// =============================================================================
+// Rate Limit Errors
+// =============================================================================
+
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
+#[error("Rate limited: {message}")]
+pub struct RateLimitedError {
+    pub message: String,
+    pub retry_after_blocks: Option<u64>,
+}
+
+impl RateLimitedError {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            retry_after_blocks: None,
+        }
+    }
+
+    pub fn with_retry_after(message: impl Into<String>, blocks: u64) -> Self {
+        Self {
+            message: message.into(),
+            retry_after_blocks: Some(blocks),
+        }
+    }
+}
+
+// =============================================================================
 // Unified Error Enum
 // =============================================================================
 
@@ -1468,6 +1570,18 @@ pub enum BittensorError {
     #[error(transparent)]
     ProposalNotFound(#[from] ProposalNotFound),
 
+    // Extrinsic dispatch error (decoded from chain events)
+    #[error(transparent)]
+    ExtrinsicDispatch(#[from] ExtrinsicDispatchError),
+
+    // Nonce error
+    #[error(transparent)]
+    NonceError(#[from] NonceError),
+
+    // Rate limit error
+    #[error(transparent)]
+    RateLimited(#[from] RateLimitedError),
+
     // External library errors (converted to String for Serialize/Deserialize)
     #[error("Subxt error: {0}")]
     Subxt(String),
@@ -1552,6 +1666,18 @@ impl BittensorError {
             self,
             BittensorError::SynapseUnauthorized(_) | BittensorError::SynapseBlacklisted(_)
         )
+    }
+
+    pub fn is_dispatch_error(&self) -> bool {
+        matches!(self, BittensorError::ExtrinsicDispatch(_))
+    }
+
+    pub fn is_nonce_error(&self) -> bool {
+        matches!(self, BittensorError::NonceError(_))
+    }
+
+    pub fn is_rate_limited(&self) -> bool {
+        matches!(self, BittensorError::RateLimited(_))
     }
 }
 
