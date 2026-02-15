@@ -18,6 +18,10 @@ pub async fn add_stake(
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!("Stake amount must be greater than zero"));
+    }
+
     let args = vec![
         Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
@@ -42,6 +46,10 @@ pub async fn unstake(
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!("Unstake amount must be greater than zero"));
+    }
+
     let args = vec![
         Value::from_bytes(hotkey.encode()),
         Value::u128(netuid as u128),
@@ -85,6 +93,10 @@ pub async fn add_stake_multiple(
         ));
     }
 
+    if amounts.contains(&0) {
+        return Err(anyhow::anyhow!("Stake amounts must be greater than zero"));
+    }
+
     let hotkey_values: Vec<Value> = hotkeys
         .iter()
         .map(|hk| Value::from_bytes(hk.encode()))
@@ -121,6 +133,10 @@ pub async fn unstake_multiple(
         return Err(anyhow::anyhow!(
             "Hotkeys and amounts must have the same length"
         ));
+    }
+
+    if amounts.contains(&0) {
+        return Err(anyhow::anyhow!("Unstake amounts must be greater than zero"));
     }
 
     let hotkey_values: Vec<Value> = hotkeys
@@ -176,6 +192,12 @@ pub async fn move_stake(
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!(
+            "Stake move amount must be greater than zero"
+        ));
+    }
+
     let args = vec![
         Value::from_bytes(from_hotkey.encode()),
         Value::from_bytes(to_hotkey.encode()),
@@ -201,6 +223,12 @@ pub async fn swap_stake(
     amount: u128,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
+    if amount == 0 {
+        return Err(anyhow::anyhow!(
+            "Stake swap amount must be greater than zero"
+        ));
+    }
+
     let args = vec![
         Value::from_bytes(hotkey.encode()),
         Value::u128(origin_netuid as u128),

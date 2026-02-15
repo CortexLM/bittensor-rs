@@ -66,6 +66,13 @@ pub async fn commit_weights(
     let hash_bytes = hex::decode(commit_hash)
         .map_err(|e| anyhow::anyhow!("Invalid commit hash format: {}", e))?;
 
+    if hash_bytes.len() != 32 {
+        return Err(anyhow::anyhow!(
+            "Commit hash must be 32 bytes, got {}",
+            hash_bytes.len()
+        ));
+    }
+
     let args = vec![Value::u128(netuid as u128), Value::from_bytes(&hash_bytes)];
 
     let tx_hash = client
@@ -99,6 +106,10 @@ pub async fn reveal_weights(
         return Err(anyhow::anyhow!(
             "UIDS and weights must have the same length"
         ));
+    }
+
+    if uids.is_empty() {
+        return Err(anyhow::anyhow!("No valid weights to reveal"));
     }
 
     let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
