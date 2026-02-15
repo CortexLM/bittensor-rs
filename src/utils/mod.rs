@@ -6,6 +6,7 @@ pub mod scale;
 pub mod ss58;
 pub mod weights;
 
+pub use crate::core::constants::EXISTENTIAL_DEPOSIT_RAO;
 pub use balance_newtypes::{
     balance_from_rao, balance_from_rao_with_netuid, balance_from_tao, balance_from_tao_with_netuid,
     format_rao_as_tao, get_unit_symbol, is_lossless_conversion, is_valid_rao_amount,

@@ -9,8 +9,20 @@ const SUBTENSOR_MODULE: &str = "SubtensorModule";
 const ADD_STAKE_FUNCTION: &str = "add_stake";
 const UNSTAKE_FUNCTION: &str = "remove_stake";
 
-/// Add stake to a hotkey on a specific subnet
-/// Subtensor expects: (hotkey, netuid, amount_staked)
+/// Add stake to a hotkey on a specific subnet.
+///
+/// Subtensor extrinsic argument order: `(hotkey, netuid, amount_staked)`.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the funds).
+/// * `hotkey` — The hotkey to stake to.
+/// * `netuid` — The subnet ID.
+/// * `amount` — Amount to stake **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
+///
+/// # Errors
+/// Returns an error if the amount is zero or the extrinsic submission fails.
 pub async fn add_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -37,8 +49,20 @@ pub async fn add_stake(
     Ok(tx_hash)
 }
 
-/// Unstake from a hotkey on a specific subnet
-/// Subtensor expects: (hotkey, netuid, amount_unstaked)
+/// Unstake from a hotkey on a specific subnet.
+///
+/// Subtensor extrinsic argument order: `(hotkey, netuid, amount_unstaked)`.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the stake).
+/// * `hotkey` — The hotkey to unstake from.
+/// * `netuid` — The subnet ID.
+/// * `amount` — Amount to unstake **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
+///
+/// # Errors
+/// Returns an error if the amount is zero or the extrinsic submission fails.
 pub async fn unstake(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -65,7 +89,18 @@ pub async fn unstake(
     Ok(tx_hash)
 }
 
-/// Unstake all from a hotkey
+/// Unstake all from a hotkey (removes all stake regardless of amount).
+///
+/// Subtensor extrinsic argument order: `(hotkey)`.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the stake).
+/// * `hotkey` — The hotkey to unstake all from.
+/// * `wait_for` — How long to wait for on-chain inclusion.
+///
+/// # Errors
+/// Returns an error if the extrinsic submission fails.
 pub async fn unstake_all(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -80,7 +115,18 @@ pub async fn unstake_all(
         .map_err(|e| anyhow::anyhow!("Failed to unstake all: {}", e))
 }
 
-/// Add stake to multiple hotkeys
+/// Add stake to multiple hotkeys in a single extrinsic.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the funds).
+/// * `hotkeys` — Slice of hotkeys to stake to.
+/// * `amounts` — Corresponding amounts **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
+///
+/// # Errors
+/// Returns an error if the slices differ in length, any amount is zero, or the
+/// extrinsic submission fails.
 pub async fn add_stake_multiple(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -125,7 +171,18 @@ pub async fn add_stake_multiple(
         .map_err(|e| anyhow::anyhow!("Failed to add stake multiple: {}", e))
 }
 
-/// Unstake from multiple hotkeys
+/// Unstake from multiple hotkeys in a single extrinsic.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the stake).
+/// * `hotkeys` — Slice of hotkeys to unstake from.
+/// * `amounts` — Corresponding amounts **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
+///
+/// # Errors
+/// Returns an error if the slices differ in length, any amount is zero, or the
+/// extrinsic submission fails.
 pub async fn unstake_multiple(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -170,7 +227,17 @@ pub async fn unstake_multiple(
         .map_err(|e| anyhow::anyhow!("Failed to unstake multiple: {}", e))
 }
 
-/// Set auto-stake for a hotkey
+/// Set auto-stake for a hotkey.
+///
+/// When enabled, dividends earned by the hotkey are automatically re-staked
+/// rather than transferred to the coldkey's free balance.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey).
+/// * `hotkey` — The hotkey to configure.
+/// * `auto_stake` — `true` to enable auto-staking, `false` to disable.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn set_auto_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -186,8 +253,20 @@ pub async fn set_auto_stake(
         .map_err(|e| anyhow::anyhow!("Failed to set auto stake: {}", e))
 }
 
-/// Move stake from one hotkey to another across subnets
-/// Subtensor expects: (origin_hotkey, destination_hotkey, origin_netuid, destination_netuid, alpha_amount)
+/// Move stake from one hotkey to another, optionally across subnets.
+///
+/// Subtensor extrinsic argument order:
+/// `(origin_hotkey, destination_hotkey, origin_netuid, destination_netuid, alpha_amount)`.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey).
+/// * `from_hotkey` — Source hotkey.
+/// * `to_hotkey` — Destination hotkey.
+/// * `origin_netuid` — Source subnet ID.
+/// * `destination_netuid` — Target subnet ID.
+/// * `amount` — Amount to move **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
 #[allow(clippy::too_many_arguments)]
 pub async fn move_stake(
     client: &BittensorClient,
@@ -219,8 +298,19 @@ pub async fn move_stake(
         .map_err(|e| anyhow::anyhow!("Failed to move stake: {}", e))
 }
 
-/// Swap stake from one subnet to another for a hotkey
-/// Subtensor expects: (hotkey, origin_netuid, destination_netuid, alpha_amount)
+/// Swap stake from one subnet to another for a hotkey.
+///
+/// Subtensor extrinsic argument order:
+/// `(hotkey, origin_netuid, destination_netuid, alpha_amount)`.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey).
+/// * `hotkey` — The hotkey whose stake is being swapped.
+/// * `origin_netuid` — Source subnet ID.
+/// * `destination_netuid` — Target subnet ID.
+/// * `amount` — Amount to swap **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn swap_stake(
     client: &BittensorClient,
     signer: &BittensorSigner,
