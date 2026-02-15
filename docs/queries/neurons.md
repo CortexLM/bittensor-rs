@@ -26,7 +26,7 @@ pub struct NeuronInfo {
     pub consensus: f64,
     pub validator_trust: f64,
     pub incentive: f64,
-    pub emission: f64,
+    pub emission: u128,
     pub dividends: f64,
     pub active: bool,
     pub last_update: u64,
@@ -56,7 +56,7 @@ pub struct NeuronInfoLite {
     pub consensus: f64,
     pub incentive: f64,
     pub dividends: f64,
-    pub emission: f64,
+    pub emission: u128,
     pub active: bool,
     pub validator_permit: bool,
     pub last_update: u64,
@@ -174,7 +174,7 @@ async fn display_neuron_info(client: &BittensorClient, netuid: u16, uid: u64) ->
     println!("  Trust: {:.4}", neuron.trust);
     println!("  Consensus: {:.4}", neuron.consensus);
     println!("  Incentive: {:.4}", neuron.incentive);
-    println!("  Emission: {:.2} RAO/block", neuron.emission);
+    println!("  Emission: {} RAO/block", neuron.emission);
     
     if let Some(axon) = &neuron.axon_info {
         println!("  Axon: {}:{}", axon.ip, axon.port);

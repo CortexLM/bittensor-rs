@@ -144,12 +144,12 @@ for neuron in neurons.iter() {
 ```rust
 use bittensor_rs::utils::balance::{Balance, rao_to_tao, tao_to_rao};
 
-// Convert between TAO and RAO (1 TAO = 1e9 RAO)
-let rao = tao_to_rao(1.5);  // 1_500_000_000
-let tao = rao_to_tao(1_000_000_000);  // 1.0
+// Convert between TAO (display) and RAO (on-chain)
+let rao = tao_to_rao(1.5);  // 1_500_000_000 RAO (truncated)
+let tao = rao_to_tao(1_000_000_000);  // 1.0 TAO
 
-// Use Balance struct
-let balance = Balance::from_tao(2.5);
+// Use Balance struct (RAO is the source of truth)
+let balance = Balance::from_rao(2_500_000_000);
 println!("Balance: {} TAO ({} RAO)", balance.as_tao(), balance.as_rao());
 ```
 

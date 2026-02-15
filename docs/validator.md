@@ -27,22 +27,22 @@ pub async fn set_weights(
 ```
 
 **Parameters:**
-- `amount`: Amount to transfer in RAO
+- `amount`: Amount to transfer in RAO (on-chain unit)
 ) -> Result<()>
 ```
 
 **Parameters:**
-- `amount`: Amount to swap in RAO
+- `amount`: Amount to swap in RAO (on-chain unit)
 ) -> Result<()>
 ```
 
 **Parameters:**
-- `amount`: Amount to move in RAO
+- `amount`: Amount to move in RAO (on-chain unit)
 ) -> Result<()>
 ```
 
 **Parameters:**
-- `amount`: Amount to unstake in RAO
+- `amount`: Amount to unstake in RAO (on-chain unit)
 ) -> Result<()>
 ```
 

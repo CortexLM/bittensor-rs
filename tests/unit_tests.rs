@@ -65,7 +65,7 @@ fn test_neuron_info_structure() {
         root_stake: 0u128,
         stake_weight: 0,
         rank: 100.0,
-        emission: 1000.0,
+        emission: 1000,
         incentive: 50.0,
         consensus: 80.0,
         trust: 90.0,
@@ -100,7 +100,7 @@ fn test_subnet_info_creation() {
         netuid: 1,
         neuron_count: 256,
         total_stake: 1000000,
-        emission: 500000.0,
+        emission: 500000,
         name: Some("Test Subnet".to_string()),
         description: Some("A test subnet".to_string()),
     };
@@ -108,7 +108,7 @@ fn test_subnet_info_creation() {
     assert_eq!(subnet.netuid, 1);
     assert_eq!(subnet.neuron_count, 256);
     assert_eq!(subnet.total_stake, 1000000);
-    assert_eq!(subnet.emission, 500000.0);
+    assert_eq!(subnet.emission, 500000);
     assert_eq!(subnet.name.as_ref().unwrap(), "Test Subnet");
 }
 
@@ -171,7 +171,7 @@ fn test_metagraph_neuron_access() {
         root_stake: 0u128,
         stake_weight: 0,
         rank: 100.0,
-        emission: 1000.0,
+        emission: 1000,
         incentive: 50.0,
         consensus: 80.0,
         trust: 90.0,

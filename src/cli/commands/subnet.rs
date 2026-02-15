@@ -114,7 +114,7 @@ async fn list_subnets(cli: &Cli) -> anyhow::Result<()> {
             info.netuid.to_string(),
             info.name.clone().unwrap_or_else(|| "N/A".to_string()),
             info.neuron_count.to_string(),
-            format!("{:.6}", info.emission),
+            format_tao(info.emission),
         ]);
     }
 
@@ -163,7 +163,7 @@ async fn show_subnet(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
                 info.name.unwrap_or_else(|| "N/A".to_string())
             );
             println!("Neurons:          {}", info.neuron_count);
-            println!("Emission:         {:.6}", info.emission);
+            println!("Emission:         {}", format_tao(info.emission));
             println!("Total Stake:      {}", format_tao(info.total_stake));
             println!("Tempo:            {} blocks", tempo_val);
             println!("Difficulty:       {}", diff_val);

@@ -4,7 +4,7 @@ The Bittensor Rust SDK provides comprehensive query capabilities for interacting
 
 ## Overview
 
-Query operations are the primary interface for retrieving data from the Bittensor blockchain. These operations are read-only and do not require transaction signing.
+Query operations are the primary interface for retrieving data from the Bittensor blockchain. These operations are read-only and do not require transaction signing. All on-chain balances, stake, and emission values are returned in RAO (`u128`); convert to TAO for display only.
 
 ## Parity Notes (Python SDK)
 

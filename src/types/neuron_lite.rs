@@ -32,8 +32,8 @@ pub struct NeuronInfoLite {
     pub validator_trust: f64,
     /// Incentive score (normalized)
     pub incentive: f64,
-    /// Emission amount
-    pub emission: f64,
+    /// Emission amount (RAO)
+    pub emission: u128,
     /// Dividends received (normalized)
     pub dividends: f64,
     /// Whether the neuron is active
@@ -67,7 +67,7 @@ impl NeuronInfoLite {
             consensus: 0.0,
             validator_trust: 0.0,
             incentive: 0.0,
-            emission: 0.0,
+            emission: 0,
             dividends: 0.0,
             active: false,
             last_update: 0,
@@ -94,7 +94,7 @@ impl NeuronInfoLite {
             consensus: 0.0,
             validator_trust: 0.0,
             incentive: 0.0,
-            emission: 0.0,
+            emission: 0,
             dividends: 0.0,
             active: false,
             last_update: 0,

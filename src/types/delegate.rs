@@ -16,7 +16,7 @@ pub struct DelegateInfoBase {
     pub validator_permits: Vec<u16>,
     /// List of subnets that the delegate is registered on
     pub registrations: Vec<u16>,
-    /// Return per 1000 tao of the delegate over a day
+    /// Return per 1000 TAO of the delegate over a day (RAO)
     pub return_per_1000: u128,
     /// Total daily return of the delegate
     pub total_daily_return: u128,

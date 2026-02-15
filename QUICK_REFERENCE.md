@@ -54,7 +54,7 @@ let all_neurons = neurons_bulk::neurons_bulk(&client, netuid, None).await?;
 ```rust
 use bittensor_rs::queries::wallets;
 
-let balance = wallets::get_balance(&client, &account_id).await?;
+let balance = wallets::get_balance(&client, &account_id).await?; // RAO
 println!("Balance: {} TAO", balance as f64 / 1e9);
 ```
 
@@ -168,6 +168,6 @@ use bittensor_rs::core::{SS58_FORMAT, RAO_PER_TAO};
 // SS58 format for Bittensor
 let format = sp_core::crypto::Ss58AddressFormat::custom(SS58_FORMAT);
 
-// Convert TAO to RAO
-let rao = tao * RAO_PER_TAO;
+// Convert TAO to RAO (display to on-chain)
+let rao = tao * RAO_PER_TAO; // truncate toward zero for exact RAO
 ```

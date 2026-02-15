@@ -98,7 +98,7 @@ let back_to_ss58 = account_to_ss58(&account);
 
 ### rao_to_tao
 
-Convert RAO (smallest unit) to TAO.
+Convert RAO (smallest on-chain unit) to TAO for display.
 
 ```rust
 pub fn rao_to_tao(rao: u128) -> f64
@@ -108,11 +108,11 @@ pub fn rao_to_tao(rao: u128) -> f64
 - `rao`: Amount in RAO
 
 **Returns:**
-- `f64`: Amount in TAO (1 TAO = 10^9 RAO)
+- `f64`: Amount in TAO (1 TAO = 10^9 RAO). Values are display-only and may lose precision above 2^53 RAO.
 
 ### tao_to_rao
 
-Convert TAO to RAO.
+Convert TAO to RAO using truncation toward zero.
 
 ```rust
 pub fn tao_to_rao(tao: f64) -> u128
@@ -122,7 +122,7 @@ pub fn tao_to_rao(tao: f64) -> u128
 - `tao`: Amount in TAO
 
 **Returns:**
-- `u128`: Amount in RAO
+- `u128`: Amount in RAO (on-chain unit)
 
 **Example:**
 ```rust
@@ -267,4 +267,3 @@ use bittensor_rs::utils::{
 - Address conversions are lightweight operations
 - SCALE encoding/decoding is optimized for Substrate compatibility
 - Value decoding handles various format representations (U128, U64, U8) for robustness
-
