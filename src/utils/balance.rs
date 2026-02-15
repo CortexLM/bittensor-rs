@@ -12,7 +12,7 @@ pub fn rao_to_tao(rao: u128) -> f64 {
 /// Convert TAO to raw units (RAO)
 /// Uses exact integer arithmetic: rao = int(tao * RAOPERTAO)
 pub fn tao_to_rao(tao: f64) -> u128 {
-    (tao * RAOPERTAO as f64) as u128
+    (tao.max(0.0) * RAOPERTAO as f64) as u128
 }
 
 /// Create balance from RAO

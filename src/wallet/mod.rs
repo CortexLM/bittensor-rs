@@ -66,7 +66,7 @@
 //!
 //! ### Encrypted Keyfile (Binary)
 //! Uses NaCl binary format with `$NACL` header:
-//! ```
+//! ```text
 //! +--------+--------+---------+-----------+
 //! |$NACL   |  Salt  |  Nonce  | Ciphertext|
 //! |5 bytes |16 bytes| 24 bytes| variable  |
