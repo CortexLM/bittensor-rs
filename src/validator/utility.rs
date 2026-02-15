@@ -30,35 +30,35 @@ impl BatchCall {
         weights: &[u16],
         version_key: u64,
     ) -> Self {
-        let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
-        let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
+        let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+        let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
 
         Self::new(
             "SubtensorModule",
             "set_mechanism_weights",
             vec![
-                Value::u128(netuid as u128),
-                Value::u128(mechanism_id as u128),
+                Value::from(netuid),
+                Value::from(mechanism_id),
                 Value::unnamed_composite(uid_values),
                 Value::unnamed_composite(weight_values),
-                Value::u128(version_key as u128),
+                Value::from(version_key),
             ],
         )
     }
 
     /// Create a set_weights call for batching (mechanism 0)
     pub fn set_weights(netuid: u16, uids: &[u16], weights: &[u16], version_key: u64) -> Self {
-        let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
-        let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
+        let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+        let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
 
         Self::new(
             "SubtensorModule",
             "set_weights",
             vec![
-                Value::u128(netuid as u128),
+                Value::from(netuid),
                 Value::unnamed_composite(uid_values),
                 Value::unnamed_composite(weight_values),
-                Value::u128(version_key as u128),
+                Value::from(version_key),
             ],
         )
     }
@@ -69,8 +69,8 @@ impl BatchCall {
             "SubtensorModule",
             "commit_mechanism_weights",
             vec![
-                Value::u128(netuid as u128),
-                Value::u128(mechanism_id as u128),
+                Value::from(netuid),
+                Value::from(mechanism_id),
                 Value::from_bytes(commit_hash),
             ],
         )
@@ -100,9 +100,12 @@ pub async fn batch_all(
                 "set_mechanism_weights" => vec![
                     (
                         "netuid",
-                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                        call.args.first().cloned().unwrap_or(Value::from(0u16)),
                     ),
-                    ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
+                    (
+                        "mecid",
+                        call.args.get(1).cloned().unwrap_or(Value::from(0u8)),
+                    ),
                     (
                         "dests",
                         call.args
@@ -119,13 +122,13 @@ pub async fn batch_all(
                     ),
                     (
                         "version_key",
-                        call.args.get(4).cloned().unwrap_or(Value::u128(0)),
+                        call.args.get(4).cloned().unwrap_or(Value::from(0u64)),
                     ),
                 ],
                 "set_weights" => vec![
                     (
                         "netuid",
-                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                        call.args.first().cloned().unwrap_or(Value::from(0u16)),
                     ),
                     (
                         "dests",
@@ -143,15 +146,18 @@ pub async fn batch_all(
                     ),
                     (
                         "version_key",
-                        call.args.get(3).cloned().unwrap_or(Value::u128(0)),
+                        call.args.get(3).cloned().unwrap_or(Value::from(0u64)),
                     ),
                 ],
                 "commit_mechanism_weights" => vec![
                     (
                         "netuid",
-                        call.args.first().cloned().unwrap_or(Value::u128(0)),
+                        call.args.first().cloned().unwrap_or(Value::from(0u16)),
                     ),
-                    ("mecid", call.args.get(1).cloned().unwrap_or(Value::u128(0))),
+                    (
+                        "mecid",
+                        call.args.get(1).cloned().unwrap_or(Value::from(0u8)),
+                    ),
                     (
                         "hash",
                         call.args.get(2).cloned().unwrap_or(Value::from_bytes([])),

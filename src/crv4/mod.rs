@@ -68,10 +68,10 @@ pub async fn commit_timelocked_weights(
     }
 
     let args = vec![
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::from_bytes(commit),
-        Value::u128(reveal_round as u128),
-        Value::u128(commit_reveal_version as u128),
+        Value::from(reveal_round),
+        Value::from(commit_reveal_version),
     ];
 
     let tx_hash = client
@@ -107,11 +107,11 @@ pub async fn commit_timelocked_mechanism_weights(
     }
 
     let args = vec![
-        Value::u128(netuid as u128),
-        Value::u128(mechanism_id as u128),
+        Value::from(netuid),
+        Value::from(mechanism_id),
         Value::from_bytes(commit),
-        Value::u128(reveal_round as u128),
-        Value::u128(commit_reveal_version as u128),
+        Value::from(reveal_round),
+        Value::from(commit_reveal_version),
     ];
 
     let tx_hash = client
@@ -313,7 +313,7 @@ pub async fn get_commit_reveal_version(client: &BittensorClient) -> Result<u16> 
 
 /// Get tempo for a subnet
 pub async fn get_tempo(client: &BittensorClient, netuid: u16) -> Result<u16> {
-    let key = vec![Value::u128(netuid as u128)];
+    let key = vec![Value::from(netuid)];
     if let Some(val) = client.storage(SUBTENSOR_MODULE, "Tempo", Some(key)).await? {
         return crate::utils::decoders::decode_u16(&val)
             .map_err(|e| anyhow::anyhow!("Failed to decode tempo: {}", e));
@@ -323,7 +323,7 @@ pub async fn get_tempo(client: &BittensorClient, netuid: u16) -> Result<u16> {
 
 /// Get reveal period in epochs
 pub async fn get_reveal_period(client: &BittensorClient, netuid: u16) -> Result<u64> {
-    let key = vec![Value::u128(netuid as u128)];
+    let key = vec![Value::from(netuid)];
     if let Some(val) = client
         .storage(SUBTENSOR_MODULE, "RevealPeriodEpochs", Some(key))
         .await?
