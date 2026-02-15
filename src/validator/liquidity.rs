@@ -5,7 +5,15 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
-/// Add liquidity to a pool
+/// Add liquidity to a subnet pool.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair.
+/// * `netuid` — The subnet ID.
+/// * `amount_a` — First token amount **in RAO** (1 TAO = 1e9 RAO).
+/// * `amount_b` — Second token amount **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn add_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -26,7 +34,14 @@ pub async fn add_liquidity(
         .map_err(|e| anyhow::anyhow!("Failed to add liquidity: {}", e))
 }
 
-/// Remove liquidity from a pool
+/// Remove liquidity from a subnet pool.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair.
+/// * `netuid` — The subnet ID.
+/// * `liquidity_amount` — Amount of liquidity tokens to remove **in RAO** (1 TAO = 1e9 RAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn remove_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -42,7 +57,20 @@ pub async fn remove_liquidity(
         .map_err(|e| anyhow::anyhow!("Failed to remove liquidity: {}", e))
 }
 
-/// Modify liquidity position
+/// Modify a concentrated-liquidity position.
+///
+/// The `liquidity_delta` is a signed value (`i128`) representing the change
+/// in liquidity — positive to add, negative to remove.  This is NOT an
+/// amount in RAO; it is the raw liquidity-unit delta used by the AMM.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair.
+/// * `netuid` — The subnet ID.
+/// * `tick_lower` — Lower tick boundary.
+/// * `tick_upper` — Upper tick boundary.
+/// * `liquidity_delta` — Signed change in liquidity units.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn modify_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -65,7 +93,14 @@ pub async fn modify_liquidity(
         .map_err(|e| anyhow::anyhow!("Failed to modify liquidity: {}", e))
 }
 
-/// Toggle user liquidity permission
+/// Toggle user liquidity permission for a subnet.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (must be subnet owner).
+/// * `netuid` — The subnet ID.
+/// * `enabled` — `true` to allow user liquidity operations, `false` to disable.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn toggle_user_liquidity(
     client: &BittensorClient,
     signer: &BittensorSigner,

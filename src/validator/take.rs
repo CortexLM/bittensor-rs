@@ -6,8 +6,17 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
-/// Increase delegate take (commission)
-/// Subtensor expects: (hotkey, take: u16)
+/// Increase delegate take (commission rate).
+///
+/// Subtensor extrinsic argument order: `(hotkey, take: u16)`.
+/// The `take` value is a u16 proportion (0–65535 maps to 0–100%).
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the hotkey).
+/// * `hotkey` — The delegate hotkey.
+/// * `take` — New take value as u16 proportion.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn increase_take(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -29,8 +38,17 @@ pub async fn increase_take(
         .map_err(|e| anyhow::anyhow!("Failed to increase take: {}", e))
 }
 
-/// Decrease delegate take (commission)
-/// Subtensor expects: (hotkey, take: u16)
+/// Decrease delegate take (commission rate).
+///
+/// Subtensor extrinsic argument order: `(hotkey, take: u16)`.
+/// The `take` value is a u16 proportion (0–65535 maps to 0–100%).
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the hotkey).
+/// * `hotkey` — The delegate hotkey.
+/// * `take` — New take value as u16 proportion.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn decrease_take(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -52,8 +70,17 @@ pub async fn decrease_take(
         .map_err(|e| anyhow::anyhow!("Failed to decrease take: {}", e))
 }
 
-/// Become a delegate (enable delegate take > 0)
-/// Subtensor expects: (hotkey, take: u16)
+/// Become a delegate (enable delegate take > 0).
+///
+/// Subtensor extrinsic argument order: `(hotkey, take: u16)`.
+/// The `take` value is a u16 proportion (0–65535 maps to 0–100%).
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the hotkey).
+/// * `hotkey` — The hotkey to promote to delegate.
+/// * `take` — Initial take value as u16 proportion.
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn become_delegate(
     client: &BittensorClient,
     signer: &BittensorSigner,
