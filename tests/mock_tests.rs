@@ -26,17 +26,36 @@ fn test_subnet_info_basic() {
 #[test]
 fn test_subnet_hyperparameters() {
     let params = SubnetHyperparameters {
+        rho: 0,
+        kappa: 0,
         weights_version: 1,
+        weights_rate_limit: 0,
         min_stake: 100000,
         min_burn: 1000,
         max_burn: 1000000,
+        bonds_moving_avg: 0,
+        max_regs_per_block: 0,
         adjustment_alpha: 100,
         target_regs_per_interval: 10,
+        adjustment_interval: 0,
         immunity_period: 5000,
         min_allowed_weights: 1,
+        max_weights_limit: 0,
         max_weight_limit: 65535,
         tempo: 99,
+        min_difficulty: 0,
+        max_difficulty: 0,
+        difficulty: 0,
+        activity_cutoff: 0,
+        registration_allowed: false,
+        max_validators: 0,
         max_allowed_uids: 4096,
+        serving_rate_limit: 0,
+        commit_reveal_weights_interval: 0,
+        commit_reveal_weights_enabled: false,
+        alpha_high: 0,
+        alpha_low: 0,
+        liquid_alpha_enabled: false,
     };
 
     assert_eq!(params.tempo, 99);
@@ -113,7 +132,6 @@ fn test_hashmap_operations() {
     assert_eq!(stake_map.get(&2), Some(&200000));
     assert_eq!(stake_map.len(), 3);
 
-    // Test total
     let total: u128 = stake_map.values().sum();
     assert_eq!(total, 600000);
 }
@@ -122,18 +140,15 @@ fn test_hashmap_operations() {
 fn test_vector_operations() {
     let mut registrations = vec![1u16, 3, 5, 7];
 
-    // Test push
     registrations.push(9);
     assert_eq!(registrations.len(), 5);
     assert_eq!(registrations[4], 9);
 
-    // Test contains
     assert!(registrations.contains(&3));
     assert!(!registrations.contains(&4));
 
-    // Test iteration
     let sum: u16 = registrations.iter().sum();
-    assert_eq!(sum, 25); // 1 + 3 + 5 + 7 + 9
+    assert_eq!(sum, 25);
 }
 
 #[test]
@@ -145,11 +160,9 @@ fn test_account_id_operations() {
     let account3 =
         AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty").unwrap();
 
-    // Test equality
     assert_eq!(account1, account2);
     assert_ne!(account1, account3);
 
-    // Test as key in HashMap
     let mut map = HashMap::new();
     map.insert(account1.clone(), 100);
     map.insert(account3.clone(), 200);

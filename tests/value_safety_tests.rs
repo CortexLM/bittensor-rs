@@ -29,43 +29,13 @@ fn test_transfer_and_stake_requires_rao_inputs() {
     assert_u128_input::<u128>(Rao::ZERO.as_u128());
     assert_u128_input::<u128>(RAOPERTAO);
 
-    let _transfer_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        &sp_core::crypto::AccountId32,
-        u128,
-        bool,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = transfer::transfer;
+    let _transfer_fn = transfer::transfer;
 
-    let _transfer_stake_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        &sp_core::crypto::AccountId32,
-        &sp_core::crypto::AccountId32,
-        u16,
-        u16,
-        u128,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = transfer::transfer_stake;
+    let _transfer_stake_fn = transfer::transfer_stake;
 
-    let _add_stake_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        &sp_core::crypto::AccountId32,
-        u16,
-        u128,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = staking::add_stake;
+    let _add_stake_fn = staking::add_stake;
 
-    let _unstake_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        &sp_core::crypto::AccountId32,
-        u16,
-        u128,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = staking::unstake;
+    let _unstake_fn = staking::unstake;
 }
 
 #[test]
@@ -73,34 +43,11 @@ fn test_weight_inputs_require_u16_not_tao() {
     let uids: Vec<u16> = vec![0, 1, 2];
     let weights: Vec<u16> = vec![10_000, 20_000, 30_000];
 
-    let _set_weights_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        u16,
-        &[u16],
-        &[u16],
-        u64,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = validator_weights::set_weights;
+    let _set_weights_fn = validator_weights::set_weights;
 
-    let _commit_weights_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        u16,
-        &str,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = validator_weights::commit_weights;
+    let _commit_weights_fn = validator_weights::commit_weights;
 
-    let _reveal_weights_fn: fn(
-        &bittensor_rs::chain::BittensorClient,
-        &bittensor_rs::chain::BittensorSigner,
-        u16,
-        &[u16],
-        &[u16],
-        &[u16],
-        u64,
-        bittensor_rs::chain::ExtrinsicWait,
-    ) -> _ = validator_weights::reveal_weights;
+    let _reveal_weights_fn = validator_weights::reveal_weights;
 
     assert_eq!(uids.len(), weights.len());
 }

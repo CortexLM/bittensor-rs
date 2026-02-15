@@ -40,6 +40,9 @@ pub struct SubnetHyperparameters {
     pub alpha_high: u16,
     pub alpha_low: u16,
     pub liquid_alpha_enabled: bool,
+    pub min_stake: u64,
+    pub max_weight_limit: u16,
+    pub max_allowed_uids: u16,
 }
 
 /// Helper to fetch a u16 storage value for a subnet
@@ -187,12 +190,13 @@ pub async fn get_subnet_hyperparameters(
         get_liquid_alpha_enabled(client, netuid),
     );
 
+    let max_weights_limit_value = max_weights_limit.unwrap_or(0);
     Ok(SubnetHyperparameters {
         rho: rho.unwrap_or(0),
         kappa: kappa.unwrap_or(0),
         immunity_period: immunity_period.unwrap_or(0),
         min_allowed_weights: min_allowed_weights.unwrap_or(0),
-        max_weights_limit: max_weights_limit.unwrap_or(0),
+        max_weights_limit: max_weights_limit_value,
         tempo: tempo.unwrap_or(0),
         min_difficulty: min_difficulty.unwrap_or(0),
         max_difficulty: max_difficulty.unwrap_or(0),
@@ -215,6 +219,9 @@ pub async fn get_subnet_hyperparameters(
         alpha_high: alpha_high.unwrap_or(0),
         alpha_low: alpha_low.unwrap_or(0),
         liquid_alpha_enabled: liquid_alpha_enabled.unwrap_or(false),
+        min_stake: 0,
+        max_weight_limit: max_weights_limit_value,
+        max_allowed_uids: 0,
     })
 }
 

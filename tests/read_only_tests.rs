@@ -40,12 +40,12 @@ fn test_balance_roundtrip() {
 #[test]
 fn test_balance_struct_operations() {
     let balance = Balance::from_rao(1_000_000_000);
-    assert_eq!(balance.rao, 1_000_000_000);
+    assert_eq!(balance.rao(), 1_000_000_000);
     assert_eq!(balance.as_tao(), 1.0);
 
     let balance2 = Balance::from_tao(2.5);
     assert_eq!(balance2.as_tao(), 2.5);
-    assert_eq!(balance2.rao, 2_500_000_000);
+    assert_eq!(balance2.rao(), 2_500_000_000);
 }
 
 #[test]
