@@ -29,7 +29,7 @@ pub async fn set_children(
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
-        Value::u128(netuid as u128),
+        Value::from(netuid),
         Value::unnamed_composite(children_values),
     ];
 
@@ -45,10 +45,7 @@ pub async fn get_parents(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Vec<AccountId32>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     if let Some(parents_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ParentKeys", keys)
@@ -67,10 +64,7 @@ pub async fn get_children(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Vec<(AccountId32, u64)>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     if let Some(children_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ChildKeys", keys)
@@ -97,10 +91,7 @@ pub async fn get_children_pending(
     netuid: u16,
     hotkey: &AccountId32,
 ) -> Result<Vec<AccountId32>> {
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     if let Some(pending_val) = client
         .storage_with_keys(SUBTENSOR_MODULE, "ChildrenPending", keys)

@@ -15,7 +15,7 @@ pub async fn register(
     netuid: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::u128(netuid as u128)];
+    let args = vec![Value::from(netuid)];
 
     let tx_hash = client
         .submit_extrinsic(SUBTENSOR_MODULE, REGISTER_FUNCTION, args, signer, wait_for)
@@ -32,7 +32,7 @@ pub async fn burned_register(
     netuid: u16,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::u128(netuid as u128)];
+    let args = vec![Value::from(netuid)];
 
     let tx_hash = client
         .submit_extrinsic(
@@ -55,10 +55,7 @@ pub async fn is_registered(
     hotkey: &AccountId32,
 ) -> Result<bool> {
     // Query the Uids storage to check if hotkey is registered
-    let keys = vec![
-        Value::u128(netuid as u128),
-        Value::from_bytes(hotkey.encode()),
-    ];
+    let keys = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     let uid_data = client
         .storage_with_keys(SUBTENSOR_MODULE, "Uids", keys)
