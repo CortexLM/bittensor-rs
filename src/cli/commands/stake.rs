@@ -175,11 +175,12 @@ async fn add_stake(
     let hotkey_account = AccountId32::from_str(hotkey.ss58_address())
         .map_err(|e| anyhow::anyhow!("Invalid hotkey address: {:?}", e))?;
 
-    let rao_amount = tao_to_rao(amount);
+    let rao_amount = crate::utils::balance_newtypes::Rao::from(tao_to_rao(amount));
 
     print_info(&format!(
         "Adding stake: {} TAO ({} RAO)",
-        amount, rao_amount
+        amount,
+        rao_amount.as_u128()
     ));
     print_info(&format!("Coldkey: {}", coldkey.ss58_address()));
     print_info(&format!("Hotkey: {}", hotkey.ss58_address()));
@@ -267,11 +268,12 @@ async fn remove_stake(
     let hotkey_account = AccountId32::from_str(hotkey.ss58_address())
         .map_err(|e| anyhow::anyhow!("Invalid hotkey address: {:?}", e))?;
 
-    let rao_amount = tao_to_rao(amount);
+    let rao_amount = crate::utils::balance_newtypes::Rao::from(tao_to_rao(amount));
 
     print_info(&format!(
         "Removing stake: {} TAO ({} RAO)",
-        amount, rao_amount
+        amount,
+        rao_amount.as_u128()
     ));
     print_info(&format!("Coldkey: {}", coldkey.ss58_address()));
     print_info(&format!("Hotkey: {}", hotkey.ss58_address()));
@@ -487,11 +489,12 @@ async fn move_stake(
     let to_hk_account = AccountId32::from_str(to_hk.ss58_address())
         .map_err(|e| anyhow::anyhow!("Invalid destination hotkey address: {:?}", e))?;
 
-    let rao_amount = tao_to_rao(amount);
+    let rao_amount = crate::utils::balance_newtypes::Rao::from(tao_to_rao(amount));
 
     print_info(&format!(
         "Moving stake: {} TAO ({} RAO)",
-        amount, rao_amount
+        amount,
+        rao_amount.as_u128()
     ));
     print_info(&format!(
         "From: {} (subnet {})",

@@ -13,9 +13,10 @@ pub async fn register(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
+    hotkey: &AccountId32,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from(netuid)];
+    let args = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     let tx_hash = client
         .submit_extrinsic(SUBTENSOR_MODULE, REGISTER_FUNCTION, args, signer, wait_for)
@@ -30,9 +31,10 @@ pub async fn burned_register(
     client: &BittensorClient,
     signer: &BittensorSigner,
     netuid: u16,
+    hotkey: &AccountId32,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    let args = vec![Value::from(netuid)];
+    let args = vec![Value::from(netuid), Value::from_bytes(hotkey.encode())];
 
     let tx_hash = client
         .submit_extrinsic(

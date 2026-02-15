@@ -8,6 +8,7 @@ use crate::cli::utils::{
 use crate::cli::Cli;
 use crate::wallet::Wallet;
 use clap::{Args, Subcommand};
+use std::str::FromStr;
 
 /// Root network command container
 #[derive(Args, Clone)]
@@ -122,7 +123,9 @@ async fn register(wallet_name: &str, cli: &Cli) -> anyhow::Result<()> {
     sp.finish_and_clear();
 
     let sp = spinner("Submitting root registration...");
-    let result = root_register(&client, &signer, ExtrinsicWait::Finalized).await;
+    let hotkey_account = sp_core::crypto::AccountId32::from_str(hotkey.ss58_address())
+        .map_err(|e| anyhow::anyhow!("Invalid hotkey address: {:?}", e))?;
+    let result = root_register(&client, &signer, &hotkey_account, ExtrinsicWait::Finalized).await;
     sp.finish_and_clear();
 
     match result {

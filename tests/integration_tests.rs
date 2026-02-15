@@ -206,14 +206,26 @@ async fn test_transfer_and_stake_flow_requires_funded_keys() {
     let hotkey = AccountId32::from_str("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty")
         .expect("Invalid hotkey");
 
-    let transfer_result =
-        validator::transfer::transfer(&client, &signer, &coldkey, 1u128, true, ExtrinsicWait::None)
-            .await;
+    let transfer_result = validator::transfer::transfer(
+        &client,
+        &signer,
+        &coldkey,
+        bittensor_rs::Rao(1u128),
+        true,
+        ExtrinsicWait::None,
+    )
+    .await;
     assert!(transfer_result.is_err());
 
-    let stake_result =
-        validator::staking::add_stake(&client, &signer, &hotkey, 1, 1u128, ExtrinsicWait::None)
-            .await;
+    let stake_result = validator::staking::add_stake(
+        &client,
+        &signer,
+        &hotkey,
+        1,
+        bittensor_rs::Rao(1u128),
+        ExtrinsicWait::None,
+    )
+    .await;
     assert!(stake_result.is_err());
 }
 

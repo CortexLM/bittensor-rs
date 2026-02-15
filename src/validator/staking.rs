@@ -1,4 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
+use crate::utils::balance_newtypes::Rao;
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -15,17 +16,17 @@ pub async fn add_stake(
     signer: &BittensorSigner,
     hotkey: &AccountId32,
     netuid: u16,
-    amount: u128,
+    amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!("Stake amount must be greater than zero"));
     }
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
         Value::from(netuid),
-        Value::u128(amount),
+        Value::u128(amount.as_u128()),
     ];
 
     let tx_hash = client
@@ -43,17 +44,17 @@ pub async fn unstake(
     signer: &BittensorSigner,
     hotkey: &AccountId32,
     netuid: u16,
-    amount: u128,
+    amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!("Unstake amount must be greater than zero"));
     }
 
     let args = vec![
         Value::from_bytes(hotkey.encode()),
         Value::from(netuid),
-        Value::u128(amount),
+        Value::u128(amount.as_u128()),
     ];
 
     let tx_hash = client
@@ -84,7 +85,7 @@ pub async fn add_stake_multiple(
     client: &BittensorClient,
     signer: &BittensorSigner,
     hotkeys: &[AccountId32],
-    amounts: &[u128],
+    amounts: &[Rao],
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     if hotkeys.len() != amounts.len() {
@@ -93,7 +94,7 @@ pub async fn add_stake_multiple(
         ));
     }
 
-    if amounts.contains(&0) {
+    if amounts.iter().any(|amount| amount.as_u128() == 0) {
         return Err(anyhow::anyhow!("Stake amounts must be greater than zero"));
     }
 
@@ -102,7 +103,10 @@ pub async fn add_stake_multiple(
         .map(|hk| Value::from_bytes(hk.encode()))
         .collect();
 
-    let amount_values: Vec<Value> = amounts.iter().map(|amt| Value::u128(*amt)).collect();
+    let amount_values: Vec<Value> = amounts
+        .iter()
+        .map(|amt| Value::u128(amt.as_u128()))
+        .collect();
 
     let args = vec![
         Value::unnamed_composite(hotkey_values),
@@ -126,7 +130,7 @@ pub async fn unstake_multiple(
     client: &BittensorClient,
     signer: &BittensorSigner,
     hotkeys: &[AccountId32],
-    amounts: &[u128],
+    amounts: &[Rao],
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
     if hotkeys.len() != amounts.len() {
@@ -135,7 +139,7 @@ pub async fn unstake_multiple(
         ));
     }
 
-    if amounts.contains(&0) {
+    if amounts.iter().any(|amount| amount.as_u128() == 0) {
         return Err(anyhow::anyhow!("Unstake amounts must be greater than zero"));
     }
 
@@ -144,7 +148,10 @@ pub async fn unstake_multiple(
         .map(|hk| Value::from_bytes(hk.encode()))
         .collect();
 
-    let amount_values: Vec<Value> = amounts.iter().map(|amt| Value::u128(*amt)).collect();
+    let amount_values: Vec<Value> = amounts
+        .iter()
+        .map(|amt| Value::u128(amt.as_u128()))
+        .collect();
 
     let args = vec![
         Value::unnamed_composite(hotkey_values),
@@ -189,10 +196,10 @@ pub async fn move_stake(
     to_hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128,
+    amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!(
             "Stake move amount must be greater than zero"
         ));
@@ -203,7 +210,7 @@ pub async fn move_stake(
         Value::from_bytes(to_hotkey.encode()),
         Value::from(origin_netuid),
         Value::from(destination_netuid),
-        Value::u128(amount),
+        Value::u128(amount.as_u128()),
     ];
 
     client
@@ -220,10 +227,10 @@ pub async fn swap_stake(
     hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128,
+    amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!(
             "Stake swap amount must be greater than zero"
         ));
@@ -233,7 +240,7 @@ pub async fn swap_stake(
         Value::from_bytes(hotkey.encode()),
         Value::from(origin_netuid),
         Value::from(destination_netuid),
-        Value::u128(amount),
+        Value::u128(amount.as_u128()),
     ];
 
     client

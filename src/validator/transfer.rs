@@ -1,4 +1,5 @@
 use crate::chain::{BittensorClient, BittensorSigner, ExtrinsicWait};
+use crate::utils::balance_newtypes::Rao;
 use anyhow::Result;
 use parity_scale_codec::Encode;
 use sp_core::crypto::AccountId32;
@@ -12,11 +13,11 @@ pub async fn transfer(
     client: &BittensorClient,
     signer: &BittensorSigner,
     dest: &AccountId32,
-    amount: u128,
+    amount: Rao,
     keep_alive: bool,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!("Transfer amount must be greater than zero"));
     }
 
@@ -30,7 +31,7 @@ pub async fn transfer(
         "transfer"
     };
 
-    let args = vec![dest_value, Value::u128(amount)];
+    let args = vec![dest_value, Value::u128(amount.as_u128())];
 
     client
         .submit_extrinsic(BALANCES_MODULE, function, args, signer, wait_for)
@@ -48,10 +49,10 @@ pub async fn transfer_stake(
     hotkey: &AccountId32,
     origin_netuid: u16,
     destination_netuid: u16,
-    amount: u128,
+    amount: Rao,
     wait_for: ExtrinsicWait,
 ) -> Result<String> {
-    if amount == 0 {
+    if amount.as_u128() == 0 {
         return Err(anyhow::anyhow!(
             "Stake transfer amount must be greater than zero"
         ));
@@ -62,7 +63,7 @@ pub async fn transfer_stake(
         Value::from_bytes(hotkey.encode()),
         Value::from(origin_netuid),
         Value::from(destination_netuid),
-        Value::u128(amount),
+        Value::u128(amount.as_u128()),
     ];
 
     client
