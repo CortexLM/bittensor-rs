@@ -13,7 +13,8 @@ use bittensor_rs::{
 use sp_core::crypto::AccountId32;
 use sp_core::{sr25519, Pair};
 use std::str::FromStr;
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
+use tokio::sync::Mutex;
 async fn connect_default_or_skip() -> Option<BittensorClient> {
     match BittensorClient::with_default().await {
         Ok(client) => Some(client),
@@ -37,7 +38,7 @@ async fn test_read_only_finney_endpoint_config() {
 
 #[tokio::test]
 async fn test_read_only_bittensor_rpc_override() {
-    let _guard = env_lock();
+    let _guard = env_lock().await;
     let override_endpoint = "ws://127.0.0.1:9944";
     std::env::set_var("BITTENSOR_RPC", override_endpoint);
 
@@ -96,9 +97,9 @@ async fn test_read_only_crv4_tempo_and_reveal_period() {
     assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
 }
 
-fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+async fn env_lock() -> tokio::sync::MutexGuard<'static, ()> {
     static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    ENV_LOCK.get_or_init(|| Mutex::new(())).lock().await
 }
 
 // =============================================================================
