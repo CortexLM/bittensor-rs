@@ -457,7 +457,6 @@ fn extract_proposal_hashes(val: &Value) -> Vec<[u8; 32]> {
 }
 
 /// Extract call data from a proposal value
-
 fn extract_u32_from_value(s: &str) -> Option<u32> {
     let s = s.trim();
     let (prefix, base) = if let Some(rest) = s.strip_prefix("U32(") {
@@ -488,7 +487,7 @@ fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
     let mut best: Option<(usize, &str)> = None;
     for prefix in prefixes {
         if let Some(pos) = slice.find(prefix) {
-            if best.map_or(true, |(best_pos, _)| pos < best_pos) {
+            if best.is_none_or(|(best_pos, _)| pos < best_pos) {
                 best = Some((pos, prefix));
             }
         }

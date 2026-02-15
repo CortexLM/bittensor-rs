@@ -21,7 +21,7 @@ where
     Ok(results)
 }
 
-fn extract_values<'a>(value: &'a Value) -> Vec<&'a Value> {
+fn extract_values(value: &Value) -> Vec<&Value> {
     match &value.value {
         ValueDef::Composite(composite) => match composite {
             Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
@@ -35,7 +35,7 @@ fn extract_values<'a>(value: &'a Value) -> Vec<&'a Value> {
     }
 }
 
-fn extract_tuple2<'a>(value: &'a Value) -> Option<(&'a Value, &'a Value)> {
+fn extract_tuple2(value: &Value) -> Option<(&Value, &Value)> {
     match &value.value {
         ValueDef::Composite(composite) => match composite {
             Composite::Named(fields) => {

@@ -72,7 +72,7 @@ pub mod serde_account_vec {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use sp_core::crypto::AccountId32;
 
-    pub fn serialize<S>(accounts: &Vec<AccountId32>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(accounts: &[AccountId32], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

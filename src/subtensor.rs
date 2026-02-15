@@ -933,10 +933,6 @@ impl SubtensorBuilder {
         }
     }
 
-    pub fn default() -> Self {
-        Self::new(crate::chain::DEFAULT_RPC_URL)
-    }
-
     pub fn with_persistence(mut self, path: PathBuf) -> Self {
         self.state_path = Some(path);
         self
@@ -964,6 +960,12 @@ impl SubtensorBuilder {
             state_path: self.state_path,
             block_time: self.block_time,
         })
+    }
+}
+
+impl Default for SubtensorBuilder {
+    fn default() -> Self {
+        Self::new(crate::chain::DEFAULT_RPC_URL)
     }
 }
 

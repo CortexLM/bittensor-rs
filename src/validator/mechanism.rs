@@ -107,10 +107,6 @@ pub async fn reveal_mechanism_weights(
         ));
     }
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
-    let salt_values: Vec<Value> = salt.iter().map(|s| Value::from(*s)).collect();
-
     let args = vec![
         Value::u128(netuid as u128),
         Value::u128(mechanism_id as u128),
@@ -150,9 +146,6 @@ pub async fn set_mechanism_weights(
             "UIDS and weights must have the same length"
         ));
     }
-
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),

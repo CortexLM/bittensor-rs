@@ -148,7 +148,7 @@ pub fn decode_identity_map(value: &Value) -> Result<HashMap<String, String>> {
     Ok(result)
 }
 
-fn collect_composite_values<'a>(value: &'a Value) -> Vec<&'a Value> {
+fn collect_composite_values(value: &Value) -> Vec<&Value> {
     match &value.value {
         ValueDef::Composite(composite) => match composite {
             Composite::Named(fields) => fields.iter().map(|(_, v)| v).collect(),
