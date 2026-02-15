@@ -64,7 +64,8 @@ fn test_balance_arithmetic() {
 fn test_balance_display() {
     let balance = Balance::from_tao(1.5);
     let display = format!("{}", balance);
-    assert!(display.contains("TAO"));
+    // Balance now displays with τ symbol for TAO (netuid=0)
+    assert!(display.contains('τ'));
 }
 
 // =============================================================================
