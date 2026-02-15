@@ -505,7 +505,7 @@ fn test_neuron_info_structure() {
         root_stake: 0,
         stake_weight: 0,
         rank: 0.5,
-        emission: 100.0,
+        emission: 100,
         incentive: 0.5,
         consensus: 0.8,
         trust: 0.9,
@@ -537,7 +537,7 @@ fn test_subnet_info_structure() {
         netuid: 1,
         neuron_count: 256,
         total_stake: 1000000000,
-        emission: 0.5,
+        emission: 0,
         name: Some("test".to_string()),
         description: None,
     };

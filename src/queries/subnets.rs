@@ -145,7 +145,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
         .await?;
     let neuron_count: u64 = n_val.and_then(|v| decode_u64(&v).ok()).unwrap_or(0);
 
-    // emission: sum Emission[(netuid, uid)] over all uids (convert from rao to TAO)
+    // emission: sum Emission[(netuid, uid)] over all uids (RAO)
     let mut emission_rao: u128 = 0;
     for uid in 0..neuron_count {
         if let Some(ev) = client
@@ -161,7 +161,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
             }
         }
     }
-    let emission = emission_rao as f64 / RAOPERTAO as f64;
+    let emission = emission_rao;
 
     // total_stake: sum TotalHotkeyAlpha[(hotkey, netuid)] for each neuron hotkey
     let mut total_stake: u128 = 0;

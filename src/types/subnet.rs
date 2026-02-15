@@ -9,8 +9,8 @@ pub struct SubnetInfo {
     pub neuron_count: u64,
     /// Total stake in the subnet
     pub total_stake: u128,
-    /// Emission rate
-    pub emission: f64,
+    /// Emission rate (RAO)
+    pub emission: u128,
     /// Subnet name
     pub name: Option<String>,
     /// Subnet description
@@ -23,7 +23,7 @@ impl SubnetInfo {
             netuid,
             neuron_count: 0,
             total_stake: 0,
-            emission: 0.0,
+            emission: 0,
             name: None,
             description: None,
         }

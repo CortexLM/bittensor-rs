@@ -180,12 +180,15 @@ async fn calculate_staking_yield(
     
     // Calculate yield from emissions
     let emission_per_block = neuron.emission;
-    let total_emissions = emission_per_block * period_blocks as f64;
+    let total_emissions = emission_per_block.saturating_mul(period_blocks as u128);
     let stake = format_rao_as_tao(neuron.stake);
     let stake_value: f64 = stake.parse().unwrap_or(0.0);
     
     if stake_value > 0.0 {
-        let apy = (total_emissions / stake_value) * (365.0 * 24.0 * 3600.0 / 12.0) / period_blocks as f64;
+        let total_emissions_tao = total_emissions as f64 / 1e9f64;
+        let apy = (total_emissions_tao / stake_value)
+            * (365.0 * 24.0 * 3600.0 / 12.0)
+            / period_blocks as f64;
         Ok(apy * 100.0)
     } else {
         Ok(0.0)

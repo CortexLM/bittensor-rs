@@ -13,7 +13,7 @@ fn test_subnet_info_basic() {
         netuid: 1,
         neuron_count: 256,
         total_stake: 1000000,
-        emission: 100000.0,
+        emission: 100000,
         name: Some("Test Subnet".to_string()),
         description: Some("Test description".to_string()),
     };

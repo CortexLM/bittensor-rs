@@ -1,6 +1,5 @@
 /// Neuron queries for fetching neuron information from the Bittensor network
 use crate::chain::BittensorClient;
-use crate::core::constants::RAOPERTAO;
 use crate::types::{AxonInfo, NeuronInfo, PrometheusInfo};
 use crate::utils::decoders::*;
 use anyhow::{Context, Result};
@@ -210,8 +209,7 @@ pub async fn neurons(
         let active = active_vec.get(idx).copied().unwrap_or(false);
         let validator_permit = validator_permit_vec.get(idx).copied().unwrap_or(false);
         let last_update = last_update_vec.get(idx).copied().unwrap_or(0);
-        let emission_raw = emission_vec.get(idx).copied().unwrap_or(0);
-        let emission = emission_raw as f64 / RAOPERTAO as f64;
+        let emission = emission_vec.get(idx).copied().unwrap_or(0);
         let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
 
         let total_stake = stakes.get(&uid).copied().unwrap_or(0);
@@ -416,8 +414,7 @@ pub async fn query_neuron_from_storage(
     let active = active_vec.get(idx).copied().unwrap_or(false);
     let validator_permit = validator_permit_vec.get(idx).copied().unwrap_or(false);
     let last_update = last_update_vec.get(idx).copied().unwrap_or(0);
-    let emission_raw = emission_vec.get(idx).copied().unwrap_or(0);
-    let emission = emission_raw as f64 / RAOPERTAO as f64;
+    let emission = emission_vec.get(idx).copied().unwrap_or(0);
     let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
 
     let version = fetch_u64_storage_opt(client, SUBTENSOR_MODULE, "Version", uid_key.clone())

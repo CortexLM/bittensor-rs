@@ -1,6 +1,6 @@
 # Type Definitions
 
-This document provides an overview of all core data structures used in the Bittensor Rust SDK.
+This document provides an overview of all core data structures used in the Bittensor Rust SDK. On-chain monetary values (balances, stake, emissions, prices) use RAO (`u128`). TAO conversions are display-only via `rao_to_tao` or `format_rao_as_tao`.
 
 ## Neuron Types
 
@@ -23,7 +23,7 @@ pub struct NeuronInfo {
     pub consensus: f64,
     pub validator_trust: f64,
     pub incentive: f64,
-    pub emission: f64,
+    pub emission: u128,
     pub dividends: f64,
     pub active: bool,
     pub last_update: u64,
@@ -80,7 +80,7 @@ pub struct NeuronInfoLite {
     pub trust: f64,
     pub consensus: f64,
     pub incentive: f64,
-    pub emission: f64,
+    pub emission: u128,
     pub active: bool,
     pub validator_permit: bool,
     pub prometheus_info: Option<PrometheusInfo>,
@@ -92,29 +92,18 @@ pub struct NeuronInfoLite {
 ## Subnet Types
 
 ### SubnetInfo
+### SubnetInfo
 
 Complete subnet information.
 
 ```rust
 pub struct SubnetInfo {
     pub netuid: u16,
-    pub rho: u16,
-    pub kappa: u16,
-    pub difficulty: u64,
-    pub immunity_period: u64,
-    pub min_allowed_weights: u64,
-    pub max_allowed_weights: u64,
-    pub max_weight_limit: u64,
-    pub scaling_law_power: u64,
-    pub subnetwork_n: u16,
-    pub max_n: u16,
-    pub blocks_since_epoch: u64,
-    pub tempo: u64,
-    pub modality: u8,
-    pub connected_uids: Vec<u64>,
-    pub emission_values: Vec<u64>,
-    pub burn: u64,
-    pub owner: Option<AccountId32>,
+    pub neuron_count: u64,
+    pub total_stake: u128,
+    pub emission: u128,
+    pub name: Option<String>,
+    pub description: Option<String>,
 }
 ```
 
@@ -157,15 +146,9 @@ Complete delegate information.
 
 ```rust
 pub struct DelegateInfo {
-    pub hotkey_ss58: String,
-    pub total_delegated: u128,
-    pub nominators: u64,
-    pub owner_ss58: String,
-    pub take: u16,
-    pub validator_permits: Vec<u16>,
-    pub registrations: Vec<u16>,
-    pub return_per_1000: u64,
-    pub total_daily_return: u128,
+    pub base: DelegateInfoBase,
+    pub total_stake: HashMap<u16, u128>,
+    pub nominators: HashMap<AccountId32, HashMap<u16, u128>>,
 }
 ```
 
@@ -175,8 +158,8 @@ Information about a delegation.
 
 ```rust
 pub struct DelegatedInfo {
-    pub hotkey_ss58: String,
-    pub coldkey_ss58: String,
+    pub base: DelegateInfoBase,
+    pub netuid: u16,
     pub stake: u128,
 }
 ```
@@ -248,10 +231,13 @@ Liquidity pool position information.
 
 ```rust
 pub struct LiquidityPosition {
-    pub tau_balance: u128,
-    pub tao_balance: u128,
-    pub lp_balance: u128,
-    pub liquidity: u128,
+    pub id: u64,
+    pub price_low_rao: u128,
+    pub price_high_rao: u128,
+    pub liquidity_rao: u128,
+    pub fees_tao_rao: u128,
+    pub fees_alpha_rao: u128,
+    pub netuid: u16,
 }
 ```
 
