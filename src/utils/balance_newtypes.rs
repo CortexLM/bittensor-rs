@@ -29,73 +29,112 @@ use std::ops::{Add, Div, Mul, Sub};
 /// Maximum exact integer value in f64 (2^53)
 const F64_MAX_EXACT_INT: u128 = 9_007_199_254_740_992; // 2^53
 
-/// RAO value - raw units (u128 wrapper)
+/// Default maximum transfer amount for safety validation (u64::MAX as u128).
 ///
-/// This is a newtype wrapper around u128 that prevents accidental mixing with TAO values.
-/// Use `Rao` for all on-chain operations, transfers, and exact arithmetic.
+/// This provides a safety margin against accidental overflow when interacting
+/// with the chain. The subtensor runtime uses u64 for balance internally,
+/// so amounts above this are almost certainly erroneous.
+const DEFAULT_MAX_TRANSFER_AMOUNT: u128 = u64::MAX as u128;
+
+/// RAO value — the smallest unit of TAO (1 TAO = 1e9 RAO).
+///
+/// This is a newtype wrapper around `u128` that prevents accidental mixing
+/// with TAO values at compile time.  **All on-chain submissions (transfers,
+/// staking, liquidity) MUST use `Rao`** — never raw `u128` or `f64`.
+///
+/// # Examples
+/// ```
+/// use bittensor_rs::utils::balance_newtypes::Rao;
+/// let one_tao = Rao::PER_TAO;
+/// assert_eq!(one_tao.as_u128(), 1_000_000_000);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Rao(pub u128);
 
 impl Rao {
-    /// Zero RAO
+    /// Zero RAO.
     pub const ZERO: Self = Self(0);
 
-    /// One RAO
+    /// One RAO — the smallest indivisible unit.
     pub const ONE: Self = Self(1);
 
-    /// RAOPERTAO RAO = 1 TAO
+    /// Maximum possible RAO value (`u128::MAX`).
+    pub const MAX: Self = Self(u128::MAX);
+
+    /// RAOPERTAO RAO = 1 TAO (exactly 1_000_000_000).
     pub const PER_TAO: Self = Self(RAOPERTAO);
 
-    /// Create from raw u128 value
+    /// Create a `Rao` from a raw `u128` value.
+    ///
+    /// The value is in RAO (1 TAO = 1e9 RAO).
     pub const fn new(value: u128) -> Self {
         Self(value)
     }
 
-    /// Get the raw u128 value
+    /// Get the raw `u128` value in RAO.
     pub const fn as_u128(self) -> u128 {
         self.0
     }
 
-    /// Check if this value can be exactly represented as f64 TAO
+    /// Check if this value can be exactly represented as `f64` TAO.
+    ///
+    /// Values above 2^53 RAO (≈ 9 million TAO) exceed the mantissa precision
+    /// of IEEE-754 double and may lose the least-significant digits.
     pub const fn is_exactly_representable_as_f64(self) -> bool {
         self.0 <= F64_MAX_EXACT_INT
     }
 
-    /// Convert to TAO (f64 representation for display)
+    /// Convert to TAO as `f64` (for display purposes only).
+    ///
+    /// **Do NOT pass the result directly to a chain extrinsic.** Convert back
+    /// to `Rao` first via [`Rao::from_tao`] or [`Tao::as_rao`].
     ///
     /// # Precision Warning
-    /// For values > 2^53 RAO (≈9 million TAO), this conversion may lose precision.
-    /// Use `as_u128()` and handle large values with integer arithmetic.
+    /// For values > 2^53 RAO (≈ 9 million TAO), this conversion may lose precision.
     pub fn as_tao(self) -> f64 {
         self.0 as f64 / RAOPERTAO as f64
     }
 
-    /// Convert to TAO type
+    /// Convert to the [`Tao`] display type.
     pub fn to_tao(self) -> Tao {
         Tao::from_rao(self.0)
     }
 
-    /// Create from TAO (f64)
+    /// Create from a TAO `f64` value.
+    ///
+    /// The amount is in TAO (1 TAO = 1e9 RAO). Negative, NaN, and infinite
+    /// values are clamped to zero. Values that would overflow `u128` saturate
+    /// to `u128::MAX`.
     pub fn from_tao(tao: f64) -> Self {
         Self(tao_to_rao(tao))
     }
 
-    /// Saturating addition
+    /// Checked addition — returns `None` on overflow.
+    pub fn checked_add(self, other: Self) -> Option<Self> {
+        self.0.checked_add(other.0).map(Self)
+    }
+
+    /// Checked subtraction — returns `None` on underflow.
+    pub fn checked_sub(self, other: Self) -> Option<Self> {
+        self.0.checked_sub(other.0).map(Self)
+    }
+
+    /// Saturating addition — clamps at `Rao::MAX` on overflow.
     pub fn saturating_add(self, other: Self) -> Self {
         Self(self.0.saturating_add(other.0))
     }
 
-    /// Saturating subtraction
+    /// Saturating subtraction — clamps at `Rao::ZERO` on underflow.
     pub fn saturating_sub(self, other: Self) -> Self {
         Self(self.0.saturating_sub(other.0))
     }
 
-    /// Saturating multiplication
+    /// Saturating multiplication by a scalar.
     pub fn saturating_mul(self, other: u128) -> Self {
         Self(self.0.saturating_mul(other))
     }
 
-    /// Safe division (returns 0 on divide by zero)
+    /// Safe division (returns `Rao::ZERO` on divide-by-zero).
     pub fn safe_div(self, divisor: u128) -> Self {
         if divisor == 0 {
             Self::ZERO
@@ -104,14 +143,29 @@ impl Rao {
         }
     }
 
-    /// Format as TAO with 9 decimal places
+    /// Validate that this amount is suitable for a transfer or stake extrinsic.
+    ///
+    /// Returns `true` when the amount is non-zero and does not exceed
+    /// `max_amount` (defaults to `u64::MAX` for a safety margin against
+    /// the subtensor runtime's internal balance representation).
+    pub fn is_valid_transfer_amount(self) -> bool {
+        self.is_valid_transfer_amount_with_max(DEFAULT_MAX_TRANSFER_AMOUNT)
+    }
+
+    /// Like [`is_valid_transfer_amount`](Self::is_valid_transfer_amount) but
+    /// with a caller-specified upper bound.
+    pub fn is_valid_transfer_amount_with_max(self, max_amount: u128) -> bool {
+        self.0 > 0 && self.0 <= max_amount
+    }
+
+    /// Format as TAO with 9 decimal places (e.g. `"1.000000000 τ"`).
     pub fn format_tao(self) -> String {
         let whole = self.0 / RAOPERTAO;
         let fraction = self.0 % RAOPERTAO;
         format!("{}.{:09} τ", whole, fraction)
     }
 
-    /// Format as RAO
+    /// Format as RAO (e.g. `"1000000000 ρ"`).
     pub fn format_rao(self) -> String {
         format!("{} ρ", self.0)
     }
@@ -125,7 +179,9 @@ impl Default for Rao {
 
 impl fmt::Display for Rao {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ρ", self.0)
+        let whole = self.0 / RAOPERTAO;
+        let fraction = self.0 % RAOPERTAO;
+        write!(f, "{}.{:09} τ ({} ρ)", whole, fraction, self.0)
     }
 }
 
@@ -169,72 +225,95 @@ impl From<Rao> for u128 {
     }
 }
 
-/// TAO value - display units (f64 wrapper)
+/// TAO value — human-readable display units (f64 wrapper, 1 TAO = 1e9 RAO).
 ///
-/// This is a newtype wrapper around f64 that prevents accidental mixing with RAO values.
-/// Use `Tao` for user-facing display and input handling.
+/// This is a newtype wrapper around `f64` that prevents accidental mixing
+/// with RAO values at compile time.  Use `Tao` for user-facing display and
+/// input handling.  **Never submit a `Tao` value directly to the chain** —
+/// convert to [`Rao`] first via [`Tao::as_rao`] or [`Tao::to_rao_checked`].
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Tao(pub f64);
 
 impl Tao {
-    /// Zero TAO
+    /// Zero TAO.
     pub const ZERO: Self = Self(0.0);
 
-    /// One TAO
+    /// One TAO (= 1_000_000_000 RAO).
     pub const ONE: Self = Self(1.0);
 
-    /// Minimum positive TAO value (1 RAO)
+    /// Minimum positive TAO value (1 RAO = 1e-9 TAO).
     pub const MIN_POSITIVE: Self = Self(1.0 / RAOPERTAO as f64);
 
-    /// Create from f64 value
+    /// Create from an `f64` value representing TAO.
     pub const fn new(value: f64) -> Self {
         Self(value)
     }
 
-    /// Get the raw f64 value
+    /// Get the raw `f64` value (in TAO).
     pub const fn as_f64(self) -> f64 {
         self.0
     }
 
-    /// Create from RAO (u128)
+    /// Create from RAO (`u128`).
+    ///
+    /// The amount is in RAO (1 TAO = 1e9 RAO).
     pub fn from_rao(rao: u128) -> Self {
         Self(rao as f64 / RAOPERTAO as f64)
     }
 
-    /// Convert to RAO (u128)
+    /// Convert to [`Rao`] using truncation toward zero.
     ///
-    /// Uses exact integer arithmetic: `rao = floor(tao * RAOPERTAO)`
-    /// This truncates toward zero, which is the standard behavior for financial amounts.
+    /// This is the standard behaviour for financial amounts and matches the
+    /// Python SDK.  Negative, NaN, and infinite values yield `Rao::ZERO`.
+    /// Values that would overflow `u128` saturate to `Rao::MAX`.
     pub fn as_rao(self) -> Rao {
         Rao::from_tao(self.0)
     }
 
-    /// Convert to RAO with rounding (round half up)
+    /// Checked conversion to [`Rao`] — returns `None` when the TAO value is
+    /// negative, NaN, infinite, or would overflow `u128` after multiplication
+    /// by `RAOPERTAO`.
+    pub fn to_rao_checked(self) -> Option<Rao> {
+        if !self.0.is_finite() || self.0 < 0.0 {
+            return None;
+        }
+        let max_tao = u128::MAX as f64 / RAOPERTAO as f64;
+        if self.0 >= max_tao {
+            return None;
+        }
+        Some(Rao((self.0 * RAOPERTAO as f64).trunc() as u128))
+    }
+
+    /// Convert to RAO with rounding (round half-up).
+    ///
+    /// The amount is in RAO (1 TAO = 1e9 RAO).
     pub fn as_rao_rounded(self) -> Rao {
         Rao((self.0 * RAOPERTAO as f64).round() as u128)
     }
 
-    /// Convert to RAO with ceiling (useful for ensuring sufficient balance)
+    /// Convert to RAO with ceiling (useful for ensuring sufficient balance).
+    ///
+    /// The amount is in RAO (1 TAO = 1e9 RAO).
     pub fn as_rao_ceiling(self) -> Rao {
         Rao((self.0 * RAOPERTAO as f64).ceil() as u128)
     }
 
-    /// Saturating addition
+    /// Saturating addition.
     pub fn saturating_add(self, other: Self) -> Self {
         Self(self.0 + other.0)
     }
 
-    /// Saturating subtraction
+    /// Saturating subtraction (clamps at 0.0).
     pub fn saturating_sub(self, other: Self) -> Self {
         Self((self.0 - other.0).max(0.0))
     }
 
-    /// Format with 9 decimal places
+    /// Format with 9 decimal places (e.g. `"1.500000000 τ"`).
     pub fn format(self) -> String {
         format!("{:.9} τ", self.0)
     }
 
-    /// Check if the TAO value would lose precision when converted to RAO and back
+    /// Check if the TAO value would lose precision when converted to RAO and back.
     pub fn is_lossless_roundtrip(self) -> bool {
         let rao = self.as_rao();
         let tao_back = rao.as_tao();
@@ -298,10 +377,33 @@ impl From<Tao> for f64 {
     }
 }
 
-/// Safe conversion from TAO (f64) to RAO (u128)
+impl From<Tao> for Rao {
+    /// Convert `Tao` to `Rao` using checked multiplication.
+    ///
+    /// # Panics
+    /// Panics with a descriptive message if the TAO value is not finite or
+    /// would overflow `u128` when multiplied by `RAOPERTAO`.  For a
+    /// non-panicking alternative use [`Tao::to_rao_checked`].
+    fn from(tao: Tao) -> Self {
+        tao.to_rao_checked().unwrap_or_else(|| {
+            panic!(
+                "Tao-to-Rao overflow: cannot convert {} TAO to RAO — \
+                 value is negative, NaN, infinite, or exceeds u128::MAX / RAOPERTAO",
+                tao.0
+            )
+        })
+    }
+}
+
+/// Safe conversion from TAO (`f64`) to RAO (`u128`).
 ///
-/// Uses exact truncation: `rao = floor(tao * RAOPERTAO)`
-/// This is the standard behavior used by the Python SDK.
+/// Uses exact truncation: `rao = floor(tao * RAOPERTAO)`.
+/// This is the standard behaviour used by the Python SDK.
+///
+/// * Negative, NaN, and infinite values return `0`.
+/// * Values that would overflow `u128` saturate to `u128::MAX`.
+///
+/// The returned value is in RAO (1 TAO = 1e9 RAO).
 pub fn tao_to_rao(tao: f64) -> u128 {
     if !tao.is_finite() || tao <= 0.0 {
         return 0;
@@ -313,11 +415,14 @@ pub fn tao_to_rao(tao: f64) -> u128 {
     (tao * RAOPERTAO as f64).trunc() as u128
 }
 
-/// Safe conversion from RAO (u128) to TAO (f64)
+/// Safe conversion from RAO (`u128`) to TAO (`f64`).
+///
+/// The input is in RAO (1 TAO = 1e9 RAO).
 ///
 /// # Precision Warning
-/// For values > 2^53 RAO (≈9 million TAO), this conversion may lose precision.
-/// The f64 mantissa has 53 bits of precision, so integers above 2^53 cannot be exactly represented.
+/// For values > 2^53 RAO (≈ 9 million TAO), this conversion may lose precision.
+/// The `f64` mantissa has 53 bits, so integers above 2^53 cannot be exactly
+/// represented.
 pub fn rao_to_tao(rao: u128) -> f64 {
     if rao == 0 {
         return 0.0;
@@ -850,7 +955,10 @@ mod tests {
 
     #[test]
     fn test_rao_display() {
-        assert_eq!(format!("{}", Rao(1_000_000_000)), "1000000000 ρ");
+        assert_eq!(
+            format!("{}", Rao(1_000_000_000)),
+            "1.000000000 τ (1000000000 ρ)"
+        );
         assert_eq!(Rao(1_000_000_000).format_tao(), "1.000000000 τ");
     }
 
@@ -887,6 +995,60 @@ mod tests {
         let a = Rao(1_000_000_000);
         assert_eq!(a.safe_div(2).as_u128(), 500_000_000);
         assert_eq!(a.safe_div(0).as_u128(), 0); // Division by zero returns 0
+    }
+
+    #[test]
+    fn test_rao_max_constant() {
+        assert_eq!(Rao::MAX.as_u128(), u128::MAX);
+    }
+
+    #[test]
+    fn test_rao_checked_add() {
+        assert_eq!(Rao(10).checked_add(Rao(5)), Some(Rao(15)));
+        assert_eq!(Rao(u128::MAX).checked_add(Rao(1)), None);
+    }
+
+    #[test]
+    fn test_rao_checked_sub() {
+        assert_eq!(Rao(10).checked_sub(Rao(5)), Some(Rao(5)));
+        assert_eq!(Rao(0).checked_sub(Rao(1)), None);
+    }
+
+    #[test]
+    fn test_is_valid_transfer_amount() {
+        assert!(!Rao::ZERO.is_valid_transfer_amount());
+        assert!(Rao::ONE.is_valid_transfer_amount());
+        assert!(Rao::PER_TAO.is_valid_transfer_amount());
+        assert!(Rao(u64::MAX as u128).is_valid_transfer_amount());
+        assert!(!Rao(u64::MAX as u128 + 1).is_valid_transfer_amount());
+    }
+
+    #[test]
+    fn test_is_valid_transfer_amount_with_max() {
+        assert!(Rao(100).is_valid_transfer_amount_with_max(100));
+        assert!(!Rao(101).is_valid_transfer_amount_with_max(100));
+        assert!(!Rao(0).is_valid_transfer_amount_with_max(100));
+    }
+
+    #[test]
+    fn test_tao_to_rao_checked() {
+        assert_eq!(Tao(1.0).to_rao_checked(), Some(Rao(1_000_000_000)));
+        assert_eq!(Tao(0.0).to_rao_checked(), Some(Rao(0)));
+        assert_eq!(Tao(-1.0).to_rao_checked(), None);
+        assert_eq!(Tao(f64::NAN).to_rao_checked(), None);
+        assert_eq!(Tao(f64::INFINITY).to_rao_checked(), None);
+    }
+
+    #[test]
+    fn test_from_tao_for_rao() {
+        let rao: Rao = Tao(1.0).into();
+        assert_eq!(rao, Rao(1_000_000_000));
+    }
+
+    #[test]
+    #[should_panic(expected = "Tao-to-Rao overflow")]
+    fn test_from_tao_for_rao_overflow_panics() {
+        let _: Rao = Tao(f64::INFINITY).into();
     }
 
     #[test]

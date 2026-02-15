@@ -17,6 +17,15 @@ const _: () = assert!(
 #[allow(dead_code)]
 const _: () = assert!(RAOPERTAO == 10u128.pow(9), "RAOPERTAO must equal 10^9");
 
+/// Existential deposit in RAO as defined by the subtensor runtime.
+///
+/// Any account whose free balance drops below this value is reaped (removed)
+/// from the chain state.  Transfers should leave at least this amount in the
+/// sender's account when using `transfer_keep_alive`.
+///
+/// Value: 500 RAO (see `subtensor/runtime/src/lib.rs`).
+pub const EXISTENTIAL_DEPOSIT_RAO: u128 = 500;
+
 /// Global maximum subnet count
 pub const GLOBAL_MAX_SUBNET_COUNT: u16 = 4096;
 

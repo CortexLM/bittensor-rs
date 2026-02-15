@@ -7,7 +7,19 @@ use subxt::dynamic::Value;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
-/// Set children hotkeys with proportions
+/// Set children hotkeys with proportions.
+///
+/// Associates child hotkeys with a parent hotkey on a given subnet, each
+/// with a proportion of the parent's stake weight.
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the hotkey).
+/// * `netuid` — The subnet ID.
+/// * `hotkey` — The parent hotkey.
+/// * `children` — List of `(proportion, child_hotkey)` tuples. Proportions
+///   are u64 values (not RAO or TAO).
+/// * `wait_for` — How long to wait for on-chain inclusion.
 pub async fn set_children(
     client: &BittensorClient,
     signer: &BittensorSigner,
@@ -39,7 +51,10 @@ pub async fn set_children(
         .map_err(|e| anyhow::anyhow!("Failed to set children: {}", e))
 }
 
-/// Get parent hotkeys for a neuron
+/// Get parent hotkeys for a neuron.
+///
+/// Returns the list of parent hotkeys that have delegated stake weight
+/// to the given hotkey on the specified subnet.
 pub async fn get_parents(
     client: &BittensorClient,
     netuid: u16,
@@ -58,7 +73,10 @@ pub async fn get_parents(
     Ok(vec![])
 }
 
-/// Get children hotkeys for a neuron
+/// Get children hotkeys for a neuron.
+///
+/// Returns a list of `(child_hotkey, proportion)` tuples for the given
+/// parent hotkey on the specified subnet.
 pub async fn get_children(
     client: &BittensorClient,
     netuid: u16,
@@ -85,7 +103,7 @@ pub async fn get_children(
     Ok(vec![])
 }
 
-/// Get pending children hotkeys
+/// Get pending children hotkeys that have not yet been confirmed.
 pub async fn get_children_pending(
     client: &BittensorClient,
     netuid: u16,
