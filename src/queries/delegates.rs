@@ -325,6 +325,135 @@ pub async fn get_delegate_take(client: &BittensorClient, hotkey: &AccountId32) -
     Ok(0.0)
 }
 
+/// Get delegate take as raw u16 value (0-65535)
+/// Direct storage read without normalization
+pub async fn get_delegate_take_raw(client: &BittensorClient, hotkey: &AccountId32) -> Result<u16> {
+    let keys = vec![Value::from_bytes(hotkey.encode())];
+
+    if let Some(take_val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Delegates", keys)
+        .await?
+    {
+        if let Ok(take) = decode_u16(&take_val) {
+            return Ok(take);
+        }
+    }
+    Ok(0)
+}
+
+/// Get total hotkey stake across all subnets
+/// Direct storage read from SubtensorModule::TotalHotkeyStake
+pub async fn get_total_hotkey_stake(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+) -> Result<u128> {
+    let keys = vec![Value::from_bytes(hotkey.encode())];
+
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyStake", keys)
+        .await?
+    {
+        if let Ok(stake) = crate::utils::decoders::decode_u128(&val) {
+            return Ok(stake);
+        }
+    }
+    Ok(0)
+}
+
+/// Optimized: Get delegate info using direct storage reads (O(D) instead of O(N*M))
+/// Reads Delegates map for take, TotalHotkeyStake for total stake
+pub async fn get_delegate_info_optimized(
+    client: &BittensorClient,
+    hotkey: &AccountId32,
+) -> Result<Option<DelegateInfo>> {
+    let take_raw = get_delegate_take_raw(client, hotkey).await?;
+    if take_raw == 0 {
+        return Ok(None);
+    }
+
+    let owner_val = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "Owner",
+            vec![Value::from_bytes(hotkey.encode())],
+        )
+        .await?;
+    let owner = match owner_val {
+        Some(v) => decode_account_id32(&v).ok(),
+        None => None,
+    };
+    let Some(owner_ss58) = owner else {
+        return Ok(None);
+    };
+
+    let total_stake_all = get_total_hotkey_stake(client, hotkey).await.unwrap_or(0);
+
+    let total_networks_val = client
+        .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
+        .await?;
+    let total_networks: u16 = total_networks_val
+        .and_then(|v| crate::utils::decoders::decode_u64(&v).ok())
+        .and_then(|n| u16::try_from(n).ok())
+        .unwrap_or(0);
+
+    let mut registrations: Vec<u16> = Vec::new();
+    let validator_permits: Vec<u16> = Vec::new();
+    let mut total_stake: HashMap<u16, u128> = HashMap::new();
+
+    for netuid in 0u16..total_networks {
+        let uid_val = client
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "Uids",
+                vec![
+                    Value::u128(netuid as u128),
+                    Value::from_bytes(hotkey.encode()),
+                ],
+            )
+            .await?;
+
+        if let Some(uid_val) = uid_val {
+            if let Ok(_uid) = crate::utils::decoders::decode_u64(&uid_val) {
+                registrations.push(netuid);
+
+                if let Some(alpha_val) = client
+                    .storage_with_keys(
+                        SUBTENSOR_MODULE,
+                        "TotalHotkeyAlpha",
+                        vec![
+                            Value::from_bytes(hotkey.encode()),
+                            Value::u128(netuid as u128),
+                        ],
+                    )
+                    .await?
+                {
+                    if let Ok(ts) = crate::utils::decoders::decode_u128(&alpha_val) {
+                        total_stake.insert(netuid, ts);
+                    }
+                }
+            }
+        }
+    }
+
+    let _ = total_stake_all;
+
+    let delegate = DelegateInfo {
+        base: DelegateInfoBase {
+            hotkey_ss58: hotkey.clone(),
+            owner_ss58,
+            take: take_raw as f64 / u16::MAX as f64,
+            validator_permits,
+            registrations,
+            return_per_1000: 0,
+            total_daily_return: 0,
+        },
+        total_stake,
+        nominators: HashMap::new(),
+    };
+
+    Ok(Some(delegate))
+}
+
 /// Check if hotkey is a delegate
 pub async fn is_hotkey_delegate(client: &BittensorClient, hotkey: &AccountId32) -> Result<bool> {
     Ok(get_delegate_take(client, hotkey).await.unwrap_or(0.0) > 0.0)

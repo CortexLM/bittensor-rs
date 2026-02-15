@@ -15,24 +15,59 @@ pub mod subnets;
 pub mod voting;
 pub mod wallets;
 
+use std::future::Future;
+use std::time::Duration;
+
+/// Generic retry wrapper with exponential backoff
+/// Retries the given async closure up to max_retries times
+pub async fn with_retry<F, Fut, T>(f: F, max_retries: u32) -> anyhow::Result<T>
+where
+    F: Fn() -> Fut,
+    Fut: Future<Output = anyhow::Result<T>>,
+{
+    let mut last_err = None;
+    for attempt in 0..=max_retries {
+        match f().await {
+            Ok(val) => return Ok(val),
+            Err(e) => {
+                last_err = Some(e);
+                if attempt < max_retries {
+                    let delay = Duration::from_millis(100 * 2u64.pow(attempt));
+                    tokio::time::sleep(delay).await;
+                    tracing::warn!(
+                        attempt = attempt + 1,
+                        max_retries,
+                        "Retry attempt after failure"
+                    );
+                }
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| anyhow::anyhow!("All retry attempts failed")))
+}
+
 // Re-export commonly used functions
 pub use bonds::{get_all_bonds, get_all_weights, get_neuron_bonds, get_neuron_weights};
 pub use chain_info::{
-    get_admin_freeze_window, get_timestamp, is_fast_blocks, is_in_admin_freeze_window,
-    last_drand_round, tx_rate_limit,
+    get_admin_freeze_window, get_block_hash, get_current_block_with_retry, get_timestamp,
+    get_total_issuance, get_total_stake, get_total_subnets, is_fast_blocks,
+    is_in_admin_freeze_window, last_drand_round, tx_rate_limit,
 };
 pub use neurons::{
-    get_all_neuron_certificates, get_children, get_children_pending, get_neuron_certificate,
-    get_neuron_for_pubkey_and_subnet, get_parents, neurons, Certificate,
+    get_all_neuron_certificates, get_children, get_children_pending, get_hotkey_for_uid,
+    get_neuron_certificate, get_neuron_for_pubkey_and_subnet, get_parents, get_uid_for_hotkey,
+    neurons, neurons_lite, Certificate,
 };
 pub use stakes::{
     get_hotkey_stake, get_stake, get_stake_add_fee, get_stake_for_coldkey,
     get_stake_for_coldkey_and_hotkey, get_stake_for_hotkey, get_stake_info_for_coldkey,
-    get_stake_movement_fee, get_stake_operations_fee, get_unstake_fee, StakeInfo,
+    get_stake_movement_fee, get_stake_operations_fee, get_total_stake_for_coldkey,
+    get_total_stake_for_hotkey, get_unstake_fee, StakeInfo,
 };
 pub use subnets::{
-    commit_reveal_enabled, get_mechanism_count, get_subnet_reveal_period_epochs, is_subnet_active,
-    recycle,
+    commit_reveal_enabled, get_all_dynamic_info, get_all_subnets_info, get_dynamic_info,
+    get_mechanism_count, get_subnet_burn_cost, get_subnet_emission_value, get_subnet_owner,
+    get_subnet_reveal_period_epochs, is_subnet_active, recycle,
 };
 
 // Re-export hyperparameters
@@ -59,3 +94,6 @@ pub use associated_ips::{get_associated_ip_count, get_associated_ips, has_associ
 
 // Re-export runtime queries
 pub use runtime::{get_hotkey_owner, get_tempo, get_weights_version_key};
+
+// Re-export delegate optimized queries
+pub use delegates::{get_delegate_info_optimized, get_delegate_take_raw, get_total_hotkey_stake};

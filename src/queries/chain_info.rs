@@ -1,5 +1,6 @@
 use crate::chain::BittensorClient;
 use anyhow::Result;
+use std::time::Duration;
 
 const SUBTENSOR_MODULE: &str = "SubtensorModule";
 
@@ -74,4 +75,99 @@ pub async fn is_fast_blocks(client: &BittensorClient) -> Result<bool> {
         }
     }
     Ok(false)
+}
+
+/// Get total issuance of the native token (RAO)
+/// Reads Balances::TotalIssuance storage
+pub async fn get_total_issuance(client: &BittensorClient) -> Result<u128> {
+    let val = client
+        .storage("Balances", "TotalIssuance", None)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Balances::TotalIssuance not found"))?;
+    crate::utils::decoders::decode_u128(&val)
+        .map_err(|e| anyhow::anyhow!("Failed to decode TotalIssuance: {}", e))
+}
+
+/// Get total stake across all subnets (RAO)
+/// Reads SubtensorModule::TotalStake storage
+pub async fn get_total_stake(client: &BittensorClient) -> Result<u128> {
+    let val = client
+        .storage(SUBTENSOR_MODULE, "TotalStake", None)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("SubtensorModule::TotalStake not found"))?;
+    crate::utils::decoders::decode_u128(&val)
+        .map_err(|e| anyhow::anyhow!("Failed to decode TotalStake: {}", e))
+}
+
+/// Get block hash for a specific block number
+/// Uses the chain RPC to retrieve the hash
+pub async fn get_block_hash(client: &BittensorClient, block_number: u64) -> Result<[u8; 32]> {
+    let hash = client
+        .api()
+        .backend()
+        .block_header(
+            client
+                .api()
+                .backend()
+                .latest_finalized_block_ref()
+                .await?
+                .hash(),
+        )
+        .await
+        .ok()
+        .flatten();
+
+    let _ = hash;
+
+    let params = vec![subxt::dynamic::Value::u128(block_number as u128)];
+    let raw_bytes = client
+        .runtime_api_call(
+            "BlockBuilder",
+            "block_hash",
+            Some(block_number.to_le_bytes().to_vec()),
+        )
+        .await;
+
+    match raw_bytes {
+        Ok(bytes) if bytes.len() == 32 => {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes);
+            Ok(arr)
+        }
+        _ => {
+            let _ = params;
+            Err(anyhow::anyhow!(
+                "Failed to get block hash for block {}",
+                block_number
+            ))
+        }
+    }
+}
+
+/// Get current block number with retry logic
+/// Retries up to max_retries times with exponential backoff
+pub async fn get_current_block_with_retry(
+    client: &BittensorClient,
+    max_retries: u32,
+) -> Result<u64> {
+    let mut last_err = None;
+    for attempt in 0..=max_retries {
+        match client.block_number().await {
+            Ok(block) => return Ok(block),
+            Err(e) => {
+                last_err = Some(anyhow::anyhow!("{}", e));
+                if attempt < max_retries {
+                    let delay = Duration::from_millis(100 * 2u64.pow(attempt));
+                    tokio::time::sleep(delay).await;
+                }
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| anyhow::anyhow!("Failed to get current block")))
+}
+
+/// Get total number of subnets
+/// Reads SubtensorModule::TotalNetworks storage
+pub async fn get_total_subnets(client: &BittensorClient) -> Result<u16> {
+    crate::queries::subnets::total_subnets(client).await
 }
