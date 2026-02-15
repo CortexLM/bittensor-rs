@@ -60,7 +60,15 @@ pub use validator::children as validator_children;
 pub use validator::weights as validator_weights;
 
 // Re-export utils with specific modules to avoid conflicts
-pub use utils::{balance, crypto, encode, scale, ss58};
+pub use utils::{balance, balance_newtypes, crypto, encode, scale, ss58};
+
+// Re-export newtype types at top level for compile-time type safety
+pub use utils::balance_newtypes::{
+    balance_from_rao, balance_from_rao_with_netuid, balance_from_tao, balance_from_tao_with_netuid,
+    format_rao_as_tao, get_unit_symbol, is_lossless_conversion, is_valid_rao_amount,
+    is_valid_tao_amount, parse_tao_string, rao, rao_to_tao, tao, tao_to_rao, tao_to_rao_ceiling,
+    tao_to_rao_rounded, Balance as SafeBalance, Rao, Tao,
+};
 
 // Re-export decoders module
 pub use utils::decoders;

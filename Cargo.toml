@@ -71,6 +71,7 @@ comfy-table = "7.1"
 
 [dev-dependencies]
 tempfile = "3.23"
+proptest = "1.6"
 
 [[bin]]
 name = "btcli"
