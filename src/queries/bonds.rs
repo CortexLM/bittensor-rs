@@ -4,7 +4,7 @@
 use crate::chain::BittensorClient;
 use crate::utils::decoders::vec::decode_vec;
 use crate::utils::decoders::{decode_u16, decode_u64};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use subxt::dynamic::Value;
 use subxt::ext::scale_value::{Composite, ValueDef};
 
@@ -152,7 +152,7 @@ fn parse_weights_from_value(value: &Value) -> Result<Vec<(u16, u16)>> {
         Err(anyhow::anyhow!("invalid weight pair"))
     })
 }
-fn extract_pair<'a>(value: &'a Value) -> Option<(&'a Value, &'a Value)> {
+fn extract_pair(value: &Value) -> Option<(&Value, &Value)> {
     match &value.value {
         ValueDef::Composite(Composite::Named(fields)) => {
             if fields.len() >= 2 {

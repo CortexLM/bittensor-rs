@@ -30,9 +30,6 @@ pub async fn set_weights(
         return Err(anyhow::anyhow!("No valid weights to set"));
     }
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
-
     let args = vec![
         Value::u128(netuid as u128),
         Value::from(netuid),
@@ -112,10 +109,7 @@ pub async fn reveal_weights(
         return Err(anyhow::anyhow!("No valid weights to reveal"));
     }
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
     let salt_values: Vec<Value> = salt.iter().map(|s| Value::from(*s)).collect();
-
     let args = vec![
         Value::u128(netuid as u128),
         Value::from(netuid),
