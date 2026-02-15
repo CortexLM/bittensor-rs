@@ -50,6 +50,34 @@ pub async fn burned_register(
     Ok(tx_hash)
 }
 
+/// Swap an old hotkey for a new one.
+///
+/// Subtensor pallet dispatch: `swap_hotkey(hotkey, new_hotkey)`
+///
+/// # Arguments
+/// * `client` — The Bittensor RPC client.
+/// * `signer` — The signing keypair (coldkey that owns the hotkey).
+/// * `old_hotkey` — The current hotkey to swap from.
+/// * `new_hotkey` — The new hotkey to swap to.
+/// * `wait_for` — How long to wait for on-chain inclusion.
+pub async fn swap_hotkey(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    old_hotkey: &AccountId32,
+    new_hotkey: &AccountId32,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    let args = vec![
+        Value::from_bytes(old_hotkey.encode()),
+        Value::from_bytes(new_hotkey.encode()),
+    ];
+
+    client
+        .submit_extrinsic(SUBTENSOR_MODULE, "swap_hotkey", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to swap hotkey: {}", e))
+}
+
 /// Check if a hotkey is registered on a subnet
 pub async fn is_registered(
     client: &BittensorClient,
