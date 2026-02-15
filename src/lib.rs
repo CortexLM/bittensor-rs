@@ -50,7 +50,8 @@ pub use queries::liquidity as liquidity_queries;
 
 // Re-export validator functions (except weights to avoid conflict)
 pub use validator::{
-    liquidity::*, mechanism::*, registration::*, root::*, serving::*, staking::*, take::*,
+    commitments::*, hyperparameters::*, identity::*, key_swap::*, liquidity::*, mechanism::*,
+    registration::*, root::*, serving::*, staking::*, subnet_management::*, sudo::*, take::*,
     transfer::*, utility::*,
 };
 

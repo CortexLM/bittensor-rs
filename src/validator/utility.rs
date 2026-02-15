@@ -89,13 +89,69 @@ pub async fn batch_all(
         return Err(anyhow::anyhow!("Cannot batch empty call list"));
     }
 
-    // Build call values using the RuntimeCall enum format
-    // Each call needs to be encoded as a RuntimeCall variant
-    let call_values: Vec<Value> = calls
+    let call_values = build_batch_call_values(&calls);
+    let args = vec![Value::unnamed_composite(call_values)];
+
+    let tx_hash = client
+        .submit_extrinsic(UTILITY_MODULE, "batch_all", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to submit batch_all: {}", e))?;
+
+    Ok(tx_hash)
+}
+
+/// Execute a batch of calls non-atomically (individual calls may fail without
+/// reverting the entire batch).
+/// Uses Utility.batch which continues executing even if some calls fail.
+pub async fn batch(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    calls: Vec<BatchCall>,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    if calls.is_empty() {
+        return Err(anyhow::anyhow!("Cannot batch empty call list"));
+    }
+
+    let call_values = build_batch_call_values(&calls);
+    let args = vec![Value::unnamed_composite(call_values)];
+
+    let tx_hash = client
+        .submit_extrinsic(UTILITY_MODULE, "batch", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to submit batch: {}", e))?;
+
+    Ok(tx_hash)
+}
+
+/// Execute a batch of calls using `force_batch` — similar to `batch` but
+/// dispatches calls with root origin when possible. Individual calls may fail
+/// without reverting the batch.
+pub async fn force_batch(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    calls: Vec<BatchCall>,
+    wait_for: ExtrinsicWait,
+) -> Result<String> {
+    if calls.is_empty() {
+        return Err(anyhow::anyhow!("Cannot batch empty call list"));
+    }
+
+    let call_values = build_batch_call_values(&calls);
+    let args = vec![Value::unnamed_composite(call_values)];
+
+    let tx_hash = client
+        .submit_extrinsic(UTILITY_MODULE, "force_batch", args, signer, wait_for)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to submit force_batch: {}", e))?;
+
+    Ok(tx_hash)
+}
+
+fn build_batch_call_values(calls: &[BatchCall]) -> Vec<Value> {
+    calls
         .iter()
         .map(|call| {
-            // Create call as named variant matching RuntimeCall enum structure
-            // RuntimeCall::SubtensorModule(pallet_subtensor::Call::function_name { args })
             let call_args: Vec<(&str, Value)> = match call.function.as_str() {
                 "set_mechanism_weights" => vec![
                     (
@@ -172,7 +228,6 @@ pub async fn batch_all(
                     .collect(),
             };
 
-            // Create the pallet call as a variant
             let pallet_call = Value::named_variant(
                 call.function.clone(),
                 call_args
@@ -181,17 +236,7 @@ pub async fn batch_all(
                     .collect::<Vec<(String, Value)>>(),
             );
 
-            // Wrap in the RuntimeCall variant for the module
             Value::named_variant(call.module.clone(), vec![("call", pallet_call)])
         })
-        .collect();
-
-    let args = vec![Value::unnamed_composite(call_values)];
-
-    let tx_hash = client
-        .submit_extrinsic(UTILITY_MODULE, "batch_all", args, signer, wait_for)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to submit batch_all: {}", e))?;
-
-    Ok(tx_hash)
+        .collect()
 }
