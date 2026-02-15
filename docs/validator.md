@@ -27,6 +27,26 @@ pub async fn set_weights(
 ```
 
 **Parameters:**
+- `amount`: Amount to transfer in RAO
+) -> Result<()>
+```
+
+**Parameters:**
+- `amount`: Amount to swap in RAO
+) -> Result<()>
+```
+
+**Parameters:**
+- `amount`: Amount to move in RAO
+) -> Result<()>
+```
+
+**Parameters:**
+- `amount`: Amount to unstake in RAO
+) -> Result<()>
+```
+
+**Parameters:**
 - `client`: Bittensor client instance
 - `signer`: Key pair signer
 - `netuid`: Subnet ID
@@ -207,10 +227,12 @@ add_stake(&client, &signer, &hotkey, netuid, amount_rao).await?;
 ```
 
 ### unstake
+### unstake
 
 Unstake from a neuron on a specific subnet.
 
 ```rust
+pub async fn unstake(
 pub async fn unstake(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,
@@ -221,10 +243,12 @@ pub async fn unstake(
 ```
 
 ### move_stake
+### move_stake
 
 Move stake between subnets.
 
 ```rust
+pub async fn move_stake(
 pub async fn move_stake(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,
@@ -236,10 +260,12 @@ pub async fn move_stake(
 ```
 
 ### swap_stake
+### swap_stake
 
 Swap stake between hotkeys.
 
 ```rust
+pub async fn swap_stake(
 pub async fn swap_stake(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,
@@ -251,10 +277,12 @@ pub async fn swap_stake(
 ```
 
 ### transfer_stake
+### transfer_stake
 
 Transfer stake to another coldkey.
 
 ```rust
+pub async fn transfer_stake(
 pub async fn transfer_stake(
     client: &BittensorClient,
     signer: &PairSigner<DefaultConfig, Pair>,

@@ -30,13 +30,13 @@ pub async fn set_weights(
         return Err(anyhow::anyhow!("No valid weights to set"));
     }
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
-        Value::unnamed_composite(uid_values),
-        Value::unnamed_composite(weight_values),
+        Value::from(netuid),
+        Value::from(version_key),
         Value::u128(version_key as u128),
     ];
 
@@ -73,7 +73,7 @@ pub async fn commit_weights(
         ));
     }
 
-    let args = vec![Value::u128(netuid as u128), Value::from_bytes(&hash_bytes)];
+    let args = vec![Value::from(netuid), Value::from_bytes(&hash_bytes)];
 
     let tx_hash = client
         .submit_extrinsic(
@@ -112,14 +112,14 @@ pub async fn reveal_weights(
         return Err(anyhow::anyhow!("No valid weights to reveal"));
     }
 
-    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::u128(*uid as u128)).collect();
-    let weight_values: Vec<Value> = weights.iter().map(|w| Value::u128(*w as u128)).collect();
-    let salt_values: Vec<Value> = salt.iter().map(|s| Value::u128(*s as u128)).collect();
+    let uid_values: Vec<Value> = uids.iter().map(|uid| Value::from(*uid)).collect();
+    let weight_values: Vec<Value> = weights.iter().map(|w| Value::from(*w)).collect();
+    let salt_values: Vec<Value> = salt.iter().map(|s| Value::from(*s)).collect();
 
     let args = vec![
         Value::u128(netuid as u128),
-        Value::unnamed_composite(uid_values),
-        Value::unnamed_composite(weight_values),
+        Value::from(netuid),
+        Value::from(version_key),
         Value::unnamed_composite(salt_values),
         Value::u128(version_key as u128),
     ];

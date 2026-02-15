@@ -46,7 +46,7 @@ pub struct NeuronInfo {
 - `stake`: Total stake on this neuron
 - `stake_dict`: Mapping of coldkey to stake amount
 - `total_stake`: Total stake on the subnet
-- `root_stake`: Total stake on root subnet (TAO)
+- `root_stake`: Total stake on root subnet (RAO)
 - `rank`: Normalized rank score
 - `trust`: Normalized trust score
 - `consensus`: Normalized consensus score
@@ -296,4 +296,3 @@ use bittensor_rs::types::{
     AxonInfo, PrometheusInfo, WeightCommitInfo
 };
 ```
-
