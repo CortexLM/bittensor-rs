@@ -17,6 +17,7 @@ use bittensor_rs::utils::balance_newtypes::{
 };
 use bittensor_rs::validator::{staking, transfer, weights as validator_weights};
 use proptest::prelude::*;
+use std::any::type_name;
 
 #[test]
 fn test_transfer_and_stake_requires_rao_inputs() {
@@ -31,12 +32,27 @@ fn test_transfer_and_stake_requires_rao_inputs() {
     assert_u128_input::<u128>(RAOPERTAO);
 
     let _transfer_fn = transfer::transfer;
-
     let _transfer_stake_fn = transfer::transfer_stake;
-
     let _add_stake_fn = staking::add_stake;
-
     let _unstake_fn = staking::unstake;
+}
+
+#[test]
+fn test_transfer_and_stake_amounts_are_rao_scalars() {
+    fn assert_type<T: Into<u128>>() -> &'static str {
+        type_name::<T>()
+    }
+
+    assert_eq!(assert_type::<u128>(), "u128");
+    assert_eq!(
+        assert_type::<Rao>(),
+        "bittensor_rs::utils::balance_newtypes::Rao"
+    );
+
+    let tao_amount = Tao(1.0);
+    let rao_amount = tao_amount.as_rao();
+    let rao_value: u128 = rao_amount.into();
+    assert_eq!(rao_value, RAOPERTAO);
 }
 
 #[test]

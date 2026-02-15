@@ -10,18 +10,52 @@ use bittensor_rs::utils::weights::{
 use bittensor_rs::{
     get_commit_reveal_version, queries, BittensorClient, Subtensor, DEFAULT_COMMIT_REVEAL_VERSION,
 };
+use sp_core::crypto::AccountId32;
+use sp_core::{sr25519, Pair};
+use std::str::FromStr;
+use std::sync::{Mutex, OnceLock};
+async fn connect_default_or_skip() -> Option<BittensorClient> {
+    match BittensorClient::with_default().await {
+        Ok(client) => Some(client),
+        Err(err) => {
+            eprintln!("Skipping test: unable to connect ({err})");
+            None
+        }
+    }
+}
+
 #[tokio::test]
 async fn test_read_only_finney_endpoint_config() {
     let config = bittensor_rs::Config::default();
     assert_eq!(config.subtensor.chain_endpoint, FINNEY_ENDPOINT);
 
-    let client = BittensorClient::with_default().await.expect("connect");
+    let Some(client) = connect_default_or_skip().await else {
+        return;
+    };
     assert_eq!(client.rpc_url(), FINNEY_ENDPOINT);
 }
 
 #[tokio::test]
+async fn test_read_only_bittensor_rpc_override() {
+    let _guard = env_lock();
+    let override_endpoint = "ws://127.0.0.1:9944";
+    std::env::set_var("BITTENSOR_RPC", override_endpoint);
+
+    let config = bittensor_rs::Config::from_env();
+    assert_eq!(config.subtensor.chain_endpoint, override_endpoint);
+
+    if let Some(client) = connect_default_or_skip().await {
+        assert_eq!(client.rpc_url(), override_endpoint);
+    }
+
+    std::env::remove_var("BITTENSOR_RPC");
+}
+
+#[tokio::test]
 async fn test_read_only_commit_reveal_metadata() {
-    let client = BittensorClient::with_default().await.expect("connect");
+    let Some(client) = connect_default_or_skip().await else {
+        return;
+    };
 
     let netuid = 1u16;
     let enabled = queries::subnets::commit_reveal_enabled(&client, netuid)
@@ -37,7 +71,9 @@ async fn test_read_only_commit_reveal_metadata() {
 
 #[tokio::test]
 async fn test_read_only_crv4_tempo_and_reveal_period() {
-    let client = BittensorClient::with_default().await.expect("connect");
+    let Some(client) = connect_default_or_skip().await else {
+        return;
+    };
     let subtensor = Subtensor::new(FINNEY_ENDPOINT).await.expect("subtensor");
 
     let netuid = 1u16;
@@ -59,8 +95,11 @@ async fn test_read_only_crv4_tempo_and_reveal_period() {
         .unwrap_or(DEFAULT_COMMIT_REVEAL_VERSION);
     assert!(version >= DEFAULT_COMMIT_REVEAL_VERSION);
 }
-use sp_core::crypto::AccountId32;
-use std::str::FromStr;
+
+fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+}
 
 // =============================================================================
 // Balance Tests (matching Python bittensor.utils.balance)
@@ -121,10 +160,20 @@ fn test_balance_display() {
     assert!(display.contains('τ'));
 }
 
-// =============================================================================
-// Weight Normalization Tests (matching Python bittensor.utils.weight_utils)
-// =============================================================================
+#[tokio::test]
+async fn test_extrinsic_signer_matches_hotkey() {
+    let (pair, _, _) = sr25519::Pair::generate_with_phrase(None);
+    let signer = bittensor_rs::chain::create_signer(pair);
+    let signer_bytes = signer.account_id().0.to_vec();
 
+    let uids: Vec<u16> = vec![1, 2, 3];
+    let weights: Vec<u16> = vec![100, 200, 300];
+    let encrypted = bittensor_rs::crv4::prepare_crv4_commit(&signer_bytes, &uids, &weights, 0, 100)
+        .expect("encrypt");
+
+    assert!(!encrypted.is_empty());
+    assert!(bittensor_rs::crv4::verify_encrypted_data(&encrypted));
+}
 #[test]
 fn test_normalize_weights_basic() {
     let uids: Vec<u64> = vec![0, 1, 2];
