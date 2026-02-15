@@ -89,16 +89,16 @@ pub async fn get_metagraph_info_full(
         info.validator_permit.push(neuron.validator_permit);
         info.pruning_score.push(neuron.pruning_score as f64);
         info.last_update.push(neuron.last_update);
-        info.emission.push(neuron.emission as f64);
+        info.emission.push(neuron.emission.as_u128() as f64);
         info.incentive.push(neuron.incentive);
         info.consensus.push(neuron.consensus);
         info.trust.push(neuron.trust);
         info.validator_trust.push(neuron.validator_trust);
         info.dividends.push(neuron.dividends);
         info.rank.push(neuron.rank);
-        info.alpha_stake.push(neuron.stake as f64);
-        info.tao_stake.push(neuron.root_stake as f64);
-        info.total_stake.push(neuron.total_stake as f64);
+        info.alpha_stake.push(neuron.stake.as_u128() as f64);
+        info.tao_stake.push(neuron.root_stake.as_u128() as f64);
+        info.total_stake.push(neuron.total_stake.as_u128() as f64);
     }
 
     info.hparams.tempo = info.tempo;

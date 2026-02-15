@@ -183,7 +183,7 @@ async fn list_root_validators(cli: &Cli) -> anyhow::Result<()> {
                 uid.to_string(),
                 format_address(&neuron.hotkey.to_string()),
                 format_address(&neuron.coldkey.to_string()),
-                format_tao(neuron.total_stake),
+                format_tao(neuron.total_stake.as_u128()),
                 format!("{:.4}", neuron.trust),
                 format!("{:.4}", neuron.consensus),
                 format!("{:.4}", neuron.incentive),
@@ -404,7 +404,10 @@ async fn show_info(cli: &Cli) -> anyhow::Result<()> {
             println!("Tempo:            {} blocks", tempo_val);
             println!("Difficulty:       {}", diff_val);
             println!("Immunity Period:  {} blocks", immunity_val);
-            println!("Total Stake:      {}", format_tao(info.total_stake));
+            println!(
+                "Total Stake:      {}",
+                format_tao(info.total_stake.as_u128())
+            );
         }
         None => {
             print_warning("Could not fetch root network info");
@@ -445,10 +448,11 @@ async fn show_delegates(cli: &Cli) -> anyhow::Result<()> {
 
     for delegate in &delegates {
         // Calculate total stake across all subnets
-        let total_stake: u128 = delegate.total_stake.values().sum();
+        let total_stake: crate::utils::balance_newtypes::Rao =
+            delegate.total_stake.values().copied().sum();
         table.add_row(vec![
             format_address(&delegate.base.hotkey_ss58.to_string()),
-            format_tao(total_stake),
+            format_tao(total_stake.as_u128()),
             format!("{:.2}%", delegate.base.take * 100.0),
             format_address(&delegate.base.owner_ss58.to_string()),
         ]);

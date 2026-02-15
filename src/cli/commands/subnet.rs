@@ -115,7 +115,7 @@ async fn list_subnets(cli: &Cli) -> anyhow::Result<()> {
             info.netuid.to_string(),
             info.name.clone().unwrap_or_else(|| "N/A".to_string()),
             info.neuron_count.to_string(),
-            format_tao(info.emission),
+            format_tao(info.emission.as_u128()),
         ]);
     }
 
@@ -164,8 +164,11 @@ async fn show_subnet(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
                 info.name.unwrap_or_else(|| "N/A".to_string())
             );
             println!("Neurons:          {}", info.neuron_count);
-            println!("Emission:         {}", format_tao(info.emission));
-            println!("Total Stake:      {}", format_tao(info.total_stake));
+            println!("Emission:         {}", format_tao(info.emission.as_u128()));
+            println!(
+                "Total Stake:      {}",
+                format_tao(info.total_stake.as_u128())
+            );
             println!("Tempo:            {} blocks", tempo_val);
             println!("Difficulty:       {}", diff_val);
             println!("Immunity Period:  {} blocks", immunity_val);
@@ -220,7 +223,7 @@ async fn show_metagraph(netuid: u16, cli: &Cli) -> anyhow::Result<()> {
                 uid.to_string(),
                 format_address(&neuron.hotkey.to_string()),
                 format_address(&neuron.coldkey.to_string()),
-                format_tao(neuron.total_stake),
+                format_tao(neuron.total_stake.as_u128()),
                 format!("{:.4}", neuron.trust),
                 format!("{:.4}", neuron.consensus),
                 format!("{:.4}", neuron.incentive),

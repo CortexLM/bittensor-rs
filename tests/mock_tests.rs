@@ -2,6 +2,7 @@ use bittensor_rs::{
     delegate::DelegateInfoBase,
     queries::SubnetHyperparameters,
     types::{DelegateInfo, DelegatedInfo, SubnetInfo},
+    Rao,
 };
 use sp_core::crypto::AccountId32;
 use std::collections::HashMap;
@@ -12,8 +13,8 @@ fn test_subnet_info_basic() {
     let subnet = SubnetInfo {
         netuid: 1,
         neuron_count: 256,
-        total_stake: 1000000,
-        emission: 100000,
+        total_stake: Rao::from(1000000u128),
+        emission: Rao::from(100000u128),
         name: Some("Test Subnet".to_string()),
         description: Some("Test description".to_string()),
     };
@@ -74,7 +75,7 @@ fn test_delegate_info_structure() {
     nominators.insert(nominator, subnet_stakes);
 
     let mut total_stake = HashMap::new();
-    total_stake.insert(1u16, 1000000u128);
+    total_stake.insert(1u16, Rao::from(1000000u128));
 
     let delegate = DelegateInfo {
         base: DelegateInfoBase {
@@ -85,8 +86,8 @@ fn test_delegate_info_structure() {
             take: 0.18,
             validator_permits: vec![1, 3],
             registrations: vec![1, 3, 5],
-            return_per_1000: 150,
-            total_daily_return: 10000,
+            return_per_1000: Rao::from(150u128),
+            total_daily_return: Rao::from(10000u128),
         },
         total_stake: total_stake.clone(),
         nominators: nominators.clone(),
@@ -95,7 +96,7 @@ fn test_delegate_info_structure() {
     assert_eq!(delegate.base.take, 0.18);
     assert_eq!(delegate.base.registrations.len(), 3);
     assert_eq!(delegate.nominators.len(), 1);
-    assert_eq!(delegate.base.return_per_1000, 150);
+    assert_eq!(delegate.base.return_per_1000, Rao::from(150u128));
 }
 
 #[test]
@@ -109,15 +110,15 @@ fn test_delegated_info_structure() {
             take: 0.18,
             validator_permits: vec![1],
             registrations: vec![1],
-            return_per_1000: 150,
-            total_daily_return: 10000,
+            return_per_1000: Rao::from(150u128),
+            total_daily_return: Rao::from(10000u128),
         },
         netuid: 1,
-        stake: 500000,
+        stake: Rao::from(500000u128),
     };
 
     assert_eq!(delegated.netuid, 1);
-    assert_eq!(delegated.stake, 500000);
+    assert_eq!(delegated.stake, Rao::from(500000u128));
     assert_eq!(delegated.base.take, 0.18);
 }
 

@@ -1,6 +1,7 @@
 use crate::chain::BittensorClient;
 use crate::core::constants::RAOPERTAO;
 use crate::types::SubnetInfo;
+use crate::utils::balance_newtypes::Rao;
 use crate::utils::decoders::{
     decode_account_id32, decode_bool, decode_u128, decode_u16, decode_u64,
 };
@@ -145,8 +146,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
         .await?;
     let neuron_count: u64 = n_val.and_then(|v| decode_u64(&v).ok()).unwrap_or(0);
 
-    // emission: sum Emission[(netuid, uid)] over all uids (RAO)
-    let mut emission_rao: u128 = 0;
+    let mut emission_rao = Rao::ZERO;
     for uid in 0..neuron_count {
         if let Some(ev) = client
             .storage_with_keys(
@@ -157,14 +157,12 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
             .await?
         {
             if let Ok(e) = decode_u64(&ev) {
-                emission_rao = emission_rao.saturating_add(e as u128);
+                emission_rao = emission_rao.saturating_add(Rao::from(e as u128));
             }
         }
     }
-    let emission = emission_rao;
 
-    // total_stake: sum TotalHotkeyAlpha[(hotkey, netuid)] for each neuron hotkey
-    let mut total_stake: u128 = 0;
+    let mut total_stake = Rao::ZERO;
     for uid in 0..neuron_count {
         if let Some(hotkey_val) = client
             .storage_with_keys(
@@ -184,7 +182,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
                     .await?
                 {
                     if let Ok(a) = decode_u128(&alpha_val) {
-                        total_stake = total_stake.saturating_add(a);
+                        total_stake = total_stake.saturating_add(Rao::from(a));
                     }
                 }
             }
@@ -195,7 +193,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
         netuid,
         neuron_count,
         total_stake,
-        emission,
+        emission: emission_rao,
         name: None,
         description: None,
     }))
@@ -437,7 +435,7 @@ pub async fn mechanism_emission_split(
 }
 
 /// Get subnet burn cost (runtime API)
-pub async fn subnet_burn_cost(client: &BittensorClient, _netuid: u16) -> Result<u128> {
+pub async fn subnet_burn_cost(client: &BittensorClient, _netuid: u16) -> Result<Rao> {
     let cost_val = client
         .runtime_api(
             "SubnetRegistrationRuntimeApi",
@@ -454,13 +452,13 @@ pub async fn subnet_burn_cost(client: &BittensorClient, _netuid: u16) -> Result<
             e
         )
     })?;
-    Ok(cost_u64 as u128)
+    Ok(Rao::from(cost_u64 as u128))
 }
 
 /// Get subnet Alpha price in RAO via runtime API (SN0 fixed to 1 TAO)
-pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<u128> {
+pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<Rao> {
     if netuid == 0 {
-        return Ok(RAOPERTAO);
+        return Ok(Rao::from(RAOPERTAO));
     }
     if let Some(val) = client
         .runtime_api(
@@ -471,21 +469,24 @@ pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<u
         .await?
     {
         return crate::utils::decoders::decode_u128(&val)
+            .map(Rao::from)
             .map_err(|e| anyhow::anyhow!("Failed to decode price: {}", e));
     }
-    // Fallback: use storage sqrt price squared
     let sqrt_price = super::liquidity::get_current_subnet_price_rao(client, netuid).await?;
-    Ok(sqrt_price)
+    Ok(Rao::from(sqrt_price))
 }
 
 /// Get prices for all subnets
 pub async fn get_subnet_prices(
     client: &BittensorClient,
-) -> Result<std::collections::HashMap<u16, u128>> {
+) -> Result<std::collections::HashMap<u16, Rao>> {
     let total = total_subnets(client).await.unwrap_or(0);
     let mut map = std::collections::HashMap::new();
     for netuid in 0u16..total {
-        map.insert(netuid, get_subnet_price(client, netuid).await.unwrap_or(0));
+        map.insert(
+            netuid,
+            get_subnet_price(client, netuid).await.unwrap_or(Rao::ZERO),
+        );
     }
     Ok(map)
 }
@@ -575,7 +576,7 @@ pub async fn get_subnet_owner(
 /// Get the network lock cost (burn cost to register a new subnet)
 /// Reads SubtensorModule::NetworkLockReductionInterval and NetworkMinLockCost
 pub async fn get_subnet_burn_cost(client: &BittensorClient) -> Result<u128> {
-    subnet_burn_cost(client, 0).await
+    Ok(subnet_burn_cost(client, 0).await?.as_u128())
 }
 
 /// Get emission value for a specific subnet (RAO per block)
@@ -729,7 +730,10 @@ pub async fn get_dynamic_info(
         info.moving_price = decode_u128(&val).unwrap_or(0);
     }
 
-    info.price = get_subnet_price(client, netuid).await.unwrap_or(0);
+    info.price = get_subnet_price(client, netuid)
+        .await
+        .unwrap_or(Rao::ZERO)
+        .as_u128();
 
     Ok(info)
 }

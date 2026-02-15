@@ -24,15 +24,15 @@ pub async fn get_vote_data(
         let index = fields
             .get("index")
             .and_then(|v| decode_u64(v).ok())
-            .unwrap_or(0);
+            .unwrap_or(0) as u32;
         let threshold = fields
             .get("threshold")
             .and_then(|v| decode_u64(v).ok())
-            .unwrap_or(0);
+            .unwrap_or(0) as u32;
         let end = fields
             .get("end")
             .and_then(|v| decode_u64(v).ok())
-            .unwrap_or(0);
+            .unwrap_or(0) as u32;
 
         let ayes = fields
             .get("ayes")

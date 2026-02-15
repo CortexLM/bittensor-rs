@@ -1,6 +1,7 @@
 /// Neuron queries for fetching neuron information from the Bittensor network
 use crate::chain::BittensorClient;
 use crate::types::{AxonInfo, NeuronInfo, PrometheusInfo};
+use crate::utils::balance_newtypes::Rao;
 use crate::utils::decoders::*;
 use anyhow::{Context, Result};
 use futures::stream::{FuturesUnordered, StreamExt};
@@ -212,9 +213,8 @@ pub async fn neurons(
         let emission = emission_vec.get(idx).copied().unwrap_or(0);
         let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
 
-        let total_stake = stakes.get(&uid).copied().unwrap_or(0);
-        let root_stake = root_stakes.get(&uid).copied().unwrap_or(0);
-        // Stake weight from StakeWeight storage - includes parent inheritance + TAO weight
+        let total_stake = Rao::from(stakes.get(&uid).copied().unwrap_or(0));
+        let root_stake = Rao::from(root_stakes.get(&uid).copied().unwrap_or(0));
         let stake_weight = stake_weight_vec.get(idx).copied().unwrap_or(0);
 
         neurons.push(NeuronInfo {
@@ -232,7 +232,7 @@ pub async fn neurons(
             consensus,
             validator_trust,
             incentive,
-            emission,
+            emission: Rao::from(emission),
             dividends,
             active,
             last_update,
@@ -257,14 +257,11 @@ pub async fn neurons(
         for neuron in &mut neurons {
             let idx = neuron.uid as usize;
             if let Some(&alpha) = alpha_stakes.get(idx) {
-                // Update stake and total_stake with the correct value including inheritance
-                neuron.stake = alpha;
-                neuron.total_stake = alpha;
+                neuron.stake = Rao::from(alpha);
+                neuron.total_stake = Rao::from(alpha);
             }
             if let Some(&total) = total_stakes.get(idx) {
-                // total_stake from runtime includes alpha + (tao * tao_weight)
-                // We store this for reference but primary stake field is alpha_stake
-                neuron.total_stake = total;
+                neuron.total_stake = Rao::from(total);
             }
         }
     }
@@ -414,7 +411,7 @@ pub async fn query_neuron_from_storage(
     let active = active_vec.get(idx).copied().unwrap_or(false);
     let validator_permit = validator_permit_vec.get(idx).copied().unwrap_or(false);
     let last_update = last_update_vec.get(idx).copied().unwrap_or(0);
-    let emission = emission_vec.get(idx).copied().unwrap_or(0);
+    let emission = Rao::from(emission_vec.get(idx).copied().unwrap_or(0));
     let pruning_score = pruning_scores_vec.get(idx).copied().unwrap_or(0) as u64;
 
     let version = fetch_u64_storage_opt(client, SUBTENSOR_MODULE, "Version", uid_key.clone())
@@ -430,10 +427,12 @@ pub async fn query_neuron_from_storage(
         .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", stake_key.clone())
         .await?
     {
-        decode_u128(&total_stake_val)
-            .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))?
+        Rao::from(
+            decode_u128(&total_stake_val)
+                .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha: {}", e))?,
+        )
     } else {
-        0u128
+        Rao::ZERO
     };
 
     let root_stake_key = vec![Value::from_bytes(hotkey.encode()), Value::u128(0u128)];
@@ -441,11 +440,13 @@ pub async fn query_neuron_from_storage(
         .storage_with_keys(SUBTENSOR_MODULE, "TotalHotkeyAlpha", root_stake_key)
         .await?
     {
-        decode_u128(&root_stake_val)
-            .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha (root): {}", e))
-            .unwrap_or(0u128)
+        Rao::from(
+            decode_u128(&root_stake_val)
+                .map_err(|e| anyhow::anyhow!("Failed to decode TotalHotkeyAlpha (root): {}", e))
+                .unwrap_or(0u128),
+        )
     } else {
-        0u128
+        Rao::ZERO
     };
 
     let stake_entries = match client
@@ -977,15 +978,15 @@ pub async fn neurons_lite(
             netuid,
             hotkey: hotkey.clone(),
             coldkey: coldkey.clone(),
-            stake: total_stake,
+            stake: Rao::from(total_stake),
             stake_dict: HashMap::new(),
-            total_stake,
+            total_stake: Rao::from(total_stake),
             rank,
             trust,
             consensus,
             validator_trust: 0.0,
             incentive,
-            emission,
+            emission: Rao::from(emission),
             dividends,
             active,
             last_update,

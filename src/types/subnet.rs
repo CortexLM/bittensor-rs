@@ -1,3 +1,4 @@
+use crate::utils::balance_newtypes::Rao;
 use serde::{Deserialize, Serialize};
 
 /// Information about a subnet in the Bittensor network
@@ -7,10 +8,10 @@ pub struct SubnetInfo {
     pub netuid: u16,
     /// Total number of neurons in the subnet
     pub neuron_count: u64,
-    /// Total stake in the subnet
-    pub total_stake: u128,
+    /// Total stake in the subnet (RAO)
+    pub total_stake: Rao,
     /// Emission rate (RAO)
-    pub emission: u128,
+    pub emission: Rao,
     /// Subnet name
     pub name: Option<String>,
     /// Subnet description
@@ -22,8 +23,8 @@ impl SubnetInfo {
         Self {
             netuid,
             neuron_count: 0,
-            total_stake: 0,
-            emission: 0,
+            total_stake: Rao::ZERO,
+            emission: Rao::ZERO,
             name: None,
             description: None,
         }
@@ -38,10 +39,10 @@ pub struct SubnetConfigInfo {
     pub weights_version: u64,
     pub tempo: u64,
     pub max_allowed_uids: u64,
-    pub min_stake: u128,
+    pub min_stake: Rao,
     pub immunity_period: u64,
-    pub min_burn: u128,
-    pub max_burn: u128,
+    pub min_burn: Rao,
+    pub max_burn: Rao,
     pub adjustment_alpha: u64,
     pub target_regs_per_interval: u64,
 }

@@ -407,7 +407,7 @@ async fn show_stake(wallet_name: Option<&str>, all: bool, cli: &Cli) -> anyhow::
                     table.add_row(vec![
                         format_address(&stake_info.hotkey.to_string()),
                         stake_info.netuid.to_string(),
-                        format_tao(stake_info.stake),
+                        format_tao(stake_info.stake.as_u128()),
                     ]);
                 }
 
@@ -598,19 +598,19 @@ async fn list_stake(wallet_name: &str, cli: &Cli) -> anyhow::Result<()> {
     }
 
     let mut table = create_table_with_headers(&["Hotkey", "Subnet", "Stake (TAO)"]);
-    let mut total_stake: u128 = 0;
+    let mut total_stake = crate::utils::balance_newtypes::Rao::ZERO;
 
     for stake_info in &stakes {
         table.add_row(vec![
             format_address(&stake_info.hotkey.to_string()),
             stake_info.netuid.to_string(),
-            format_tao(stake_info.stake),
+            format_tao(stake_info.stake.as_u128()),
         ]);
-        total_stake += stake_info.stake;
+        total_stake = total_stake.saturating_add(stake_info.stake);
     }
 
     println!("{table}");
-    println!("\nTotal stake: {}", format_tao(total_stake));
+    println!("\nTotal stake: {}", format_tao(total_stake.as_u128()));
 
     Ok(())
 }
