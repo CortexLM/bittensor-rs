@@ -12,9 +12,8 @@
 
 use bittensor_rs::core::constants::RAOPERTAO;
 use bittensor_rs::utils::balance_newtypes::{
-    format_rao_as_tao, is_lossless_conversion, is_valid_rao_amount, is_valid_tao_amount,
-    parse_tao_string, rao_to_tao, tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao,
-    Tao,
+    format_rao_as_tao, is_lossless_conversion, is_valid_tao_amount, parse_tao_string, rao_to_tao,
+    tao_to_rao, tao_to_rao_ceiling, tao_to_rao_rounded, Balance, Rao, Tao,
 };
 
 // ============================================================================
@@ -118,11 +117,7 @@ fn test_conversion_precision_small_values() {
         // But the round-trip via f64 can still lose precision for some patterns
         // We accept small epsilon due to floating point representation
         if rao <= 9_007_199_254_740_992u128 {
-            let diff = if rao >= rao_back {
-                rao - rao_back
-            } else {
-                rao_back - rao
-            };
+            let diff = rao.abs_diff(rao_back);
             assert!(
                 diff <= 1, // Allow off-by-one due to floating point
                 "Precision loss at RAO={}: TAO={}, RAO_back={}",
@@ -517,7 +512,7 @@ fn test_property_arithmetic_associative() {
     let b2 = Rao(2_000_000_000);
     let c2 = Rao(1_000_000_000);
     let left_sub = (a2.saturating_sub(b2)).saturating_sub(c2);
-    let right_sub = a2.saturating_sub(b2.saturating_sub(c2));
+    let _right_sub = a2.saturating_sub(b2.saturating_sub(c2));
     // These should be different due to saturating behavior
     assert_eq!(left_sub.as_u128(), 7_000_000_000);
 }
