@@ -1,8 +1,9 @@
 //! Core constants from the Bittensor protocol
 //! These match the values defined in the Python implementation
 
-/// TAO/RAO conversion factor (1 TAO = 1e9 RAO)
-pub const RAOPERTAO: u64 = 1_000_000_000;
+/// TAO/RAO conversion factor (1 TAO = 1_000_000_000 RAO)
+/// This is 1e9 as defined in the Python SDK (bittensor.utils.balance)
+pub const RAOPERTAO: u128 = 1_000_000_000;
 
 /// Global maximum subnet count
 pub const GLOBAL_MAX_SUBNET_COUNT: u16 = 4096;

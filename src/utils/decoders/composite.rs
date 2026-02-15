@@ -285,15 +285,19 @@ mod tests {
         // Fields: block (u64), version (u32), ip (u128), port (u16), ip_type (u8)
         // Using unnamed composite as that's how subxt returns it
         let prometheus_value = Value::unnamed_composite([
-            Value::u128(12345),       // block
-            Value::u128(1),           // version
-            Value::u128(2130706433),  // ip: 127.0.0.1 as u128
-            Value::u128(9933),        // port
-            Value::u128(4),           // ip_type: IPv4
+            Value::u128(12345),      // block
+            Value::u128(1),          // version
+            Value::u128(2130706433), // ip: 127.0.0.1 as u128
+            Value::u128(9933),       // port
+            Value::u128(4),          // ip_type: IPv4
         ]);
 
         let result = decode_prometheus_info(&prometheus_value);
-        assert!(result.is_ok(), "Failed to decode PrometheusInfo: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to decode PrometheusInfo: {:?}",
+            result
+        );
 
         let info = result.unwrap();
         assert_eq!(info.block, 12345);
@@ -307,14 +311,14 @@ mod tests {
         // Create a test Value representing AxonInfo
         // Fields: block, version, ip, port, ip_type, protocol, placeholder1, placeholder2
         let axon_value = Value::unnamed_composite([
-            Value::u128(54321),       // block
-            Value::u128(2),           // version
-            Value::u128(2130706433),  // ip: 127.0.0.1 as u128
-            Value::u128(8080),        // port
-            Value::u128(4),           // ip_type: IPv4
-            Value::u128(1),           // protocol
-            Value::u128(0),           // placeholder1
-            Value::u128(0),           // placeholder2
+            Value::u128(54321),      // block
+            Value::u128(2),          // version
+            Value::u128(2130706433), // ip: 127.0.0.1 as u128
+            Value::u128(8080),       // port
+            Value::u128(4),          // ip_type: IPv4
+            Value::u128(1),          // protocol
+            Value::u128(0),          // placeholder1
+            Value::u128(0),          // placeholder2
         ]);
 
         let result = decode_axon_info(&axon_value);
@@ -340,7 +344,11 @@ mod tests {
         ]);
 
         let result = decode_identity_map(&identity_value);
-        assert!(result.is_ok(), "Failed to decode identity map: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to decode identity map: {:?}",
+            result
+        );
 
         let map = result.unwrap();
         assert_eq!(map.get("name"), Some(&"TestValidator".to_string()));
@@ -370,7 +378,11 @@ mod tests {
         ]);
 
         let result = decode_named_composite(&composite);
-        assert!(result.is_ok(), "Failed to decode named composite: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to decode named composite: {:?}",
+            result
+        );
 
         let map = result.unwrap();
         assert_eq!(map.len(), 3);
@@ -387,11 +399,7 @@ mod tests {
     #[test]
     fn test_decode_named_composite_with_unnamed_fields() {
         // Create an unnamed composite value
-        let composite = Value::unnamed_composite([
-            Value::u128(1),
-            Value::u128(2),
-            Value::u128(3),
-        ]);
+        let composite = Value::unnamed_composite([Value::u128(1), Value::u128(2), Value::u128(3)]);
 
         let result = decode_named_composite(&composite);
         assert!(result.is_ok());
@@ -424,10 +432,13 @@ mod tests {
     #[test]
     fn test_decode_named_composite_with_variant() {
         // Create a variant value with named fields
-        let variant = Value::named_variant("SomeVariant", [
-            ("field1", Value::u128(100)),
-            ("field2", Value::string("variant_data")),
-        ]);
+        let variant = Value::named_variant(
+            "SomeVariant",
+            [
+                ("field1", Value::u128(100)),
+                ("field2", Value::string("variant_data")),
+            ],
+        );
 
         let result = decode_named_composite(&variant);
         assert!(result.is_ok());
@@ -445,6 +456,9 @@ mod tests {
         let re2 = get_identity_regex();
 
         // Both should point to the same regex instance
-        assert!(std::ptr::eq(re1, re2), "Regex should be cached via OnceLock");
+        assert!(
+            std::ptr::eq(re1, re2),
+            "Regex should be cached via OnceLock"
+        );
     }
 }

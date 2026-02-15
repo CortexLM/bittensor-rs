@@ -435,10 +435,7 @@ fn parse_proxies_storage(value: &Value) -> BittensorResult<Vec<ProxyInfo>> {
 
     // Match up the extracted values into ProxyInfo structs
     // The first account ID in the tuple is usually followed by proxy type and delay
-    let num_proxies = account_ids
-        .len()
-        .min(proxy_types.len())
-        .min(delays.len());
+    let num_proxies = account_ids.len().min(proxy_types.len()).min(delays.len());
 
     for i in 0..num_proxies {
         proxies.push(ProxyInfo {

@@ -1,9 +1,9 @@
 //! Wallet commands for managing coldkeys and hotkeys.
 
 use crate::cli::utils::{
-    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer,
-    print_error, print_info, print_success, print_warning, prompt_password,
-    prompt_password_optional, resolve_endpoint, spinner, tao_to_rao,
+    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer, print_error,
+    print_info, print_success, print_warning, prompt_password, prompt_password_optional,
+    resolve_endpoint, spinner, tao_to_rao,
 };
 use crate::cli::Cli;
 use crate::wallet::{Mnemonic, Wallet};
@@ -360,8 +360,7 @@ async fn list_wallets(path: Option<&str>) -> anyhow::Result<()> {
         crate::wallet::list_wallets_at(Path::new(p))
             .map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?
     } else {
-        get_wallet_names()
-            .map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?
+        get_wallet_names().map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?
     };
 
     if wallet_names.is_empty() {
@@ -408,9 +407,10 @@ async fn overview(name: Option<&str>, _all: bool, cli: &Cli) -> anyhow::Result<(
             }
         }
     } else {
-        let names = get_wallet_names()
-            .map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?;
-        names.iter()
+        let names =
+            get_wallet_names().map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?;
+        names
+            .iter()
             .filter_map(|n| Wallet::new(n, "default", None).ok())
             .collect()
     };
@@ -423,29 +423,26 @@ async fn overview(name: Option<&str>, _all: bool, cli: &Cli) -> anyhow::Result<(
     let mut table = create_table_with_headers(&["Wallet", "Coldkey", "Free Balance", "Staked"]);
 
     for wallet in &wallets {
-        let password = prompt_password_optional(&format!(
-            "Password for '{}' (enter to skip)",
-            &wallet.name
-        ));
+        let password =
+            prompt_password_optional(&format!("Password for '{}' (enter to skip)", &wallet.name));
 
         let coldkey_addr = match wallet.coldkey_ss58(password.as_deref()) {
             Ok(addr) => addr,
             Err(e) => {
-                print_warning(&format!(
-                    "Could not unlock '{}': {}",
-                    &wallet.name,
-                    e
-                ));
+                print_warning(&format!("Could not unlock '{}': {}", &wallet.name, e));
                 continue;
             }
         };
 
-        let sp = spinner(&format!("Fetching balance for {}...", format_address(&coldkey_addr)));
-        
+        let sp = spinner(&format!(
+            "Fetching balance for {}...",
+            format_address(&coldkey_addr)
+        ));
+
         // Parse SS58 to AccountId32
         let account = AccountId32::from_str(&coldkey_addr)
             .map_err(|e| anyhow::anyhow!("Invalid SS58 address: {}", e))?;
-        
+
         let balance_result = get_balance(&client, &account).await;
         let stake_result = get_stake_info_for_coldkey(&client, &account).await;
         sp.finish_and_clear();
@@ -493,9 +490,10 @@ async fn balance(name: Option<&str>, all: bool, cli: &Cli) -> anyhow::Result<()>
             }
         }
     } else if all {
-        let names = get_wallet_names()
-            .map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?;
-        names.iter()
+        let names =
+            get_wallet_names().map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?;
+        names
+            .iter()
             .filter_map(|n| Wallet::new(n, "default", None).ok())
             .collect()
     } else {
@@ -517,10 +515,8 @@ async fn balance(name: Option<&str>, all: bool, cli: &Cli) -> anyhow::Result<()>
         create_table_with_headers(&["Wallet", "Coldkey", "Free Balance", "Staked", "Total"]);
 
     for wallet in &wallets {
-        let password = prompt_password_optional(&format!(
-            "Password for '{}' (enter to skip)",
-            &wallet.name
-        ));
+        let password =
+            prompt_password_optional(&format!("Password for '{}' (enter to skip)", &wallet.name));
 
         let coldkey_addr = match wallet.coldkey_ss58(password.as_deref()) {
             Ok(addr) => addr,
@@ -530,12 +526,15 @@ async fn balance(name: Option<&str>, all: bool, cli: &Cli) -> anyhow::Result<()>
             }
         };
 
-        let sp = spinner(&format!("Fetching balance for {}...", format_address(&coldkey_addr)));
-        
+        let sp = spinner(&format!(
+            "Fetching balance for {}...",
+            format_address(&coldkey_addr)
+        ));
+
         // Parse SS58 to AccountId32
         let account = AccountId32::from_str(&coldkey_addr)
             .map_err(|e| anyhow::anyhow!("Invalid SS58 address: {}", e))?;
-        
+
         let balance_result = get_balance(&client, &account).await;
         let stake_result = get_stake_info_for_coldkey(&client, &account).await;
         sp.finish_and_clear();
@@ -596,10 +595,7 @@ async fn transfer(name: &str, dest: &str, amount: f64, cli: &Cli) -> anyhow::Res
 
     let rao_amount = tao_to_rao(amount);
 
-    print_info(&format!(
-        "Transfer {} TAO ({} RAO)",
-        amount, rao_amount
-    ));
+    print_info(&format!("Transfer {} TAO ({} RAO)", amount, rao_amount));
     print_info(&format!("From: {}", coldkey.ss58_address()));
     print_info(&format!("To: {}", dest));
 
@@ -615,7 +611,15 @@ async fn transfer(name: &str, dest: &str, amount: f64, cli: &Cli) -> anyhow::Res
     sp.finish_and_clear();
 
     let sp = spinner("Submitting transfer...");
-    let result = do_transfer(&client, &signer, &dest_account, rao_amount, true, ExtrinsicWait::Finalized).await;
+    let result = do_transfer(
+        &client,
+        &signer,
+        &dest_account,
+        rao_amount,
+        true,
+        ExtrinsicWait::Finalized,
+    )
+    .await;
     sp.finish_and_clear();
 
     match result {

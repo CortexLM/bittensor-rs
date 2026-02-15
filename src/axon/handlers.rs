@@ -70,19 +70,20 @@ pub fn verify_request(
     axon_hotkey: &str,
 ) -> Result<VerifiedRequest, SynapseUnauthorized> {
     // Extract required headers
-    let dendrite_hotkey = get_header_string(headers, header_names::DENDRITE_HOTKEY)
-        .ok_or_else(|| SynapseUnauthorized {
-            message: "Missing dendrite hotkey header".to_string(),
-            hotkey: None,
-        })?;
-
-    let nonce_str =
-        get_header_string(headers, header_names::DENDRITE_NONCE).ok_or_else(|| {
+    let dendrite_hotkey =
+        get_header_string(headers, header_names::DENDRITE_HOTKEY).ok_or_else(|| {
             SynapseUnauthorized {
-                message: "Missing dendrite nonce header".to_string(),
-                hotkey: Some(dendrite_hotkey.clone()),
+                message: "Missing dendrite hotkey header".to_string(),
+                hotkey: None,
             }
         })?;
+
+    let nonce_str = get_header_string(headers, header_names::DENDRITE_NONCE).ok_or_else(|| {
+        SynapseUnauthorized {
+            message: "Missing dendrite nonce header".to_string(),
+            hotkey: Some(dendrite_hotkey.clone()),
+        }
+    })?;
 
     let nonce: u64 = nonce_str.parse().map_err(|_| SynapseUnauthorized {
         message: format!("Invalid nonce format: {}", nonce_str),
@@ -143,8 +144,8 @@ pub fn verify_signature(
     signature: &str,
 ) -> Result<(), AxonError> {
     // Decode the signature from hex
-    let sig_bytes =
-        hex::decode(signature).map_err(|e| AxonError::new(format!("Invalid signature hex: {}", e)))?;
+    let sig_bytes = hex::decode(signature)
+        .map_err(|e| AxonError::new(format!("Invalid signature hex: {}", e)))?;
 
     if sig_bytes.len() != 64 {
         return Err(AxonError::new(format!(
@@ -162,7 +163,10 @@ pub fn verify_signature(
         .map_err(|e| AxonError::new(format!("Invalid dendrite hotkey: {}", e)))?;
 
     // Create the message to verify
-    let message = format!("{}.{}.{}.{}", nonce, dendrite_hotkey, axon_hotkey, body_hash);
+    let message = format!(
+        "{}.{}.{}.{}",
+        nonce, dendrite_hotkey, axon_hotkey, body_hash
+    );
 
     // Verify the signature
     if sr25519::Pair::verify(&sig, message.as_bytes(), &public) {
@@ -419,10 +423,7 @@ mod tests {
         let synapse = extract_synapse(&headers, body).unwrap();
 
         assert!(synapse.extra.contains_key("key"));
-        assert_eq!(
-            synapse.extra.get("key"),
-            Some(&serde_json::json!("value"))
-        );
+        assert_eq!(synapse.extra.get("key"), Some(&serde_json::json!("value")));
     }
 
     #[test]

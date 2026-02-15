@@ -107,9 +107,7 @@ fn sanitize_name(name: &str) -> Result<&str, WalletError> {
     }
     // Reject empty or whitespace-only names
     if name.trim().is_empty() {
-        return Err(WalletError::InvalidName(
-            "Name cannot be empty".to_string(),
-        ));
+        return Err(WalletError::InvalidName("Name cannot be empty".to_string()));
     }
     // Reject names starting with dots (hidden files)
     if name.starts_with('.') {
@@ -270,7 +268,8 @@ impl Wallet {
         fs::create_dir_all(&self.path)?;
 
         // Save coldkey
-        self.coldkey.set_keypair(keypair.clone(), password, overwrite)?;
+        self.coldkey
+            .set_keypair(keypair.clone(), password, overwrite)?;
 
         // Save public key file
         self.save_coldkey_pub(&keypair)?;
@@ -326,7 +325,9 @@ impl Wallet {
     /// # Arguments
     /// * `password` - Password for decryption (if encrypted)
     pub fn coldkey_keypair(&self, password: Option<&str>) -> Result<Keypair, WalletError> {
-        self.coldkey.get_keypair(password).map_err(WalletError::Keyfile)
+        self.coldkey
+            .get_keypair(password)
+            .map_err(WalletError::Keyfile)
     }
 
     /// Get the hotkey keypair.
@@ -334,7 +335,9 @@ impl Wallet {
     /// # Arguments
     /// * `password` - Password for decryption (if encrypted)
     pub fn hotkey_keypair(&self, password: Option<&str>) -> Result<Keypair, WalletError> {
-        self.hotkey.get_keypair(password).map_err(WalletError::Keyfile)
+        self.hotkey
+            .get_keypair(password)
+            .map_err(WalletError::Keyfile)
     }
 
     /// Get the coldkey SS58 address.
@@ -589,11 +592,11 @@ mod tests {
         // Create a fresh wallet instance pointing to the same files
         // This tests that reading from disk requires password
         let wallet2 = Wallet::new("test_wallet", "default", Some(base_path)).unwrap();
-        
+
         // Should fail without password when reading from disk
         assert!(wallet2.coldkey_keypair(None).is_err());
         assert!(wallet2.hotkey_keypair(None).is_err());
-        
+
         // Should succeed with correct password
         assert!(wallet2.coldkey_keypair(Some(password)).is_ok());
         assert!(wallet2.hotkey_keypair(Some(password)).is_ok());

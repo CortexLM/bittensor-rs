@@ -114,9 +114,8 @@ pub async fn reveal_weights(
     let uid_u16: Vec<u16> = uids
         .iter()
         .map(|uid| {
-            u16::try_from(*uid).map_err(|_| {
-                anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX)
-            })
+            u16::try_from(*uid)
+                .map_err(|_| anyhow::anyhow!("UID {} exceeds u16 max value {}", uid, u16::MAX))
         })
         .collect::<Result<Vec<u16>>>()?;
 

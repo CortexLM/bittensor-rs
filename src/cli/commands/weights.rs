@@ -113,7 +113,9 @@ pub async fn execute(cmd: WeightsCommand, cli: &Cli) -> anyhow::Result<()> {
             uids,
             weights,
         } => set_weights(&wallet, &hotkey, netuid, &uids, &weights, cli).await,
-        WeightsCommands::Info { netuid, hotkey } => weight_info(netuid, hotkey.as_deref(), cli).await,
+        WeightsCommands::Info { netuid, hotkey } => {
+            weight_info(netuid, hotkey.as_deref(), cli).await
+        }
         WeightsCommands::Pending { wallet, hotkey } => pending_commits(&wallet, &hotkey, cli).await,
     }
 }
@@ -197,10 +199,10 @@ async fn commit_weights(
     // Get the hotkey's public key bytes
     use sp_core::Pair;
     let hotkey_pubkey: [u8; 32] = hotkey.pair().public().0;
-    
+
     // Generate random salt
     let salt: Vec<u16> = (0..8).map(|_| rand::random::<u16>()).collect();
-    
+
     let commit_hash_bytes = generate_subtensor_commit_hash(
         &hotkey_pubkey,
         netuid,
@@ -213,7 +215,14 @@ async fn commit_weights(
     let commit_hash = hex::encode(commit_hash_bytes);
 
     let sp = spinner("Submitting weight commit...");
-    let result = raw_commit_weights(&client, &signer, netuid, &commit_hash, ExtrinsicWait::Finalized).await;
+    let result = raw_commit_weights(
+        &client,
+        &signer,
+        netuid,
+        &commit_hash,
+        ExtrinsicWait::Finalized,
+    )
+    .await;
     sp.finish_and_clear();
 
     match result {
@@ -282,7 +291,9 @@ async fn reveal_weights(
     // This information is typically stored locally when commit is performed
     print_warning("Weight reveal requires the original committed data (uids, weights, salt).");
     print_info("Use the high-level Subtensor API for automatic commit/reveal tracking.");
-    print_info("Or use 'btcli weights set' for direct weight setting if commit-reveal is disabled.");
+    print_info(
+        "Or use 'btcli weights set' for direct weight setting if commit-reveal is disabled.",
+    );
 
     Ok(())
 }
@@ -317,10 +328,7 @@ async fn set_weights(
         return Err(anyhow::anyhow!("Invalid weights"));
     }
 
-    let normalized_f32: Vec<f32> = weight_values
-        .iter()
-        .map(|w| (*w / sum) as f32)
-        .collect();
+    let normalized_f32: Vec<f32> = weight_values.iter().map(|w| (*w / sum) as f32).collect();
 
     let wallet = match Wallet::new(wallet_name, hotkey_name, None) {
         Ok(w) => w,
@@ -366,14 +374,15 @@ async fn set_weights(
 
     let sp = spinner("Submitting weights...");
     let result = raw_set_weights(
-        &client, 
-        &signer, 
-        netuid, 
-        &uids_u64, 
-        &normalized_f32, 
+        &client,
+        &signer,
+        netuid,
+        &uids_u64,
+        &normalized_f32,
         Some(0), // version_key
-        ExtrinsicWait::Finalized
-    ).await;
+        ExtrinsicWait::Finalized,
+    )
+    .await;
     sp.finish_and_clear();
 
     match result {
@@ -407,8 +416,14 @@ async fn weight_info(netuid: u16, _hotkey: Option<&str>, cli: &Cli) -> anyhow::R
 
     // Fetch weight-related parameters
     let tempo_val = tempo(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let rate_limit = weights_rate_limit(&client, netuid).await.ok().flatten().unwrap_or(0);
-    let cr_enabled = commit_reveal_enabled(&client, netuid).await.unwrap_or(false);
+    let rate_limit = weights_rate_limit(&client, netuid)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(0);
+    let cr_enabled = commit_reveal_enabled(&client, netuid)
+        .await
+        .unwrap_or(false);
 
     sp.finish_and_clear();
 
@@ -429,11 +444,7 @@ async fn weight_info(netuid: u16, _hotkey: Option<&str>, cli: &Cli) -> anyhow::R
 }
 
 /// Show pending weight commits
-async fn pending_commits(
-    wallet_name: &str,
-    hotkey_name: &str,
-    cli: &Cli,
-) -> anyhow::Result<()> {
+async fn pending_commits(wallet_name: &str, hotkey_name: &str, cli: &Cli) -> anyhow::Result<()> {
     use crate::chain::BittensorClient;
 
     let endpoint = resolve_endpoint(&cli.network, cli.endpoint.as_deref());
@@ -461,7 +472,10 @@ async fn pending_commits(
         .map_err(|e| anyhow::anyhow!("Failed to connect: {}", e))?;
     sp.finish_and_clear();
 
-    println!("\nPending Commits for {}", format_address(hotkey.ss58_address()));
+    println!(
+        "\nPending Commits for {}",
+        format_address(hotkey.ss58_address())
+    );
     println!("═══════════════════════════════════════════════");
 
     // Note: Pending commits are typically stored locally by the application

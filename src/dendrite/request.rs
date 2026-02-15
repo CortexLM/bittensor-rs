@@ -130,7 +130,10 @@ impl DendriteRequest {
             .ok_or_else(|| RequestError::Signing("Missing dendrite hotkey".to_string()))?;
 
         // Create message to sign: "{nonce}.{dendrite_hotkey}.{axon_hotkey}.{body_hash}"
-        let message = format!("{}.{}.{}.{}", nonce, dendrite_hotkey, axon_hotkey, body_hash);
+        let message = format!(
+            "{}.{}.{}.{}",
+            nonce, dendrite_hotkey, axon_hotkey, body_hash
+        );
 
         // Sign the message
         let signature = keypair.sign(message.as_bytes());
@@ -206,10 +209,7 @@ pub fn synapse_to_headers(synapse: &Synapse) -> HeaderMap {
         header_names::DENDRITE_VERSION,
         synapse_headers.dendrite_version
     );
-    add_header!(
-        header_names::DENDRITE_NONCE,
-        synapse_headers.dendrite_nonce
-    );
+    add_header!(header_names::DENDRITE_NONCE, synapse_headers.dendrite_nonce);
     add_header!(header_names::DENDRITE_UUID, synapse_headers.dendrite_uuid);
     add_header!(
         header_names::DENDRITE_HOTKEY,
@@ -227,10 +227,7 @@ pub fn synapse_to_headers(synapse: &Synapse) -> HeaderMap {
     add_header!(header_names::AXON_NONCE, synapse_headers.axon_nonce);
     add_header!(header_names::AXON_UUID, synapse_headers.axon_uuid);
     add_header!(header_names::AXON_HOTKEY, synapse_headers.axon_hotkey);
-    add_header!(
-        header_names::AXON_SIGNATURE,
-        synapse_headers.axon_signature
-    );
+    add_header!(header_names::AXON_SIGNATURE, synapse_headers.axon_signature);
 
     headers
 }
@@ -339,7 +336,10 @@ pub fn create_signature_message(
     axon_hotkey: &str,
     body_hash: &str,
 ) -> String {
-    format!("{}.{}.{}.{}", nonce, dendrite_hotkey, axon_hotkey, body_hash)
+    format!(
+        "{}.{}.{}.{}",
+        nonce, dendrite_hotkey, axon_hotkey, body_hash
+    )
 }
 
 /// Sign a message with the given keypair and return hex-encoded signature

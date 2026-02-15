@@ -315,8 +315,9 @@ impl Keypair {
     /// The restored keypair or an error.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, KeypairError> {
         // Try to restore from raw vec
-        let pair = sr25519::Pair::from_seed_slice(bytes)
-            .map_err(|e| KeypairError::DerivationError(format!("Failed to restore keypair: {:?}", e)))?;
+        let pair = sr25519::Pair::from_seed_slice(bytes).map_err(|e| {
+            KeypairError::DerivationError(format!("Failed to restore keypair: {:?}", e))
+        })?;
         Ok(Self::from_pair(pair))
     }
 }
@@ -336,7 +337,7 @@ mod tests {
     fn test_from_mnemonic() {
         let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         let keypair = Keypair::from_mnemonic(phrase, None).unwrap();
-        
+
         // Should be deterministic
         let keypair2 = Keypair::from_mnemonic(phrase, None).unwrap();
         assert_eq!(keypair.public_key(), keypair2.public_key());
@@ -348,7 +349,7 @@ mod tests {
         let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         let keypair_no_pass = Keypair::from_mnemonic(phrase, None).unwrap();
         let keypair_with_pass = Keypair::from_mnemonic(phrase, Some("password")).unwrap();
-        
+
         // Different passwords should produce different keys
         assert_ne!(keypair_no_pass.public_key(), keypair_with_pass.public_key());
     }
@@ -357,7 +358,7 @@ mod tests {
     fn test_from_seed() {
         let seed = [42u8; 32];
         let keypair = Keypair::from_seed(&seed).unwrap();
-        
+
         // Should be deterministic
         let keypair2 = Keypair::from_seed(&seed).unwrap();
         assert_eq!(keypair.public_key(), keypair2.public_key());
@@ -373,7 +374,7 @@ mod tests {
     fn test_from_uri() {
         let keypair = Keypair::from_uri("//Alice").unwrap();
         assert!(!keypair.ss58_address().is_empty());
-        
+
         // Should be deterministic
         let keypair2 = Keypair::from_uri("//Alice").unwrap();
         assert_eq!(keypair.public_key(), keypair2.public_key());
@@ -383,12 +384,12 @@ mod tests {
     fn test_sign_and_verify() {
         let keypair = Keypair::generate();
         let message = b"Hello, Bittensor!";
-        
+
         let signature = keypair.sign(message);
         assert_eq!(signature.len(), 64);
-        
+
         assert!(keypair.verify(message, &signature));
-        
+
         // Wrong message should fail
         assert!(!keypair.verify(b"Wrong message", &signature));
     }
@@ -398,7 +399,7 @@ mod tests {
         let keypair = Keypair::generate();
         let message = b"Test message";
         let signature = keypair.sign(message);
-        
+
         assert!(Keypair::verify_with_public(
             message,
             &signature,
@@ -410,10 +411,10 @@ mod tests {
     fn test_to_and_from_bytes() {
         let original = Keypair::generate();
         let bytes = original.to_bytes();
-        
+
         let restored = Keypair::from_bytes(&bytes).unwrap();
         assert_eq!(original.public_key(), restored.public_key());
-        
+
         // Verify signing still works
         let message = b"Test";
         let sig = original.sign(message);
@@ -424,10 +425,10 @@ mod tests {
     fn test_invalid_signature_length() {
         let keypair = Keypair::generate();
         let message = b"Test";
-        
+
         // Too short
         assert!(!keypair.verify(message, &[0u8; 32]));
-        
+
         // Too long
         assert!(!keypair.verify(message, &[0u8; 128]));
     }

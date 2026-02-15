@@ -1,4 +1,3 @@
-
 pub mod axon;
 pub mod blocks;
 pub mod chain;
@@ -112,31 +111,61 @@ pub use axon::{
 pub use wallet::{
     default_wallet_path, is_legacy_format, list_wallets, list_wallets_at, migrate_legacy_keyfile,
     wallet_path, Keyfile, KeyfileData, KeyfileError, Keypair, KeypairError, Mnemonic,
-    MnemonicError, Wallet, WalletError as WalletModuleError, BITTENSOR_SS58_FORMAT, KEYFILE_VERSION,
+    MnemonicError, Wallet, WalletError as WalletModuleError, BITTENSOR_SS58_FORMAT,
+    KEYFILE_VERSION,
 };
 
 // Re-export comprehensive error types
 pub use errors::{
-    // Unified error type and result alias
-    BittensorError, BittensorResult,
-    // Chain/Network Errors
-    BlockNotFound, ChainConnectionError, ChainQueryError, ExtrinsicError, MetadataError,
-    TransactionFailed,
-    // Wallet Errors
-    InvalidKeyfile, InvalidMnemonic, KeyExists, KeyfileDecryptionError, KeyfileNotFound,
-    KeyfilePermissionError, WalletError,
     // Registration Errors
-    AlreadyRegistered, NotRegistered, PowFailed, RegistrationFailed,
-    // Stake Errors
-    InsufficientBalance, InsufficientStake, StakeFailed,
-    // Weights Errors
-    InvalidWeights, TooManyWeights, WeightVersionMismatch, WeightsError,
-    // Synapse/Communication Errors
-    SerializationError, SynapseBlacklisted, SynapseError, SynapseTimeout, SynapseUnauthorized,
-    // Dendrite Errors
-    AxonUnreachable, DendriteError, InvalidResponse,
-    // Axon Errors
-    AxonConfigError, AxonError, AxonNotServing,
+    AlreadyRegistered,
     // Senate/Governance Errors
-    AlreadySenateMember, NotSenateMember, ProposalNotFound, VoteFailed,
+    AlreadySenateMember,
+    // Axon Errors
+    AxonConfigError,
+    AxonError,
+    AxonNotServing,
+    // Dendrite Errors
+    AxonUnreachable,
+    // Unified error type and result alias
+    BittensorError,
+    BittensorResult,
+    // Chain/Network Errors
+    BlockNotFound,
+    ChainConnectionError,
+    ChainQueryError,
+    DendriteError,
+    ExtrinsicError,
+    // Stake Errors
+    InsufficientBalance,
+    InsufficientStake,
+    // Wallet Errors
+    InvalidKeyfile,
+    InvalidMnemonic,
+    InvalidResponse,
+    // Weights Errors
+    InvalidWeights,
+    KeyExists,
+    KeyfileDecryptionError,
+    KeyfileNotFound,
+    KeyfilePermissionError,
+    MetadataError,
+    NotRegistered,
+    NotSenateMember,
+    PowFailed,
+    ProposalNotFound,
+    RegistrationFailed,
+    // Synapse/Communication Errors
+    SerializationError,
+    StakeFailed,
+    SynapseBlacklisted,
+    SynapseError,
+    SynapseTimeout,
+    SynapseUnauthorized,
+    TooManyWeights,
+    TransactionFailed,
+    VoteFailed,
+    WalletError,
+    WeightVersionMismatch,
+    WeightsError,
 };

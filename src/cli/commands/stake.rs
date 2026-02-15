@@ -1,9 +1,9 @@
 //! Stake commands for managing TAO delegation.
 
 use crate::cli::utils::{
-    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer,
-    print_error, print_info, print_success, print_warning, prompt_password_optional,
-    resolve_endpoint, spinner, tao_to_rao,
+    confirm, create_table_with_headers, format_address, format_tao, keypair_to_signer, print_error,
+    print_info, print_success, print_warning, prompt_password_optional, resolve_endpoint, spinner,
+    tao_to_rao,
 };
 use crate::cli::Cli;
 use crate::wallet::Wallet;
@@ -340,7 +340,8 @@ async fn show_stake(wallet_name: Option<&str>, all: bool, cli: &Cli) -> anyhow::
         }
     } else if all {
         let names = list_wallets().map_err(|e| anyhow::anyhow!("Failed to list wallets: {}", e))?;
-        names.iter()
+        names
+            .iter()
             .filter_map(|n| Wallet::new(n, "default", None).ok())
             .collect()
     } else {
@@ -359,10 +360,8 @@ async fn show_stake(wallet_name: Option<&str>, all: bool, cli: &Cli) -> anyhow::
     }
 
     for wallet in &wallets {
-        let coldkey_password = prompt_password_optional(&format!(
-            "Password for '{}' (enter to skip)",
-            &wallet.name
-        ));
+        let coldkey_password =
+            prompt_password_optional(&format!("Password for '{}' (enter to skip)", &wallet.name));
 
         let coldkey_addr = match wallet.coldkey_ss58(coldkey_password.as_deref()) {
             Ok(addr) => addr,
@@ -389,15 +388,18 @@ async fn show_stake(wallet_name: Option<&str>, all: bool, cli: &Cli) -> anyhow::
 
         match stake_result {
             Ok(stakes) => {
-                println!("\nWallet: {} ({})", &wallet.name, format_address(&coldkey_addr));
+                println!(
+                    "\nWallet: {} ({})",
+                    &wallet.name,
+                    format_address(&coldkey_addr)
+                );
 
                 if stakes.is_empty() {
                     print_info("No stake found");
                     continue;
                 }
 
-                let mut table =
-                    create_table_with_headers(&["Hotkey", "Subnet", "Stake (TAO)"]);
+                let mut table = create_table_with_headers(&["Hotkey", "Subnet", "Stake (TAO)"]);
 
                 for stake_info in stakes {
                     table.add_row(vec![
@@ -412,8 +414,7 @@ async fn show_stake(wallet_name: Option<&str>, all: bool, cli: &Cli) -> anyhow::
             Err(e) => {
                 print_warning(&format!(
                     "Failed to fetch stake for {}: {}",
-                    &wallet.name,
-                    e
+                    &wallet.name, e
                 ));
             }
         }
@@ -470,14 +471,16 @@ async fn move_stake(
         .map_err(|e| anyhow::anyhow!("Failed to unlock coldkey: {}", e))?;
     let signer = keypair_to_signer(&coldkey);
 
-    let from_hotkey_password = prompt_password_optional("Source hotkey password (enter if unencrypted)");
+    let from_hotkey_password =
+        prompt_password_optional("Source hotkey password (enter if unencrypted)");
     let from_hk = from_wallet
         .hotkey_keypair(from_hotkey_password.as_deref())
         .map_err(|e| anyhow::anyhow!("Failed to unlock source hotkey: {}", e))?;
     let from_hk_account = AccountId32::from_str(from_hk.ss58_address())
         .map_err(|e| anyhow::anyhow!("Invalid source hotkey address: {:?}", e))?;
 
-    let to_hotkey_password = prompt_password_optional("Destination hotkey password (enter if unencrypted)");
+    let to_hotkey_password =
+        prompt_password_optional("Destination hotkey password (enter if unencrypted)");
     let to_hk = to_wallet
         .hotkey_keypair(to_hotkey_password.as_deref())
         .map_err(|e| anyhow::anyhow!("Failed to unlock destination hotkey: {}", e))?;
@@ -486,7 +489,10 @@ async fn move_stake(
 
     let rao_amount = tao_to_rao(amount);
 
-    print_info(&format!("Moving stake: {} TAO ({} RAO)", amount, rao_amount));
+    print_info(&format!(
+        "Moving stake: {} TAO ({} RAO)",
+        amount, rao_amount
+    ));
     print_info(&format!(
         "From: {} (subnet {})",
         from_hk.ss58_address(),

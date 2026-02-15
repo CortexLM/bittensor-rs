@@ -346,8 +346,9 @@ impl Keyfile {
         let mut key = derive_key(password, &data.salt)?;
 
         // Decrypt using XSalsa20Poly1305
-        let cipher = XSalsa20Poly1305::new_from_slice(&key)
-            .map_err(|e| KeyfileError::EncryptionFailed(format!("Failed to create cipher: {}", e)))?;
+        let cipher = XSalsa20Poly1305::new_from_slice(&key).map_err(|e| {
+            KeyfileError::EncryptionFailed(format!("Failed to create cipher: {}", e))
+        })?;
 
         let decrypted = cipher
             .decrypt(data.nonce.as_ref().into(), data.encrypted_key.as_ref())
@@ -408,7 +409,11 @@ impl Keyfile {
     }
 
     /// Parse JSON and decrypt to keypair.
-    fn decrypt_keypair(&self, data: &[u8], password: Option<&str>) -> Result<Keypair, KeyfileError> {
+    fn decrypt_keypair(
+        &self,
+        data: &[u8],
+        password: Option<&str>,
+    ) -> Result<Keypair, KeyfileError> {
         // Try to parse as JSON (encrypted format)
         if let Ok(json) = serde_json::from_slice::<KeyfileJson>(data) {
             return self.decrypt_from_json(&json, password);
@@ -725,7 +730,7 @@ mod tests {
         // Create a fresh Keyfile instance to avoid cached keypair
         // This simulates loading from disk like a real application would
         let keyfile2 = Keyfile::new(&path);
-        
+
         // Should require password when loading from encrypted file
         let result = keyfile2.get_keypair(None);
         if let Err(ref e) = result {

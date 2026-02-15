@@ -66,13 +66,7 @@ pub async fn register_senate(
     let args: Vec<Value> = vec![];
 
     let tx_hash = client
-        .submit_extrinsic(
-            SUBTENSOR_MODULE,
-            "join_senate",
-            args,
-            signer,
-            wait_for,
-        )
+        .submit_extrinsic(SUBTENSOR_MODULE, "join_senate", args, signer, wait_for)
         .await
         .map_err(|e| {
             BittensorError::Extrinsic(ExtrinsicError::with_call(
@@ -94,13 +88,7 @@ pub async fn leave_senate(
     let args: Vec<Value> = vec![];
 
     let tx_hash = client
-        .submit_extrinsic(
-            SUBTENSOR_MODULE,
-            "leave_senate",
-            args,
-            signer,
-            wait_for,
-        )
+        .submit_extrinsic(SUBTENSOR_MODULE, "leave_senate", args, signer, wait_for)
         .await
         .map_err(|e| {
             BittensorError::Extrinsic(ExtrinsicError::with_call(
@@ -118,7 +106,7 @@ pub async fn leave_senate(
 // =============================================================================
 
 /// Vote on a proposal
-/// 
+///
 /// # Arguments
 /// * `client` - The Bittensor client
 /// * `signer` - The signer (must be a senate member)
@@ -141,13 +129,7 @@ pub async fn vote(
     ];
 
     let tx_hash = client
-        .submit_extrinsic(
-            SUBTENSOR_MODULE,
-            "vote",
-            args,
-            signer,
-            wait_for,
-        )
+        .submit_extrinsic(SUBTENSOR_MODULE, "vote", args, signer, wait_for)
         .await
         .map_err(|e| {
             BittensorError::Extrinsic(ExtrinsicError::with_call(
@@ -196,9 +178,7 @@ pub async fn is_senate_member(
 }
 
 /// Get all senate members
-pub async fn get_senate_members(
-    client: &BittensorClient,
-) -> BittensorResult<Vec<AccountId32>> {
+pub async fn get_senate_members(client: &BittensorClient) -> BittensorResult<Vec<AccountId32>> {
     // Query SenateMembers.Members storage
     let members_val = client
         .storage(SENATE_MODULE, "Members", None)
@@ -232,7 +212,7 @@ pub async fn get_proposal(
 ) -> BittensorResult<Option<Proposal>> {
     // Get vote data first
     let vote_data = get_vote_data(client, proposal_hash).await?;
-    
+
     // Query proposal call data from Triumvirate.ProposalOf
     let proposal_of_val = client
         .storage_with_keys(
@@ -265,7 +245,11 @@ pub async fn get_proposal(
     let proposer = match get_triumvirate_prime(client).await {
         Ok(prime) => Some(prime),
         Err(e) => {
-            tracing::warn!("Failed to get triumvirate prime for proposal {:?}: {}", proposal_hash, e);
+            tracing::warn!(
+                "Failed to get triumvirate prime for proposal {:?}: {}",
+                proposal_hash,
+                e
+            );
             None
         }
     };
@@ -283,9 +267,7 @@ pub async fn get_proposal(
 }
 
 /// Get all active proposals
-pub async fn get_proposals(
-    client: &BittensorClient,
-) -> BittensorResult<Vec<Proposal>> {
+pub async fn get_proposals(client: &BittensorClient) -> BittensorResult<Vec<Proposal>> {
     // Query Triumvirate.Proposals to get list of proposal hashes
     let proposals_val = client
         .storage(TRIUMVIRATE_MODULE, "Proposals", None)
@@ -304,7 +286,7 @@ pub async fn get_proposals(
     };
 
     let mut proposals = Vec::with_capacity(proposal_hashes.len());
-    
+
     for hash in proposal_hashes {
         if let Some(proposal) = get_proposal(client, &hash).await? {
             proposals.push(proposal);
@@ -338,7 +320,7 @@ pub async fn get_vote_data(
     match voting_val {
         Some(val) => {
             let s = format!("{:?}", val);
-            
+
             let index = extract_first_u64_after_key(&s, "index")
                 .map(|v| v as u32)
                 .unwrap_or(0);
@@ -362,9 +344,7 @@ pub async fn get_vote_data(
 }
 
 /// Get the number of proposals
-pub async fn get_proposal_count(
-    client: &BittensorClient,
-) -> BittensorResult<u32> {
+pub async fn get_proposal_count(client: &BittensorClient) -> BittensorResult<u32> {
     // Query Triumvirate.ProposalCount storage
     let count_val = client
         .storage(TRIUMVIRATE_MODULE, "ProposalCount", None)
@@ -479,12 +459,12 @@ fn extract_u32_from_value(s: &str) -> Option<u32> {
 fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
     if let Some(kp) = s.find(key) {
         let subs = &s[kp..];
-        
+
         // Find which pattern appears first after the key
         let u64_pos = subs.find("U64(");
         let u32_pos = subs.find("U32(");
         let u128_pos = subs.find("U128(");
-        
+
         // Collect all found patterns with their positions
         let mut candidates: Vec<(usize, &str, usize)> = vec![];
         if let Some(p) = u64_pos {
@@ -496,10 +476,10 @@ fn extract_first_u64_after_key(s: &str, key: &str) -> Option<u64> {
         if let Some(p) = u128_pos {
             candidates.push((p, "U128(", 5));
         }
-        
+
         // Sort by position to find the first one
         candidates.sort_by_key(|c| c.0);
-        
+
         if let Some((pos, _pattern, skip)) = candidates.first() {
             let aft = &subs[pos + skip..];
             if let Some(end) = aft.find(')') {
@@ -589,7 +569,7 @@ fn extract_proposal_hashes(val: &Value) -> Vec<[u8; 32]> {
     let s = format!("{:?}", val);
     let mut hashes = Vec::new();
     let mut rem = s.as_str();
-    
+
     while let Some(pos) = rem.find("0x") {
         let hex_str: String = rem[pos + 2..]
             .chars()
@@ -606,7 +586,7 @@ fn extract_proposal_hashes(val: &Value) -> Vec<[u8; 32]> {
         }
         rem = &rem[pos + 2 + hex_str.len()..];
     }
-    
+
     hashes
 }
 
@@ -656,7 +636,7 @@ mod tests {
     fn test_proposal_creation() {
         let hash = [1u8; 32];
         let proposer = AccountId32::from([2u8; 32]);
-        
+
         let proposal = Proposal {
             hash,
             index: 5,
@@ -667,7 +647,7 @@ mod tests {
             nays: vec![],
             end: 2000,
         };
-        
+
         assert_eq!(proposal.hash, hash);
         assert_eq!(proposal.index, 5);
         assert_eq!(proposal.threshold, 3);
@@ -680,7 +660,7 @@ mod tests {
     #[test]
     fn test_proposal_with_unknown_proposer() {
         let hash = [1u8; 32];
-        
+
         let proposal = Proposal {
             hash,
             index: 5,
@@ -691,7 +671,7 @@ mod tests {
             nays: vec![],
             end: 2000,
         };
-        
+
         assert!(proposal.proposer.is_none());
     }
 
@@ -718,11 +698,11 @@ mod tests {
         let account1 = [0x01u8; 32];
         let hex1 = hex::encode(account1);
         let s = format!("{{ ayes: [0x{}], nays: [] }}", hex1);
-        
+
         let ayes = extract_accounts_array_after_key(&s, "ayes");
         assert_eq!(ayes.len(), 1);
         assert_eq!(ayes[0], AccountId32::from(account1));
-        
+
         let nays = extract_accounts_array_after_key(&s, "nays");
         assert!(nays.is_empty());
     }
@@ -734,15 +714,15 @@ mod tests {
         let hash2 = [0xbbu8; 32];
         let hex1 = hex::encode(hash1);
         let hex2 = hex::encode(hash2);
-        
+
         // Create a mock Value debug representation
         let mock_val_str = format!("Composite(Unnamed([0x{}, 0x{}]))", hex1, hex2);
         let _mock_val = Value::from_bytes(hash1.as_slice()); // Just need a Value for testing
-        
+
         // Test the extraction logic directly on the string
         let mut hashes = Vec::new();
         let mut rem = mock_val_str.as_str();
-        
+
         while let Some(pos) = rem.find("0x") {
             let hex_str: String = rem[pos + 2..]
                 .chars()
@@ -759,7 +739,7 @@ mod tests {
             }
             rem = &rem[pos + 2 + hex_str.len()..];
         }
-        
+
         assert_eq!(hashes.len(), 2);
         assert_eq!(hashes[0], hash1);
         assert_eq!(hashes[1], hash2);
@@ -771,10 +751,10 @@ mod tests {
         // how actual chain data looks when formatted with Debug
         let call_data = vec![0x01u8, 0x02, 0x03, 0x04];
         let hex_data = hex::encode(&call_data);
-        
+
         // Simulate how the debug output looks with 0x prefix
         let mock_debug_str = format!("Composite(Unnamed([0x{}]))", hex_data);
-        
+
         // Test the extraction logic directly on the string
         let extracted = {
             let s = &mock_debug_str;
@@ -792,7 +772,7 @@ mod tests {
                 vec![]
             }
         };
-        
+
         // The extracted data should match our original data
         assert!(!extracted.is_empty());
         assert_eq!(extracted, call_data);
@@ -803,7 +783,7 @@ mod tests {
         let voter1 = AccountId32::from([1u8; 32]);
         let voter2 = AccountId32::from([2u8; 32]);
         let voter3 = AccountId32::from([3u8; 32]);
-        
+
         let vote_data = VoteData {
             index: 1,
             threshold: 2,
@@ -811,7 +791,7 @@ mod tests {
             nays: vec![voter3.clone()],
             end: 5000,
         };
-        
+
         assert_eq!(vote_data.ayes.len(), 2);
         assert_eq!(vote_data.nays.len(), 1);
         assert!(vote_data.ayes.contains(&voter1));
@@ -823,7 +803,7 @@ mod tests {
     fn test_proposal_with_empty_call_data() {
         let hash = [0u8; 32];
         let proposer = AccountId32::from([1u8; 32]);
-        
+
         let proposal = Proposal {
             hash,
             index: 0,
@@ -834,7 +814,7 @@ mod tests {
             nays: vec![],
             end: 0,
         };
-        
+
         assert!(proposal.call_data.is_empty());
         assert_eq!(proposal.index, 0);
     }
@@ -848,23 +828,31 @@ mod tests {
         let hex1 = hex::encode(account1);
         let hex2 = hex::encode(account2);
         let hex3 = hex::encode(account3);
-        
+
         // Simulate debug output with two arrays: ayes and nays
-        let s = format!(
-            "{{ ayes: [0x{}, 0x{}], nays: [0x{}] }}",
-            hex1, hex2, hex3
-        );
-        
+        let s = format!("{{ ayes: [0x{}, 0x{}], nays: [0x{}] }}", hex1, hex2, hex3);
+
         let ayes = extract_accounts_array_after_key(&s, "ayes");
-        assert_eq!(ayes.len(), 2, "Should extract exactly 2 accounts from ayes array");
+        assert_eq!(
+            ayes.len(),
+            2,
+            "Should extract exactly 2 accounts from ayes array"
+        );
         assert_eq!(ayes[0], AccountId32::from(account1));
         assert_eq!(ayes[1], AccountId32::from(account2));
-        
+
         // Verify ayes doesn't contain the nays account
-        assert!(!ayes.contains(&AccountId32::from(account3)), "ayes should not contain nays account");
-        
+        assert!(
+            !ayes.contains(&AccountId32::from(account3)),
+            "ayes should not contain nays account"
+        );
+
         let nays = extract_accounts_array_after_key(&s, "nays");
-        assert_eq!(nays.len(), 1, "Should extract exactly 1 account from nays array");
+        assert_eq!(
+            nays.len(),
+            1,
+            "Should extract exactly 1 account from nays array"
+        );
         assert_eq!(nays[0], AccountId32::from(account3));
     }
 
@@ -873,17 +861,18 @@ mod tests {
         // Test with nested structures to ensure bracket tracking works
         let account1 = [0xaau8; 32];
         let hex1 = hex::encode(account1);
-        
+
         // Simulate complex nested structure
-        let s = format!(
-            "{{ data: [Composite([0x{}])], other: [] }}",
-            hex1
-        );
-        
+        let s = format!("{{ data: [Composite([0x{}])], other: [] }}", hex1);
+
         let accounts = extract_accounts_array_after_key(&s, "data");
-        assert_eq!(accounts.len(), 1, "Should extract account from nested structure");
+        assert_eq!(
+            accounts.len(),
+            1,
+            "Should extract account from nested structure"
+        );
         assert_eq!(accounts[0], AccountId32::from(account1));
-        
+
         let other = extract_accounts_array_after_key(&s, "other");
         assert!(other.is_empty(), "other array should be empty");
     }
@@ -893,24 +882,24 @@ mod tests {
         // Test U64 format
         let s1 = "{ value: U64(12345) }";
         assert_eq!(extract_first_u64_after_key(s1, "value"), Some(12345));
-        
+
         // Test U32 format
         let s2 = "{ count: U32(42) }";
         assert_eq!(extract_first_u64_after_key(s2, "count"), Some(42));
-        
+
         // Test U128 format
         let s3 = "{ big: U128(999999999999) }";
         assert_eq!(extract_first_u64_after_key(s3, "big"), Some(999999999999));
-        
+
         // Test mixed - should pick the first one after the key
         let s4 = "{ first: U32(10), second: U64(20) }";
         assert_eq!(extract_first_u64_after_key(s4, "first"), Some(10));
         assert_eq!(extract_first_u64_after_key(s4, "second"), Some(20));
-        
+
         // Test when key is not found
         let s5 = "{ something: U64(100) }";
         assert_eq!(extract_first_u64_after_key(s5, "missing"), None);
-        
+
         // Test with whitespace
         let s6 = "{ spaced: U64( 555 ) }";
         assert_eq!(extract_first_u64_after_key(s6, "spaced"), Some(555));
@@ -919,10 +908,10 @@ mod tests {
     #[test]
     fn test_extract_accounts_empty_array() {
         let s = "{ ayes: [], nays: [] }";
-        
+
         let ayes = extract_accounts_array_after_key(s, "ayes");
         assert!(ayes.is_empty());
-        
+
         let nays = extract_accounts_array_after_key(s, "nays");
         assert!(nays.is_empty());
     }
@@ -931,7 +920,7 @@ mod tests {
     fn test_extract_accounts_no_array() {
         // Test when key exists but no array follows
         let s = "{ ayes: 123 }";
-        
+
         let accounts = extract_accounts_array_after_key(s, "ayes");
         assert!(accounts.is_empty());
     }

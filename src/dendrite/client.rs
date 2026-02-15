@@ -4,7 +4,9 @@
 //! It handles request signing, connection pooling, timeouts, and response parsing.
 
 use crate::dendrite::request::{DendriteRequest, RequestError};
-use crate::dendrite::response::{build_error_synapse, status_codes, DendriteResponse, ResponseError};
+use crate::dendrite::response::{
+    build_error_synapse, status_codes, DendriteResponse, ResponseError,
+};
 use crate::dendrite::streaming::{StreamError, StreamingResponse, StreamingSynapse};
 use crate::types::{AxonInfo, Synapse, TerminalInfo};
 use crate::utils::ss58::AccountId32ToSS58;
@@ -466,11 +468,7 @@ impl Dendrite {
         }
 
         // Build the HTTP request
-        let http_request = self
-            .client
-            .post(&url)
-            .headers(headers)
-            .timeout(timeout);
+        let http_request = self.client.post(&url).headers(headers).timeout(timeout);
 
         // Execute the request and get the response stream
         let response = http_request.send().await?;
@@ -571,9 +569,7 @@ mod tests {
 
     #[test]
     fn test_dendrite_with_ip_and_port() {
-        let dendrite = Dendrite::new(None)
-            .with_ip("192.168.1.1")
-            .with_port(8080);
+        let dendrite = Dendrite::new(None).with_ip("192.168.1.1").with_port(8080);
 
         assert_eq!(dendrite.ip, Some("192.168.1.1".to_string()));
         assert_eq!(dendrite.port, Some(8080));
