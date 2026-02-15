@@ -512,27 +512,50 @@ fn extract_accounts_array_after_key(s: &str, key: &str) -> Vec<AccountId32> {
         Some(pos) => pos,
         None => return Vec::new(),
     };
-    let after_bracket = &after_key[start + 1..];
-    let end = match after_bracket.find(']') {
+    let after_bracket = &after_key[start..];
+    let mut depth: i32 = 0;
+    let mut end: Option<usize> = None;
+
+    for (idx, ch) in after_bracket.char_indices() {
+        match ch {
+            '[' => depth += 1,
+            ']' => {
+                depth -= 1;
+                if depth == 0 {
+                    end = Some(idx);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let end = match end {
         Some(pos) => pos,
         None => return Vec::new(),
     };
-    let content = &after_bracket[..end];
+    let content = &after_bracket[1..end];
 
-    content
-        .split(',')
-        .filter_map(|entry| {
-            let trimmed = entry.trim();
-            let hex_str = trimmed.strip_prefix("0x").unwrap_or(trimmed);
-            let decoded = hex::decode(hex_str).ok()?;
-            if decoded.len() != 32 {
-                return None;
+    let mut accounts = Vec::new();
+    let mut rem = content;
+    while let Some(pos) = rem.find("0x") {
+        let hex_str: String = rem[pos + 2..]
+            .chars()
+            .take_while(|c| c.is_ascii_hexdigit())
+            .collect();
+        if hex_str.len() >= 64 {
+            if let Ok(bytes) = hex::decode(&hex_str[..64]) {
+                if bytes.len() == 32 {
+                    let mut arr = [0u8; 32];
+                    arr.copy_from_slice(&bytes);
+                    accounts.push(AccountId32::from(arr));
+                }
             }
-            let mut bytes = [0u8; 32];
-            bytes.copy_from_slice(&decoded);
-            Some(AccountId32::from(bytes))
-        })
-        .collect()
+        }
+        rem = &rem[pos + 2 + hex_str.len()..];
+    }
+
+    accounts
 }
 fn extract_call_data(val: &Value) -> Vec<u8> {
     decode_bytes(val).unwrap_or_default()
