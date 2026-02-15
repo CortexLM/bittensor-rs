@@ -34,6 +34,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-appender = "0.2"
 chrono = { version = "0.4", features = ["serde"] }
 
+# Connection management dependencies
+backoff = { version = "0.4.0", features = ["tokio"] }
+governor = "0.10.4"
+tokio-retry = "0.3.0"
+
 # CRv4 / Timelock encryption dependencies (same as subtensor)
 tle = { git = "https://github.com/ideal-lab5/timelock", rev = "5416406cfd32799e31e1795393d4916894de4468", default-features = false, features = ["std"] }
 w3f-bls = { git = "https://github.com/opentensor/bls", branch = "fix-no-std", default-features = false, features = ["std"] }
