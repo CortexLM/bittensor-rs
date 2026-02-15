@@ -364,6 +364,7 @@ mod tests {
 
     fn create_test_axon() -> AxonInfo {
         AxonInfo {
+            hotkey: Some("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string()),
             block: 1000,
             version: 100,
             ip: IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),

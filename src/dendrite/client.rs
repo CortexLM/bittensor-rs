@@ -236,8 +236,8 @@ impl Dendrite {
         let mut request = DendriteRequest::new(axon, &synapse, &dendrite_info, timeout)?;
 
         // Sign the request if we have a keypair
-        // For signing, we need the axon's hotkey - we'll use the IP:port as identifier for unsigned
-        let axon_hotkey = axon.ip_str();
+        // For signing, prefer the axon's hotkey if known, otherwise fall back to IP:port
+        let axon_hotkey = axon.hotkey.clone().unwrap_or_else(|| axon.ip_str());
         if let Some(ref keypair) = self.keypair {
             request.sign(keypair, &axon_hotkey)?;
         }
@@ -271,7 +271,6 @@ impl Dendrite {
             computed_body_hash: request.headers.computed_body_hash.clone(),
             ..Default::default()
         });
-
         // Build the HTTP request
         let http_request = self
             .client
@@ -513,6 +512,7 @@ mod tests {
 
     fn create_test_axon() -> AxonInfo {
         AxonInfo {
+            hotkey: Some("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string()),
             block: 1000,
             version: 100,
             ip: IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
@@ -526,6 +526,7 @@ mod tests {
 
     fn create_non_serving_axon() -> AxonInfo {
         AxonInfo {
+            hotkey: None,
             block: 1000,
             version: 100,
             ip: IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)),
