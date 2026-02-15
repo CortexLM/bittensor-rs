@@ -319,7 +319,7 @@ fn test_rao_newtype_conversions() {
     assert_eq!(tao, 1.23456789);
 
     let formatted = rao.to_string();
-    assert_eq!(formatted, "1.234567890");
+    assert_eq!(formatted, "1234567890 ρ");
 
     let parsed = parse_tao_string("1.234567890").unwrap();
     assert_eq!(parsed, rao);
@@ -332,7 +332,7 @@ fn test_tao_newtype_conversions() {
     assert_eq!(rao.as_u128(), 1_234_567_890);
 
     let formatted = tao.to_string();
-    assert_eq!(formatted, "1.234567890");
+    assert_eq!(formatted, "1.234567890 τ");
 
     let parsed = Tao::from_rao(1_234_567_890);
     assert_eq!(parsed, tao);
