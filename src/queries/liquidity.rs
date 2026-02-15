@@ -1,5 +1,5 @@
 use crate::chain::BittensorClient;
-use crate::core::constants::{MAX_TICK, MIN_TICK, TICK_STEP};
+use crate::core::constants::{MAX_TICK, MIN_TICK, RAOPERTAO, TICK_STEP};
 use crate::types::LiquidityPosition;
 use crate::utils::decoders::{
     decode_fixed_u64f64, decode_i32, decode_named_composite, decode_u128, decode_u64, decode_vec,
@@ -170,8 +170,8 @@ pub async fn get_liquidity_list(
                 alpha_above,
             );
 
-            let price_low = tick_to_price(tick_low) * 1e9f64;
-            let price_high = tick_to_price(tick_high) * 1e9f64;
+            let price_low = tick_to_price(tick_low) * RAOPERTAO as f64;
+            let price_high = tick_to_price(tick_high) * RAOPERTAO as f64;
 
             out.push(LiquidityPosition {
                 id: id.unwrap_or(0),
@@ -203,7 +203,7 @@ pub async fn get_current_subnet_price_rao(client: &BittensorClient, netuid: u16)
     Ok(if price <= 0.0 {
         0
     } else {
-        (price * 1e9f64) as u128
+        (price * RAOPERTAO as f64) as u128
     })
 }
 

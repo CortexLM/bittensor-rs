@@ -1,4 +1,5 @@
 use crate::chain::BittensorClient;
+use crate::core::constants::RAOPERTAO;
 use crate::types::SubnetInfo;
 use crate::utils::decoders::{
     decode_account_id32, decode_bool, decode_u128, decode_u16, decode_u64,
@@ -160,7 +161,7 @@ pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option
             }
         }
     }
-    let emission = emission_rao as f64 / 1e9;
+    let emission = emission_rao as f64 / RAOPERTAO as f64;
 
     // total_stake: sum TotalHotkeyAlpha[(hotkey, netuid)] for each neuron hotkey
     let mut total_stake: u128 = 0;
@@ -459,7 +460,7 @@ pub async fn subnet_burn_cost(client: &BittensorClient, _netuid: u16) -> Result<
 /// Get subnet Alpha price in RAO via runtime API (SN0 fixed to 1 TAO)
 pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<u128> {
     if netuid == 0 {
-        return Ok(1_000_000_000u128);
+        return Ok(RAOPERTAO);
     }
     if let Some(val) = client
         .runtime_api(

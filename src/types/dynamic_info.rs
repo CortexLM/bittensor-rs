@@ -1,6 +1,7 @@
 //! DynamicInfo type - comprehensive subnet information
 //! Matches Python's bittensor.core.chain_data.DynamicInfo
 
+use crate::core::constants::RAOPERTAO;
 use serde::{Deserialize, Serialize};
 
 /// Dynamic information about a subnet
@@ -68,17 +69,17 @@ impl DynamicInfo {
 
     /// Get alpha price as f64 (in TAO)
     pub fn alpha_price_tao(&self) -> f64 {
-        self.price as f64 / 1e9
+        self.price as f64 / RAOPERTAO as f64
     }
 
     /// Get emission as TAO per block
     pub fn emission_tao(&self) -> f64 {
-        self.emission_value as f64 / 1e9
+        self.emission_value as f64 / RAOPERTAO as f64
     }
 
     /// Get burn cost as TAO
     pub fn burn_tao(&self) -> f64 {
-        self.burn as f64 / 1e9
+        self.burn as f64 / RAOPERTAO as f64
     }
 
     /// Calculate total alpha supply
