@@ -250,3 +250,7 @@ match neurons::get_neuron(&client, netuid, uid).await {
 - [Subnet Queries](subnets.md) - Query subnet configuration
 - [Staking Queries](staking.md) - Detailed stake information
 - [Type Definitions](../types.md) - Complete structure definitions
+- [Metagraph Queries](metagraph.md) - Subnet snapshot data
+- [Subnet Queries](subnets.md) - Query subnet configuration
+- [Staking Queries](staking.md) - Detailed stake information
+- [Type Definitions](../types.md) - Complete structure definitions

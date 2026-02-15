@@ -35,15 +35,15 @@ This checklist captures parity gaps between the Rust SDK and the upstream Python
 
 ## Missing/Incomplete APIs (vs Python SDK)
 - ❌ Wallet parity: Python SDK includes wallet utils for coldkey/hotkey management, mnemonic generation, and keystore behaviors. Validate Rust wallet feature coverage and document gaps.
-- ❌ Delegate and governance operations: verify exposure of senate/voting, proposal management, and delegate APIs aligned with Python SDK.
-- ❌ Metagraph and runtime API queries: Python SDK exposes runtime API endpoints (metagraph, neuron info) with caching; document any missing or partial support.
-- ❌ Dendrite/Axon integration parity: Python SDK includes network stack details (priority, timeout, endpoints). Verify Rust equivalents and document missing features.
+- ⚠️ Delegate and governance operations: senate voting and proposal calls now exposed. Validate runtime call metadata and update CLI coverage.
+- ⚠️ Metagraph and runtime API queries: metagraph snapshots and runtime helpers implemented. Add cache strategies and parity validation against Python SDK.
+- ✅ Dendrite/Axon integration parity: Dendrite/Axon includes header parity, timeout handling, priority/blacklist middleware, and streaming support.
 - ❌ Wallet compatibility specifics are not tracked (derivation path, keystore JSON schema, encryption defaults, SS58 format). Acceptance: document current Rust behavior vs Python SDK for mnemonic length, derivation paths, and keystore compatibility.
 ## Missing/Incomplete APIs (vs Python SDK)
 - ❌ Wallet parity: Python SDK includes wallet utils for coldkey/hotkey management, mnemonic generation, and keystore behaviors. Validate Rust wallet feature coverage and document gaps.
-- ❌ Delegate and governance operations: verify exposure of senate/voting, proposal management, and delegate APIs aligned with Python SDK.
-- ❌ Metagraph and runtime API queries: Python SDK exposes runtime API endpoints (metagraph, neuron info) with caching; document any missing or partial support.
-- ❌ Dendrite/Axon integration parity: Python SDK includes network stack details (priority, timeout, endpoints). Verify Rust equivalents and document missing features.
+- ⚠️ Delegate and governance operations: senate voting and proposal calls now exposed. Validate runtime call metadata and update CLI coverage.
+- ⚠️ Metagraph and runtime API queries: metagraph snapshots and runtime helpers implemented. Add cache strategies and parity validation against Python SDK.
+- ✅ Dendrite/Axon integration parity: Dendrite/Axon includes header parity, timeout handling, priority/blacklist middleware, and streaming support.
 
 ## Validation & Runtime Expectations
 - ⚠️ Ensure docs reference finney default entrypoint and chain runtime expectations (Subtensor). Confirm all storage indices and extrinsics align with latest runtime metadata.

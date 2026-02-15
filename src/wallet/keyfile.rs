@@ -256,11 +256,12 @@ impl Keyfile {
                     self.path
                 );
                 // Store as JSON format matching Python SDK
+                let secret_seed = keypair.secret_seed().ok();
                 let json_data = KeyfileJsonData {
                     ss58_address: keypair.ss58_address().to_string(),
                     public_key: format!("0x{}", hex::encode(keypair.public_key())),
                     private_key: format!("0x{}", hex::encode(&raw_key)),
-                    secret_seed: None,
+                    secret_seed: secret_seed.map(|seed| format!("0x{}", hex::encode(seed))),
                     secret_phrase: None,
                     account_id: Some(format!("0x{}", hex::encode(keypair.public_key()))),
                 };

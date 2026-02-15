@@ -9,6 +9,7 @@ pub mod identity;
 pub mod liquidity;
 pub mod metagraph_queries;
 pub mod neurons;
+pub mod runtime;
 pub mod stakes;
 pub mod subnets;
 pub mod voting;
@@ -42,8 +43,9 @@ pub use hyperparameters::{
     get_liquid_alpha_enabled, get_max_burn, get_max_difficulty, get_max_regs_per_block,
     get_max_validators, get_max_weights_limit, get_min_allowed_weights, get_min_burn,
     get_min_difficulty, get_registration_allowed, get_rho, get_serving_rate_limit,
-    get_subnet_hyperparameters, get_target_regs_per_interval, get_tempo, get_weights_rate_limit,
-    get_weights_version_key, SubnetHyperparameters,
+    get_subnet_hyperparameters, get_target_regs_per_interval, get_tempo as get_subnet_tempo,
+    get_weights_rate_limit, get_weights_version_key as get_subnet_weights_version_key,
+    SubnetHyperparameters,
 };
 
 // Re-export commitment types and functions
@@ -54,3 +56,6 @@ pub use commitments::{
 
 // Re-export associated IPs
 pub use associated_ips::{get_associated_ip_count, get_associated_ips, has_associated_ips, IpInfo};
+
+// Re-export runtime queries
+pub use runtime::{get_hotkey_owner, get_tempo, get_weights_version_key};

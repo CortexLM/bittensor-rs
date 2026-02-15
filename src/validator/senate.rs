@@ -78,6 +78,71 @@ pub async fn register_senate(
                 "join_senate",
             ))
         })?;
+    Ok(tx_hash)
+}
+
+/// Propose a new governance call via the triumvirate
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `signer` - The signer (must be a senate member)
+/// * `call_data` - Encoded call data for the proposal
+/// * `wait_for` - How long to wait for the transaction
+pub async fn propose(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    call_data: Vec<u8>,
+    wait_for: ExtrinsicWait,
+) -> BittensorResult<String> {
+    let args = vec![Value::from_bytes(call_data)];
+
+    let tx_hash = client
+        .submit_extrinsic(TRIUMVIRATE_MODULE, "propose", args, signer, wait_for)
+        .await
+        .map_err(|e| {
+            BittensorError::Extrinsic(ExtrinsicError::with_call(
+                format!("Failed to submit proposal: {}", e),
+                TRIUMVIRATE_MODULE,
+                "propose",
+            ))
+        })?;
+
+    Ok(tx_hash)
+}
+
+/// Close a governance proposal
+///
+/// # Arguments
+/// * `client` - The Bittensor client
+/// * `signer` - The signer (must be a senate member)
+/// * `proposal_hash` - The 32-byte hash of the proposal
+/// * `proposal_index` - The index of the proposal
+/// * `weight_bound` - Weight bound for the proposal
+/// * `wait_for` - How long to wait for the transaction
+pub async fn close_proposal(
+    client: &BittensorClient,
+    signer: &BittensorSigner,
+    proposal_hash: &[u8; 32],
+    proposal_index: u32,
+    weight_bound: u64,
+    wait_for: ExtrinsicWait,
+) -> BittensorResult<String> {
+    let args = vec![
+        Value::from_bytes(proposal_hash),
+        Value::u128(proposal_index as u128),
+        Value::u128(weight_bound as u128),
+    ];
+
+    let tx_hash = client
+        .submit_extrinsic(TRIUMVIRATE_MODULE, "close", args, signer, wait_for)
+        .await
+        .map_err(|e| {
+            BittensorError::Extrinsic(ExtrinsicError::with_call(
+                format!("Failed to close proposal: {}", e),
+                TRIUMVIRATE_MODULE,
+                "close",
+            ))
+        })?;
 
     Ok(tx_hash)
 }

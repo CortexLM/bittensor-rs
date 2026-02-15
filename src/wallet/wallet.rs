@@ -254,15 +254,15 @@ impl Wallet {
         mnemonic: Option<&str>,
         overwrite: bool,
     ) -> Result<String, WalletError> {
-        let mnemonic_obj = match mnemonic {
-            Some(phrase) => Mnemonic::from_phrase(phrase)?,
-            None => Mnemonic::generate(),
+        let (mnemonic_obj, provided_phrase) = match mnemonic {
+            Some(phrase) => (Mnemonic::from_phrase(phrase)?, Some(phrase.to_string())),
+            None => (Mnemonic::generate(), None),
         };
 
         let keypair = Keypair::from_mnemonic_obj(&mnemonic_obj, password)?;
 
         // Store the mnemonic phrase before potentially moving it
-        let phrase = mnemonic_obj.phrase().to_string();
+        let phrase = provided_phrase.unwrap_or_else(|| mnemonic_obj.phrase().to_string());
 
         // Ensure wallet directory exists
         fs::create_dir_all(&self.path)?;
@@ -292,13 +292,13 @@ impl Wallet {
         mnemonic: Option<&str>,
         overwrite: bool,
     ) -> Result<String, WalletError> {
-        let mnemonic_obj = match mnemonic {
-            Some(phrase) => Mnemonic::from_phrase(phrase)?,
-            None => Mnemonic::generate(),
+        let (mnemonic_obj, provided_phrase) = match mnemonic {
+            Some(phrase) => (Mnemonic::from_phrase(phrase)?, Some(phrase.to_string())),
+            None => (Mnemonic::generate(), None),
         };
 
         let keypair = Keypair::from_mnemonic_obj(&mnemonic_obj, password)?;
-        let phrase = mnemonic_obj.phrase().to_string();
+        let phrase = provided_phrase.unwrap_or_else(|| mnemonic_obj.phrase().to_string());
 
         // Ensure hotkeys directory exists
         let hotkeys_dir = self.path.join(HOTKEYS_DIR);

@@ -47,6 +47,10 @@ The `queries` module provides organized functions for querying network state:
 - **voting.rs** - Governance and voting queries
 - **liquidity.rs** - Liquidity pool queries
 - **commitments.rs** - Commit-reveal and timelock commitments
+- **metagraph_queries.rs** - Subnet metagraph snapshots
+- **runtime.rs** - Runtime storage helpers
+- **liquidity.rs** - Liquidity pool queries
+- **commitments.rs** - Commit-reveal and timelock commitments
 
 All query functions are optimized for performance using bulk operations and concurrent fetching where possible.
 
@@ -90,6 +94,8 @@ The `validator` module provides operations for validators:
 - **mechanism.rs** - Mechanism-specific weight operations
 - **root.rs** - Root subnet operations
 - **children.rs** - Child subnet operations
+- **liquidity.rs** - Liquidity pool operations
+- **senate.rs** - Governance (Triumvirate) operations
 - **liquidity.rs** - Liquidity pool operations
 
 #### subtensor
