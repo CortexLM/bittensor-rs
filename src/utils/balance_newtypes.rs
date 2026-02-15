@@ -376,6 +376,10 @@ pub fn parse_tao_string(s: &str) -> Option<Rao> {
         let whole_str = &cleaned[..dot_pos];
         let frac_str = &cleaned[dot_pos + 1..];
 
+        if whole_str.is_empty() || frac_str.is_empty() || frac_str.len() > 9 {
+            return None;
+        }
+
         let whole: u128 = whole_str.parse().ok()?;
         let frac_padded = format!("{:0<9}", frac_str);
         let frac_str_9 = &frac_padded[..9.min(frac_padded.len())];
@@ -673,7 +677,15 @@ pub fn is_valid_tao_amount(tao: f64) -> bool {
         return false;
     }
     // Check for overflow: max u128 / RAOPERTAO ≈ 3.4e29 TAO
-    tao < (u128::MAX as f64 / RAOPERTAO as f64)
+    let max_tao = u128::MAX as f64 / RAOPERTAO as f64;
+    if tao >= max_tao {
+        return false;
+    }
+    let scaled = tao * RAOPERTAO as f64;
+    let rounded = scaled.round();
+    let diff = (scaled - rounded).abs();
+    let tolerance = f64::EPSILON * scaled.abs().max(1.0) * 4.0;
+    diff <= tolerance
 }
 
 /// Validate that a RAO amount is valid (non-negative, fits in u128)
