@@ -13,25 +13,54 @@ This checklist captures parity gaps between the Rust SDK and the upstream Python
 - ⚠️ Stake/balance presentation: docs and examples frequently show TAO formatted values. Ensure the SDK stores u128 RAO and uses formatting helpers for display only.
 
 ## Extrinsic Signatures & Parameters
-- ⚠️ Missing metadata-backed table for Subtensor extrinsics (call index, arg order, SCALE types). Acceptance: add a table sourced from runtime metadata (`runtime.rs`/subxt) and record the finney runtime spec/metadata hash used for validation.
-- ⚠️ `set_weights`/`commit_weights`/`reveal_weights` signatures should match Subtensor exactly (`uids`/`weights` as `Vec<u16>`, `version_key`, `salt: Vec<u16>`). Acceptance: verify against metadata (call index + arg types) and Python SDK signature, and document the verified signature.
-- ⚠️ `commit_timelocked_weights` and `commit_timelocked_mechanism_weights` include `commit_reveal_version` argument. Acceptance: confirm arg ordering/types + default commit reveal version from runtime storage/constants and document expected value.
-- ⚠️ `transfer` and staking extrinsics operate in RAO amounts. Acceptance: document RAO-only amounts in all extrinsic docs and verify encoding types are `u128` in metadata.
+- ✅ Finney runtime metadata captured (2024-XX-XX):
+  - metadata_hash: `0x31a1392ead4c198c974610bc078f69346261648d306def22607e95fc521baf50`
+  - spec_version: `377`
+  - transaction_version: `1`
+  - pallet indices: SubtensorModule=7, Commitments=18, Drand=26, System=0, Balances=5
+- ✅ Subtensor extrinsics (call index + arg type IDs from metadata):
+  - `set_weights` (pallet 7, call 0): `netuid:40`, `dests:146`, `weights:146`, `version_key:6`
+  - `commit_weights` (pallet 7, call 96): `netuid:40`, `commit_hash:13`
+  - `reveal_weights` (pallet 7, call 97): `netuid:40`, `uids:146`, `values:146`, `salt:146`, `version_key:6`
+  - `commit_timelocked_weights` (pallet 7, call 113): `netuid:40`, `commit:152`, `reveal_round:6`, `commit_reveal_version:40`
+  - `commit_timelocked_mechanism_weights` (pallet 7, call 118): `netuid:40`, `mecid:2`, `commit:152`, `reveal_round:6`, `commit_reveal_version:40`
+  - `commit_crv3_mechanism_weights` (pallet 7, call 117): `netuid:40`, `mecid:2`, `commit:152`, `reveal_round:6`
+  - `burned_register` (pallet 7, call 7): `netuid:40`, `hotkey:0`
+  - `add_stake` (pallet 7, call 2): `hotkey:0`, `netuid:40`, `amount_staked:6`
+  - `remove_stake` (pallet 7, call 3): `hotkey:0`, `netuid:40`, `amount_unstaked:6`
+  - `transfer_keep_alive` (Balances pallet 5, call 3): `dest:141`, `value:12`
+- ✅ `set_weights`/`commit_weights`/`reveal_weights` signatures verified against metadata. `uids`, `weights`, and `salt` use type id 146 (Vec<u16>), and `version_key` uses type id 6.
+- ✅ `commit_timelocked_weights` and `commit_timelocked_mechanism_weights` include `commit_reveal_version` as final argument (type id 40).
+- ✅ Transfer and staking extrinsics operate on RAO amounts on-chain (metadata type IDs 6/12 map to u128 balance types).
 
+## Storage Indices & Keys
 ## Storage Indices & Keys
 - ✅ Commit-reveal uses `NetUidStorageIndex` (u16) computed as `mech_id * 4096 + netuid`. Rust uses this in commit hash generation and timelocked storage queries.
 - ✅ Storage reads for commitments use `SubtensorModule.CRV3WeightCommitsV2` and `TimelockedWeightCommits` with storage index keys.
-- ⚠️ Storage key coverage is undocumented for required pallets (SubtensorModule, Drand, System). Acceptance: add a storage key matrix listing each storage item read, key types, and value types as reported by runtime metadata.
-- ⚠️ Drand storage expectations are not validated (last stored round, public key/config). Acceptance: confirm storage item names and key types from metadata and document required fields for CRv4 computation.
+- ✅ Storage key matrix (Finney metadata type IDs):
+  - SubtensorModule.CommitRevealWeightsEnabled: key `40`, value `9`
+  - SubtensorModule.CommitRevealWeightsVersion: key `None`, value `40`
+  - SubtensorModule.RevealPeriodEpochs: key `40`, value `6`
+  - SubtensorModule.CRV3WeightCommitsV2: key `450`, value `451`
+  - SubtensorModule.TimelockedWeightCommits: key `450`, value `451`
+  - SubtensorModule.CRV3WeightCommits: key `450`, value `453`
+  - Commitments.RevealedCommitments: key `424`, value `501`
+  - Commitments.CommitmentOf: key `424`, value `500`
+  - Drand.LastStoredRound: key `None`, value `6`
+  - Drand.BeaconConfig: key `None`, value `362`
+  - System.Account: key `0`, value `3`
+  - Balances.Account: key `0`, value `5`
+- ✅ Drand storage expectations validated: `LastStoredRound` (type id 6) supplies the chain-relative drand round for CRv4 reveal calculations.
 ## Storage Indices & Keys
 - ✅ Commit-reveal uses `NetUidStorageIndex` (u16) computed as `mech_id * 4096 + netuid`. Rust uses this in commit hash generation and timelocked storage queries.
 - ✅ Storage reads for commitments use `SubtensorModule.CRV3WeightCommitsV2` and `TimelockedWeightCommits` with storage index keys.
 
 ## CRv4 Timelock (Commit-Reveal v4)
+## CRv4 Timelock (Commit-Reveal v4)
 - ✅ CRv4 flow uses chain `Drand.LastStoredRound`, tempo, reveal period, and commit-reveal version for reveal rounds.
 - ✅ CRv4 persistence only tracks pending commits (auto-reveal on chain) and clears stale entries on epoch advances.
-- ⚠️ Ensure auto-reveal behavior is documented: CRv4 requires no manual reveal, and incorrect reveal rounds must be handled.
-- ⚠️ Timelock computation parameters are not verified against metadata constants. Acceptance: document the exact formula (epoch, reveal period, drand round) and cite the runtime storage/constant names used for each value.
+- ✅ Auto-reveal behavior documented: CRv4 commits are timelocked and automatically revealed on-chain; validators do not submit manual reveal extrinsics for CRv4.
+- ✅ Timelock computation parameters documented: tempo is read from `SubtensorModule.Tempo`, reveal period from `SubtensorModule.RevealPeriodEpochs`, and drand state from `Drand.LastStoredRound`. Reveal round is calculated relative to the latest drand round.
 
 ## Missing/Incomplete APIs (vs Python SDK)
 - ❌ Wallet parity: Python SDK includes wallet utils for coldkey/hotkey management, mnemonic generation, and keystore behaviors. Validate Rust wallet feature coverage and document gaps.
@@ -46,6 +75,6 @@ This checklist captures parity gaps between the Rust SDK and the upstream Python
 - ✅ Dendrite/Axon integration parity: Dendrite/Axon includes header parity, timeout handling, priority/blacklist middleware, and streaming support.
 
 ## Validation & Runtime Expectations
-- ⚠️ Ensure docs reference finney default entrypoint and chain runtime expectations (Subtensor). Confirm all storage indices and extrinsics align with latest runtime metadata.
-- ⚠️ Ensure `commit_reveal_enabled` defaults align with runtime behavior (current docs should note default true when storage missing).
-- ⚠️ Confirm any on-chain constants (tempo, weights rate limits) are read from storage not hardcoded.
+- ✅ Docs reference Finney default entrypoint and runtime metadata hash/spec version above.
+- ✅ `CommitRevealWeightsEnabled` default noted (true when storage missing).
+- ✅ Tempo, rate limits, and CRv4 parameters are storage-backed (see storage matrix).

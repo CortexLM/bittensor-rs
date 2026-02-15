@@ -12,6 +12,13 @@ The `BittensorClient` is the primary interface for connecting to and interacting
 - Extrinsic arguments and storage indices must match Subtensor runtime metadata. In particular, commit-reveal uses `NetUidStorageIndex` (`u16`, computed as `mechanism_id * 4096 + netuid`).
 - CRv4 commit-reveal uses drand timelock encryption and requires `Drand.LastStoredRound` from chain state.
 - See `docs/parity_checklist.md` for full parity checklist.
+- Finney defaults: `DEFAULT_RPC_URL`/`DEFAULT_ENDPOINT` resolve to `wss://entrypoint-finney.opentensor.ai:443` unless overridden by `BITTENSOR_RPC`.
+## Parity Notes (Python SDK)
+
+- All on-chain values are in RAO (u128). Use TAO conversion helpers only for display.
+- Extrinsic arguments and storage indices must match Subtensor runtime metadata. In particular, commit-reveal uses `NetUidStorageIndex` (`u16`, computed as `mechanism_id * 4096 + netuid`).
+- CRv4 commit-reveal uses drand timelock encryption and requires `Drand.LastStoredRound` from chain state.
+- See `docs/parity_checklist.md` for full parity checklist.
 
 ## Client Initialization
 

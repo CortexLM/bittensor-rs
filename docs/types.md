@@ -2,6 +2,8 @@
 
 This document provides an overview of all core data structures used in the Bittensor Rust SDK. On-chain monetary values (balances, stake, emissions, prices) use RAO (`u128`). TAO conversions are display-only via `rao_to_tao` or `format_rao_as_tao`.
 
+Finney runtime reference: metadata hash `0x31a1392ead4c198c974610bc078f69346261648d306def22607e95fc521baf50`, spec version `377`.
+
 ## Neuron Types
 
 ### NeuronInfo

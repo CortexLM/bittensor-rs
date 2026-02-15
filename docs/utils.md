@@ -99,6 +99,9 @@ let back_to_ss58 = account_to_ss58(&account);
 ### rao_to_tao
 
 Convert RAO (smallest on-chain unit) to TAO for display.
+### rao_to_tao
+
+Convert RAO (smallest on-chain unit) to TAO for display.
 
 ```rust
 pub fn rao_to_tao(rao: u128) -> f64
@@ -108,6 +111,9 @@ pub fn rao_to_tao(rao: u128) -> f64
 - `rao`: Amount in RAO
 
 **Returns:**
+- `f64`: Amount in TAO (1 TAO = 10^9 RAO). Values are display-only and may lose precision above 2^53 RAO.
+
+**On-chain note:** All extrinsics and storage values use RAO (`u128`). Convert to TAO only for display.
 - `f64`: Amount in TAO (1 TAO = 10^9 RAO). Values are display-only and may lose precision above 2^53 RAO.
 
 ### tao_to_rao
