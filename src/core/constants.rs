@@ -5,6 +5,18 @@
 /// This is 1e9 as defined in the Python SDK (bittensor.utils.balance)
 pub const RAOPERTAO: u128 = 1_000_000_000;
 
+/// Compile-time assertion that RAOPERTAO is exactly 1e9
+/// This prevents accidental modification of this critical constant
+#[allow(dead_code)]
+const _: () = assert!(
+    RAOPERTAO == 1_000_000_000,
+    "RAOPERTAO must be exactly 1_000_000_000 (1e9) for Python SDK compatibility"
+);
+
+/// Verify RAOPERTAO matches Python SDK's pow(10, 9) exactly
+#[allow(dead_code)]
+const _: () = assert!(RAOPERTAO == 10u128.pow(9), "RAOPERTAO must equal 10^9");
+
 /// Global maximum subnet count
 pub const GLOBAL_MAX_SUBNET_COUNT: u16 = 4096;
 

@@ -1,3 +1,20 @@
+//! Cryptographic utilities for Bittensor operations
+//!
+//! This module provides cryptographic primitives for:
+//! - Commit-reveal mechanism for weights
+//! - Salt generation for cryptographic operations
+//! - Blake2b hashing (used by Subtensor)
+//!
+//! # SR25519 Signature Compatibility
+//!
+//! The Bittensor network uses SR25519 (Schnorr signatures on Ristretto25519) for signing.
+//! SR25519 signatures are exactly 64 bytes in the format defined by the schnorrkel crate:
+//! - First 32 bytes: the Ristretto25519 point R (compressed)
+//! - Second 32 bytes: the scalar s (response)
+//!
+//! This format is compatible with the Python Bittensor SDK's use of substrate-interface
+//! and the sp_core::sr25519 implementation in Substrate.
+
 use anyhow::Result;
 use hex;
 use parity_scale_codec::Encode;
@@ -133,7 +150,8 @@ pub fn commit_hash_to_hex(hash: &[u8]) -> String {
 
 /// Parse hex string to commit hash
 pub fn hex_to_commit_hash(hex_str: &str) -> Result<Vec<u8>> {
-    hex::decode(hex_str).map_err(|e| anyhow::anyhow!("Invalid hex string: {}", e))
+    let decoded = hex::decode(hex_str).map_err(|e| anyhow::anyhow!("Invalid hex string: {}", e))?;
+    Ok(decoded)
 }
 
 /// Parse hex string to 32-byte commit hash
@@ -162,6 +180,43 @@ pub fn generate_salt(len: usize) -> Vec<u16> {
 /// Convert u8 salt to u16 salt (for backwards compatibility)
 pub fn salt_u8_to_u16(salt: &[u8]) -> Vec<u16> {
     salt.iter().map(|b| *b as u16).collect()
+}
+
+/// Verify that a signature is valid (64 bytes for SR25519)
+///
+/// This function performs basic format validation on SR25519 signatures.
+/// For full verification, use `Keypair::verify` or `sr25519::Pair::verify`.
+///
+/// # Arguments
+/// * `signature` - The signature bytes
+///
+/// # Returns
+/// `true` if the signature format is valid (64 bytes)
+pub fn is_valid_sr25519_signature(signature: &[u8]) -> bool {
+    signature.len() == 64
+}
+
+/// Get SR25519 signature format description for debugging
+///
+/// # Arguments
+/// * `signature` - The signature bytes
+///
+/// # Returns
+/// A description of the signature format
+pub fn signature_format_info(signature: &[u8]) -> String {
+    if signature.len() != 64 {
+        return format!(
+            "Invalid SR25519 signature: expected 64 bytes, got {}",
+            signature.len()
+        );
+    }
+    format!(
+        "Valid SR25519 signature: 64 bytes (R point: 32 bytes, scalar s: 32 bytes)\n\
+         R (compressed): 0x{}...\n\
+         s (response):   0x{}",
+        hex::encode(&signature[0..4]),
+        hex::encode(&signature[32..36])
+    )
 }
 
 #[cfg(test)]
@@ -295,5 +350,42 @@ mod tests {
         // Salt should be random (very unlikely to be all zeros)
         let all_zero = salt.iter().all(|&s| s == 0);
         assert!(!all_zero);
+    }
+
+    #[test]
+    fn test_is_valid_sr25519_signature() {
+        // Valid signature is exactly 64 bytes
+        let valid_sig = [0u8; 64];
+        assert!(is_valid_sr25519_signature(&valid_sig));
+
+        // Invalid signatures
+        assert!(!is_valid_sr25519_signature(&[0u8; 63])); // Too short
+        assert!(!is_valid_sr25519_signature(&[0u8; 65])); // Too long
+        assert!(!is_valid_sr25519_signature(&[0u8; 0])); // Empty
+    }
+
+    #[test]
+    fn test_signature_format_info() {
+        let valid_sig = [0xABu8; 64];
+        let info = signature_format_info(&valid_sig);
+        assert!(info.contains("Valid SR25519"));
+
+        let invalid_sig = [0u8; 32];
+        let info = signature_format_info(&invalid_sig);
+        assert!(info.contains("Invalid SR25519"));
+    }
+
+    #[test]
+    fn test_hex_encoding_roundtrip() {
+        let hash = [0xDEu8, 0xAD, 0xBE, 0xEF];
+        let hex_str = commit_hash_to_hex(&hash);
+        let decoded = hex_to_commit_hash(&hex_str).unwrap();
+        assert_eq!(hash.to_vec(), decoded);
+
+        // Test 32-byte hash
+        let hash32 = [0xABu8; 32];
+        let hex_str32 = commit_hash_to_hex(&hash32);
+        let decoded32 = hex_to_commit_hash_32(&hex_str32).unwrap();
+        assert_eq!(hash32, decoded32);
     }
 }

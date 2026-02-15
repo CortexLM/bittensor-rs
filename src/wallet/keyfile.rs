@@ -8,7 +8,7 @@
 //! Python Bittensor SDK (bittensor-wallet) uses two formats:
 //!
 //! ### Encrypted Format (Binary with $NACL header)
-//! ```
+//! ```text
 //! +--------+--------+---------+-----------+
 //! | Header |  Salt  |  Nonce  | Ciphertext|
 //! | 5 bytes|16 bytes| 24 bytes| variable  |
