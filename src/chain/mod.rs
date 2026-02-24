@@ -39,9 +39,14 @@ pub struct BittensorClient {
 impl BittensorClient {
     /// Create a new Bittensor client connected to the specified RPC endpoint
     /// Uses BITTENSOR_RPC env var if provided, otherwise defaults to Finney endpoint
+    /// Automatically uses insecure connection for ws:// URLs.
     pub async fn new(rpc_url: impl Into<String>) -> Result<Self, Error> {
         let url = rpc_url.into();
-        let api = subxt::OnlineClient::<PolkadotConfig>::from_url(&url).await?;
+        let api = if url.starts_with("ws://") {
+            subxt::OnlineClient::<PolkadotConfig>::from_insecure_url(&url).await?
+        } else {
+            subxt::OnlineClient::<PolkadotConfig>::from_url(&url).await?
+        };
 
         Ok(Self { api, rpc_url: url })
     }
