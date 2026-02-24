@@ -335,10 +335,13 @@ impl Subtensor {
     }
 
     /// Get current epoch number for a subnet
+    /// Uses subtensor formula: epoch = (block + netuid + 1) / (tempo + 1)
     pub async fn get_current_epoch(&self, netuid: u16) -> Result<u64> {
         let block = self.get_current_block().await?;
         let tempo = self.tempo(netuid).await? as u64;
-        Ok(block / (tempo + 1))
+        let tempo_plus_one = tempo.saturating_add(1);
+        let netuid_plus_one = (netuid as u64).saturating_add(1);
+        Ok(block.saturating_add(netuid_plus_one) / tempo_plus_one)
     }
 
     /// Get mechanism count for a subnet
@@ -352,35 +355,29 @@ impl Subtensor {
     }
 
     /// Get current epoch phase for a subnet
-    /// Returns: "evaluation", "commit", or "reveal"
-    pub async fn get_current_phase(&self, netuid: u16) -> Result<String> {
-        let block = self.get_current_block().await?;
-        let tempo = self.tempo(netuid).await? as u64;
-        let block_in_epoch = block % (tempo + 1);
-
-        // Standard phase distribution: 75% eval, 15% commit, 10% reveal
-        let eval_end = (tempo * 75) / 100;
-        let commit_end = eval_end + (tempo * 15) / 100;
-
-        if block_in_epoch < eval_end {
-            Ok("evaluation".to_string())
-        } else if block_in_epoch < commit_end {
-            Ok("commit".to_string())
-        } else {
-            Ok("reveal".to_string())
-        }
+    ///
+    /// Subtensor uses epoch-granular commit-reveal:
+    /// - Commits are accepted during the ENTIRE epoch
+    /// - Reveals are accepted during the ENTIRE next epoch (epoch + reveal_period)
+    /// Returns: "commit" (always - entire epoch is a commit window)
+    pub async fn get_current_phase(&self, _netuid: u16) -> Result<String> {
+        // Subtensor allows commits at any block during an epoch.
+        // The "reveal" phase is the next epoch, not a sub-epoch window.
+        Ok("commit".to_string())
     }
 
     /// Check if currently in reveal phase
-    pub async fn is_in_reveal_phase(&self, netuid: u16) -> Result<bool> {
-        let phase = self.get_current_phase(netuid).await?;
-        Ok(phase == "reveal")
+    /// Note: In subtensor, reveal phase = the entire next epoch after commit.
+    /// This always returns false for the current epoch since you commit in epoch N
+    /// and reveal in epoch N + reveal_period.
+    pub async fn is_in_reveal_phase(&self, _netuid: u16) -> Result<bool> {
+        Ok(false)
     }
 
     /// Check if currently in commit phase
-    pub async fn is_in_commit_phase(&self, netuid: u16) -> Result<bool> {
-        let phase = self.get_current_phase(netuid).await?;
-        Ok(phase == "commit")
+    /// In subtensor, the entire epoch is a commit window.
+    pub async fn is_in_commit_phase(&self, _netuid: u16) -> Result<bool> {
+        Ok(true)
     }
 
     /// Get pending commits info string (for logging)
@@ -684,7 +681,9 @@ impl Subtensor {
         // Store pending commit
         let current_block = self.get_current_block().await?;
         let tempo = self.tempo(netuid).await? as u64;
-        let epoch = current_block / (tempo + 1);
+        let tempo_plus_one = tempo.saturating_add(1);
+        let netuid_plus_one = (netuid as u64).saturating_add(1);
+        let epoch = current_block.saturating_add(netuid_plus_one) / tempo_plus_one;
 
         let pending = PendingCommit {
             netuid,
