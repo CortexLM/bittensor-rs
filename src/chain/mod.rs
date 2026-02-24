@@ -348,7 +348,11 @@ pub struct BittensorClient {
 impl BittensorClient {
     pub async fn new(rpc_url: impl Into<String>) -> Result<Self, Error> {
         let url = rpc_url.into();
-        let api = subxt::OnlineClient::<PolkadotConfig>::from_url(&url).await?;
+        let api = if url.starts_with("ws://") {
+            subxt::OnlineClient::<PolkadotConfig>::from_insecure_url(&url).await?
+        } else {
+            subxt::OnlineClient::<PolkadotConfig>::from_url(&url).await?
+        };
 
         Ok(Self {
             api,
