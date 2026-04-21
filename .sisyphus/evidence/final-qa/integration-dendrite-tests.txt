@@ -1,0 +1,3 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running tests/integration.rs (target/debug/deps/integration-95dfaac19cfc0bd3)
+cargo test: 7 passed (1 suite, 0.14s)

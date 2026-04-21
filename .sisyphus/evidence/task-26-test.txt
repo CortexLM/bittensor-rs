@@ -1,0 +1,682 @@
+
+running 29 tests
+test config::tests::default_config ... ok
+test axon::tests::new_axon_with_defaults ... ok
+test axon::tests::attach_handler ... ok
+test axon::tests::blacklist_and_unblacklist ... ok
+test config::tests::external_ip_falls_back ... ok
+test config::tests::bind_addr_format ... ok
+test axon::tests::start_and_stop ... ok
+test axon::tests::set_priority ... ok
+test axon::tests::attached_route_responds ... ok
+test config::tests::config_serialization_roundtrip ... ok
+test axon::tests::unregistered_route_returns_404 ... ok
+test middleware::tests::constant_time_eq_same_strings ... ok
+test middleware::tests::constant_time_eq_different_strings ... ok
+test middleware::tests::blacklist_passes_non_blacklisted_hotkey ... ok
+test middleware::tests::body_hash_passes_matching_hash ... ok
+test middleware::tests::blacklist_rejects_blacklisted_hotkey ... ok
+test middleware::tests::body_hash_passes_when_no_hash_header ... ok
+test middleware::tests::priority_assigns_known_priority ... ok
+test middleware::tests::full_chain_rejects_blacklisted_after_verification ... ok
+test middleware::tests::priority_defaults_to_zero_for_unknown_hotkey ... ok
+test middleware::tests::body_hash_rejects_mismatch ... ok
+test router::tests::registry_len ... ok
+test router::tests::register_synapse_route_creates_path ... ok
+test middleware::tests::verification_rejects_missing_signature_when_hotkey_set ... ok
+test middleware::tests::full_middleware_chain_passes_valid_request ... ok
+test middleware::tests::verification_passes_with_signature_header ... ok
+test router::tests::registry_register_and_lookup ... ok
+test middleware::tests::verification_skips_when_no_axon_hotkey ... ok
+test router::tests::unregistered_route_returns_404 ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 15 tests
+test axon_struct_unsigned_request_bypasses_middleware ... ignored
+test oneshot_middleware_rejects_unsigned ... ok
+test oneshot_middleware_accepts_signed ... ok
+test unsigned_request_returns_401 ... ok
+test multiple_synapse_routes ... ok
+test unsigned_request_passes_when_no_hotkey ... ok
+test late_blacklist_still_blocks ... ok
+test sse_streaming_round_trip ... ok
+test unregistered_route_returns_404 ... ok
+test signed_request_round_trip ... ok
+test signed_sse_streaming_passes_verification ... ok
+test priority_defaults_to_zero ... ok
+test blacklisted_hotkey_returns_403 ... ok
+test priority_header_in_response ... ok
+test tampered_body_hash_returns_400 ... ok
+
+test result: ok. 14 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.96s
+
+
+running 86 tests
+test client::tests::archive_config_has_two_endpoints ... ok
+test events::filters::tests::event_filter_trait_methods ... ok
+test events::filters::tests::filter_delegate_added_returns_empty ... ok
+test events::filters::tests::filter_pallet_balances ... ok
+test events::filters::tests::filter_neuron_registered_works ... ok
+test client::tests::network_config_produces_endpoints ... ok
+test events::filters::tests::filter_pallet_subtensor ... ok
+test events::filters::tests::filter_pallet_case_insensitive ... ok
+test events::filters::tests::filter_pallet_system ... ok
+test events::filters::tests::filter_stake_added_works ... ok
+test events::filters::tests::filter_stake_removed_returns_empty ... ok
+test events::filters::tests::filter_transfer_works ... ok
+test events::filters::tests::filter_weights_set_works ... ok
+test events::monitor::tests::broadcast_capacity_custom ... ok
+test events::monitor::tests::broadcast_drops_on_laggy_receiver ... ok
+test events::monitor::tests::monitor_error_converts_to_bittensor_error ... ok
+test events::monitor::tests::handler_dispatch_with_broadcast ... ok
+test events::monitor::tests::monitor_error_event_fetch ... ok
+test events::subscriptions::tests::subscribe_blocks_exists ... ok
+test events::monitor::tests::broadcast_sends_to_receiver ... ok
+test events::subscriptions::tests::subscribe_events_exists ... ok
+test events::monitor::tests::receiver_count_increases_with_subscriptions ... ok
+test events::monitor::tests::broadcast_reaches_multiple_receivers ... ok
+test events::subscriptions::tests::subscribe_storage_exists ... ok
+test events::tests::chain_event_delegate_added_accessors ... ok
+test events::tests::chain_event_neuron_registered_accessors ... ok
+test events::tests::chain_event_stake_added_accessors ... ok
+test events::tests::chain_event_stake_moved_accessors ... ok
+test events::tests::chain_event_stake_removed_accessors ... ok
+test events::tests::chain_event_system_accessors ... ok
+test events::tests::chain_event_transfer_accessors ... ok
+test events::tests::chain_event_unknown_accessors ... ok
+test events::tests::chain_event_weights_set_accessors ... ok
+test events::tests::default_handler_is_noop ... ok
+test events::tests::handler_dispatch_neuron_registered ... ok
+test events::tests::handler_dispatch_stake_added ... ok
+test events::tests::handler_dispatch_unknown_is_noop ... ok
+test events::tests::handler_dispatch_transfer ... ok
+test extrinsics::children::tests::set_childkey_take_call_construction ... ok
+test extrinsics::children::tests::set_children_call_construction ... ok
+test extrinsics::coldkey_swap::tests::announce_coldkey_swap_call_construction ... ok
+test extrinsics::coldkey_swap::tests::dispute_coldkey_swap_call_construction ... ok
+test extrinsics::coldkey_swap::tests::swap_coldkey_announced_call_construction ... ok
+test extrinsics::proxy::tests::add_proxy_call_construction ... ok
+test extrinsics::proxy::tests::announce_call_construction ... ok
+test extrinsics::proxy::tests::reject_announcement_call_construction ... ok
+test extrinsics::proxy::tests::remove_announcement_call_construction ... ok
+test extrinsics::proxy::tests::remove_proxies_call_construction ... ok
+test extrinsics::proxy::tests::remove_proxy_call_construction ... ok
+test extrinsics::registration::tests::burned_register_call_construction ... ok
+test extrinsics::registration::tests::register_network_call_construction ... ok
+test extrinsics::registration::tests::register_call_construction ... ok
+test extrinsics::serving::tests::serve_axon_call_construction ... ok
+test extrinsics::root::tests::claim_root_call_construction ... ok
+test extrinsics::root::tests::root_register_call_construction ... ok
+test extrinsics::serving::tests::set_identity_call_construction ... ok
+test extrinsics::staking::tests::move_stake_call_construction ... ok
+test extrinsics::staking::tests::add_stake_call_construction ... ok
+test extrinsics::staking::tests::remove_stake_call_construction ... ok
+test extrinsics::staking::tests::swap_stake_call_construction ... ok
+test extrinsics::staking::tests::transfer_stake_call_construction ... ok
+test extrinsics::staking::tests::unstake_all_call_construction ... ok
+test extrinsics::sudo::tests::sudo_call_signature ... ok
+test extrinsics::take::tests::decrease_take_call_construction ... ok
+test extrinsics::take::tests::increase_take_call_construction ... ok
+test extrinsics::tests::to_multi_address_works ... ok
+test extrinsics::tests::tx_success_construction ... ok
+test extrinsics::transfer::tests::transfer_all_call_construction ... ok
+test extrinsics::transfer::tests::transfer_call_construction ... ok
+test extrinsics::transfer::tests::transfer_keep_alive_call_construction ... ok
+test extrinsics::weights::tests::commit_weights_call_construction ... ok
+test extrinsics::weights::tests::reveal_weights_call_construction ... ok
+test extrinsics::weights::tests::set_weights_call_construction ... ok
+test queries::account::tests::balance_from_rao ... ok
+test queries::account::tests::stake_info_construction ... ok
+test queries::children::tests::children_query_signature ... ok
+test queries::commit::tests::weight_commit_info_construction ... ok
+test queries::metagraph::tests::metagraph_info_fields ... ok
+test queries::network::tests::network_block_signature ... ok
+test queries::delegate::tests::delegate_info_construction ... ok
+test queries::neuron::tests::neuron_info_construction ... ok
+test queries::neuron::tests::neuron_info_lite_construction ... ok
+test queries::identity::tests::identity_module_compiles ... ok
+test queries::proxy::tests::proxy_query_signature ... ok
+test queries::subnet::tests::subnet_info_construction ... ok
+test queries::weights::tests::weights_params_present ... ok
+
+test result: ok. 86 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 151 tests
+test commands::delegate::tests::delegate_command_debug_format ... ok
+test commands::delegate::tests::delegate_add_no_wallet_fails ... ok
+test commands::delegate::tests::delegate_remove_no_wallet_fails ... ok
+test commands::delegate::tests::delegate_take_no_wallet_fails ... ok
+test commands::delegate::tests::my_delegates_no_wallet_fails ... ok
+test commands::delegate::tests::parse_tao_delegate_negative_fails ... ok
+test commands::delegate::tests::parse_tao_delegate_zero ... ok
+test commands::delegate::tests::parse_tao_delegate_one ... ok
+test commands::delegate::tests::parse_tao_delegate_decimal ... ok
+test commands::registration::tests::parse_comma_u16_empty ... ok
+test commands::delegate::tests::parse_delegate_list ... ok
+test commands::registration::tests::parse_comma_u16_invalid_fails ... ok
+test commands::registration::tests::parse_comma_u16_single ... ok
+test commands::delegate::tests::parse_delegate_take ... ok
+test commands::registration::tests::parse_comma_u16_with_spaces ... ok
+test commands::delegate::tests::parse_delegate_add ... ok
+test commands::registration::tests::burned_register_no_wallet_fails ... ok
+test commands::delegate::tests::parse_delegate_my_delegates ... ok
+test commands::registration::tests::parse_comma_u16_simple ... ok
+test commands::delegate::tests::parse_delegate_remove ... ok
+test commands::registration::tests::parse_burned_register_command ... ok
+test commands::registration::tests::parse_register_command ... ok
+test commands::registration::tests::registration_command_debug_format ... ok
+test commands::registration::tests::root_command_debug_format ... ok
+test commands::registration::tests::parse_root_get_weights ... ok
+test commands::registration::tests::register_no_wallet_fails ... ok
+test commands::registration::tests::parse_register_command_default_netuid ... ok
+test commands::registration::tests::parse_root_register_top_level ... ok
+test commands::delegate::tests::delegate_command_all_variants_parseable ... ok
+test commands::registration::tests::root_register_no_wallet_fails ... ok
+test commands::registration::tests::parse_root_claim ... ok
+test commands::registration::tests::parse_root_register_via_register_group ... ok
+test commands::stake::tests::parse_stake_get_stake_command ... ok
+test commands::stake::tests::parse_stake_add_command ... ok
+test commands::stake::tests::parse_tao_decimal ... ok
+test commands::stake::tests::parse_tao_invalid_string_fails ... ok
+test commands::stake::tests::parse_stake_list_command ... ok
+test commands::stake::tests::parse_tao_large_amount ... ok
+test commands::registration::tests::parse_root_set_weights ... ok
+test commands::stake::tests::parse_stake_remove_command ... ok
+test commands::stake::tests::parse_set_auto_stake_command ... ok
+test commands::stake::tests::parse_tao_small_decimal ... ok
+test commands::stake::tests::parse_tao_negative_fails ... ok
+test commands::stake::tests::parse_stake_move_command ... ok
+test commands::stake::tests::parse_stake_swap_command ... ok
+test commands::stake::tests::parse_tao_one ... ok
+test commands::stake::tests::parse_tao_very_small ... ok
+test commands::stake::tests::parse_tao_zero ... ok
+test commands::stake::tests::stake_command_debug_format ... ok
+test commands::registration::tests::registration_command_all_variants_parseable ... ok
+test commands::subnet::tests::parse_comma_u16_empty ... ok
+test commands::subnet::tests::parse_comma_u16_invalid_fails ... ok
+test commands::subnet::tests::parse_comma_u16_simple ... ok
+test commands::stake::tests::stake_get_no_wallet ... ok
+test commands::subnet::tests::parse_comma_u16_single ... ok
+test commands::subnet::tests::parse_comma_u16_with_spaces ... ok
+test commands::stake::tests::stake_list_no_wallet ... ok
+test commands::subnet::tests::subnet_command_debug_format ... ok
+test commands::transfer::tests::parse_multiple_destinations_amounts ... ok
+test commands::transfer::tests::parse_tao_decimal ... ok
+test commands::transfer::tests::parse_mismatched_destinations_amounts ... ok
+test commands::transfer::tests::parse_tao_invalid_fails ... ok
+test commands::transfer::tests::parse_tao_negative_fails ... ok
+test commands::transfer::tests::parse_tao_zero ... ok
+test commands::transfer::tests::parse_tao_one ... ok
+test commands::subnet::tests::subnet_create_no_wallet_fails ... ok
+test commands::subnet::tests::parse_subnet_list ... ok
+test commands::subnet::tests::parse_subnet_info ... ok
+test commands::subnet::tests::parse_subnet_create ... ok
+test commands::transfer::tests::transfer_command_debug_format ... ok
+test commands::subnet::tests::parse_subnet_hyperparameters ... ok
+test commands::subnet::tests::parse_subnet_set_identity ... ok
+test commands::transfer::tests::parse_transfer_command ... ok
+test commands::transfer::tests::transfer_multiple_no_wallet_fails ... ok
+test commands::subnet::tests::subnet_command_all_variants_parseable ... ok
+test commands::transfer::tests::transfer_no_wallet_fails ... ok
+test commands::stake::tests::stake_command_all_variants_parseable ... ok
+test commands::transfer::tests::transfer_command_all_variants_parseable ... ok
+test commands::transfer::tests::parse_transfer_multiple_command ... ok
+test commands::wallet::tests::parse_wallet_balance_all_flag ... ok
+test commands::wallet::tests::parse_wallet_regen_coldkey_command ... ok
+test commands::wallet::tests::parse_wallet_overview_command ... ok
+test commands::wallet::tests::parse_wallet_create_command ... ok
+test commands::wallet::tests::parse_wallet_inspect_command ... ok
+test commands::wallet::tests::parse_wallet_create_hotkey_command ... ok
+test commands::wallet::tests::parse_wallet_regen_coldkeypub_command ... ok
+test commands::wallet::tests::parse_wallet_transfer_command ... ok
+test commands::wallet::tests::parse_wallet_regen_hotkey_command ... ok
+test commands::wallet::tests::wallet_command_debug_format ... ok
+test config::tests::default_wallet_name ... ok
+test commands::wallet::tests::parse_wallet_swap_coldkey_command ... ok
+test config::tests::resolve_finney_network ... ok
+test config::tests::resolve_local_network ... ok
+test config::tests::resolve_mainnet_alias ... ok
+test config::tests::resolve_test_network ... ok
+test config::tests::resolve_testnet_alias ... ok
+test config::tests::wallet_dir_combines_path_and_name ... ok
+test config::tests::wallet_name_override ... ok
+test config::tests::wallet_path_override ... ok
+test config::tests::resolve_unknown_network_fails ... ok
+test tests::help_output_contains_btcli_rs ... ok
+test tests::parse_register_burned ... ok
+test tests::parse_no_subcommand_fails ... ok
+test tests::parse_root_register_top_level ... ok
+test tests::parse_stake_add ... ok
+test tests::parse_register_pow ... ok
+test tests::parse_network_flag ... ok
+test tests::parse_stake_remove ... ok
+test tests::parse_transfer_multiple ... ok
+test tests::parse_wallet_balance ... ok
+test tests::parse_transfer_top_level ... ok
+test tests::parse_wallet_create ... ok
+test tests::parse_stake_list ... ok
+test tests::all_top_level_commands_parseable ... ok
+test tests::parse_wallet_create_hotkey ... ok
+test tests::parse_wallet_inspect ... ok
+test tests::parse_wallet_create_hotkey_seed ... ok
+test commands::wallet::tests::wallet_command_all_variants_parseable ... ok
+test tests::parse_wallet_overview ... ok
+test tests::parse_wallet_regen_coldkey ... ok
+test tests::parse_wallet_path_flag ... ok
+test tests::parse_wallet_swap_coldkey ... ok
+test tests::parse_wallet_regen_coldkeypub ... ok
+test tests::parse_wallet_list ... ok
+test tests::parse_wallet_show ... ok
+test tests::parse_wallet_regen_hotkey ... ok
+test tests::parse_wallet_transfer ... ok
+test tests::parse_wallet_name_flag ... ok
+test commands::wallet::tests::inspect_nonexistent_wallet ... ok
+test commands::wallet::tests::list_empty_wallets ... ok
+test commands::wallet::tests::regen_coldkeypub_invalid_address ... ok
+test commands::wallet::tests::show_nonexistent_wallet ... ok
+test commands::wallet::tests::create_and_list_wallets ... ok
+test commands::wallet::tests::create_wallet_default_hotkey_name ... ok
+test commands::wallet::tests::create_wallet_with_no_password ... ok
+test commands::wallet::tests::create_wallet_password_mismatch ... ok
+test commands::wallet::tests::inspect_created_wallet ... ok
+test commands::wallet::tests::regen_hotkey_valid_mnemonic ... ok
+test commands::wallet::tests::show_created_wallet ... ok
+test commands::wallet::tests::show_wallet_lists_hotkeys ... ok
+test commands::wallet::tests::regen_coldkeypub_valid_address ... ok
+test commands::wallet::tests::create_wallet_coldkeypub_is_nonempty ... ok
+test commands::wallet::tests::list_shows_wallet_details ... ok
+test commands::wallet::tests::create_hotkey_seed_based ... ok
+test commands::wallet::tests::create_wallet_produces_key_files ... ok
+test commands::wallet::tests::create_wallet_with_password ... ok
+test commands::wallet::tests::create_hotkey_derived_with_password ... ok
+test commands::wallet::tests::inspect_wallet_wrong_password_still_succeeds ... ok
+test commands::wallet::tests::list_with_multiple_wallets ... ok
+test commands::wallet::tests::inspect_wallet_with_password_shows_full_coldkey ... ok
+test commands::wallet::tests::regen_coldkey_valid_mnemonic ... ok
+
+test result: ok. 151 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.12s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 92 tests
+test balance::tests::add_balances ... ok
+test balance::tests::checked_mul_overflow ... ok
+test balance::tests::checked_sub_underflow ... ok
+test balance::tests::checked_add_overflow ... ok
+test balance::tests::display_zero ... ok
+test balance::tests::default_is_zero ... ok
+test balance::tests::display_nine_decimal_places ... ok
+test balance::tests::display_small_balance ... ok
+test balance::tests::checked_div_by_zero ... ok
+test balance::tests::div_balances ... ok
+test balance::tests::from_rao_identity ... ok
+test balance::tests::from_str_integer ... ok
+test balance::tests::from_str_valid ... ok
+test balance::tests::from_str_invalid ... ok
+test balance::tests::from_tao_roundtrip ... ok
+test balance::tests::mul_by_scalar ... ok
+test balance::tests::one_tao_equals_billion_rao ... ok
+test balance::tests::saturating_add ... ok
+test balance::tests::saturating_sub ... ok
+test balance::tests::ordering ... ok
+test balance::tests::scale_codec_roundtrip ... ok
+test balance::tests::serialization_roundtrip ... ok
+test balance::tests::sub_balances ... ok
+test config::tests::archive_network_config ... ok
+test balance::tests::zero_balance ... ok
+test config::tests::finney_network_config ... ok
+test config::tests::latent_lite_network_config ... ok
+test config::tests::local_network_config ... ok
+test config::tests::network_config_equality ... ok
+test config::tests::subtensor_config_builder ... ok
+test config::tests::network_config_serialization_roundtrip ... ok
+test config::tests::subtensor_config_default ... ok
+test config::tests::test_network_config ... ok
+test error::tests::delay_capped_at_max ... ok
+test error::tests::delay_for_attempt_exponential_backoff ... ok
+test error::tests::error_category_mapping ... ok
+test error::tests::error_display ... ok
+test error::tests::retry_config_non_retryable ... ok
+test error::tests::error_category_display ... ok
+test error::tests::retry_config_rate_limit ... ok
+test error::tests::retry_config_serialization_roundtrip ... ok
+test error::tests::retry_config_transient ... ok
+test error::tests::retryable_errors ... ok
+test pow::tests::compute_seal_deterministic ... ok
+test pow::tests::seal_below_threshold_equal_returns_false ... ok
+test pow::tests::compute_seal_different_nonce ... ok
+test pow::tests::seal_below_threshold_less ... ok
+test pow::tests::pow_solution_nonce_starts_at_zero ... ok
+test pow::tests::seal_meets_difficulty_low_seal_passes ... ok
+test pow::tests::seal_meets_difficulty_zero_difficulty ... ok
+test pow::tests::seal_meets_difficulty_high_seal_fails ... ok
+test pow::tests::solve_pow_easy_difficulty ... ok
+test pow::tests::solve_pow_returns_correct_seal ... ok
+test pow::tests::threshold_decreases_with_difficulty ... ok
+test pow::tests::u256_div_u64_correctness ... ok
+test types::tests::audit_info_scale_roundtrip ... ok
+test types::tests::axon_info_scale_roundtrip ... ok
+test types::tests::axon_info_json_roundtrip ... ok
+test types::tests::chain_identity_json_roundtrip ... ok
+test types::tests::neuron_certificate_scale_roundtrip ... ok
+test types::tests::neuron_info_lite_scale_roundtrip ... ok
+test types::tests::delegate_info_json_roundtrip ... ok
+test types::tests::prometheus_info_scale_roundtrip ... ok
+test types::tests::proposal_vote_data_json_roundtrip ... ok
+test types::tests::stake_info_with_balance ... ok
+test types::tests::subnet_hyperparams_scale_roundtrip ... ok
+test types::tests::registration_info_json_roundtrip ... ok
+test types::tests::subnet_info_scale_roundtrip ... ok
+test types::tests::subnet_state_json_roundtrip ... ok
+test types::tests::weight_commit_scale_roundtrip ... ok
+test weight_utils::tests::convert_chain_duplicate_dests ... ok
+test weight_utils::tests::convert_chain_filters_zeros ... ok
+test weight_utils::tests::convert_chain_mismatched_lengths ... ok
+test weight_utils::tests::convert_chain_all_zeros_filtered ... ok
+test weight_utils::tests::normalize_u16_all_equal ... ok
+test weight_utils::tests::convert_chain_valid ... ok
+test weight_utils::tests::normalize_u16_all_zeros ... ok
+test weight_utils::tests::normalize_u16_empty ... ok
+test weight_utils::tests::normalize_u16_large_values ... ok
+test weight_utils::tests::normalize_u16_mixed_negative_and_positive ... ok
+test weight_utils::tests::normalize_u16_multiple_values ... ok
+test weight_utils::tests::normalize_u16_negative_weights ... ok
+test weight_utils::tests::normalize_u16_single_nonzero ... ok
+test weight_utils::tests::normalize_u64_all_zeros ... ok
+test weight_utils::tests::normalize_u64_negative_clamped ... ok
+test weight_utils::tests::normalize_u64_proportional ... ok
+test weight_utils::tests::normalize_u64_single_nonzero ... ok
+test weight_utils::tests::process_empty_weights ... ok
+test weight_utils::tests::process_all_zero_weights ... ok
+test weight_utils::tests::process_mixed_weights ... ok
+test weight_utils::tests::process_negative_weights_uniform ... ok
+test pow::tests::solve_pow_medium_difficulty ... ok
+
+test result: ok. 92 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+
+
+running 25 tests
+test config::tests::default_config ... ok
+test dendrite::tests::axon_url_http ... ok
+test dendrite::tests::axon_url_https ... ok
+test dendrite::tests::error_mapping_network ... ok
+test dendrite::tests::error_mapping_timeout ... ok
+test dendrite::tests::ip_from_u64_localhost ... ok
+test dendrite::tests::error_mapping_signing_not_retryable ... ok
+test dendrite::tests::ip_from_u64_zero ... ok
+test config::tests::builder_pattern ... ok
+test signing::tests::empty_body_hashes_to_known_value ... ok
+test signing::tests::uuid_is_v4 ... ok
+test signing::tests::body_hash_matches_sha3_256 ... ok
+test signing::tests::nonce_is_preserved ... ok
+test signing::tests::sign_request_produces_all_bt_headers ... ok
+test signing::tests::signature_starts_with_0x ... ok
+test signing::tests::different_nonces_produce_different_signatures ... ok
+test dendrite::tests::wiremock_tests::query_returns_200_ok ... ok
+test dendrite::tests::nonce_increments ... ok
+test dendrite::tests::new_dendrite_default_config ... ok
+test dendrite::tests::wiremock_tests::connection_refused_returns_network_error ... ok
+test dendrite::tests::wiremock_tests::http_500_returns_rpc_error ... ok
+test dendrite::tests::new_dendrite_with_hotkey ... ok
+test dendrite::tests::wiremock_tests::query_returns_401_signing_error ... ok
+test dendrite::tests::wiremock_tests::signed_request_includes_bt_headers ... ok
+test dendrite::tests::wiremock_tests::timeout_returns_timeout_error ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.65s
+
+
+running 7 tests
+test unsigned_request_sends_no_bt_headers ... ok
+test body_hash_matches_sha3_256 ... ok
+test nonce_is_preserved_in_signed_request ... ok
+test signature_is_valid_sr25519 ... ok
+test different_signers_produce_different_signatures ... ok
+test signed_request_includes_bt_headers ... ok
+test dendrite_returns_signing_error_on_401 ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+
+running 29 tests
+test metagraph::tests::test_bond_expansion ... ok
+test metagraph::tests::test_clone_is_independent ... ok
+test metagraph::tests::test_empty_metagraph_iterator ... ok
+test metagraph::tests::test_index_invalid_uid_panics - should panic ... ok
+test metagraph::tests::test_field_lengths_consistency ... ok
+test metagraph::tests::test_index_valid_uid ... ok
+test metagraph::tests::test_into_iter_via_reference ... ok
+test metagraph::tests::test_neuron_at_out_of_bounds_returns_default ... ok
+test metagraph::tests::test_iterator_exact_size ... ok
+test metagraph::tests::test_neuron_at_preserves_axon_info ... ok
+test metagraph::tests::test_neuron_at_preserves_prometheus_info ... ok
+test metagraph::tests::test_neuron_at_reconstructs_weights ... ok
+test metagraph::tests::test_neuron_at_valid_position ... ok
+test metagraph::tests::test_neuron_by_uid_found ... ok
+test metagraph::tests::test_neurons_iterator_empty ... ok
+test metagraph::tests::test_neuron_by_uid_not_found ... ok
+test metagraph::tests::test_neurons_iterator_yields_all ... ok
+test metagraph::tests::test_new_creates_empty_metagraph ... ok
+test metagraph::tests::test_rank_values_from_neurons ... ok
+test metagraph::tests::test_stake_values_from_neurons ... ok
+test serialize::tests::test_load_nonexistent_file ... ok
+test sync::tests::test_from_neurons_builds_consistent_metagraph ... ok
+test sync::tests::test_from_neurons_single_neuron ... ok
+test sync::tests::test_from_neurons_weight_expansion ... ok
+test sync::tests::test_from_neurons_empty_subnet ... ok
+test serialize::tests::test_save_creates_parent_dirs ... ok
+test serialize::tests::test_save_load_roundtrip ... ok
+test serialize::tests::test_save_load_empty_metagraph ... ok
+test serialize::tests::test_save_load_preserves_tensors ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 23 tests
+test hashing::tests::abc_sha3_256 ... ok
+test hashing::tests::consistent_and_different_inputs ... ok
+test header::tests::prefix_strings_are_correct ... ok
+test hashing::tests::empty_string_sha3_256 ... ok
+test hashing::tests::json_body_sha3_256 ... ok
+test header::tests::top_level_keys_match_python ... ok
+test signing::tests::signing_message_dot_separated_exactly_five_parts ... ok
+test signing::tests::signing_message_empty_fields ... ok
+test signing::tests::signing_message_format ... ok
+test signing::tests::signing_message_no_spaces ... ok
+test streaming::tests::process_chunk_invalid_utf8 ... ok
+test synapse::tests::deserialize_body_invalid_json ... ok
+test streaming::tests::process_chunk_valid_utf8 ... ok
+test synapse::tests::deserialize_body_valid_json ... ok
+test synapse::tests::parse_header_missing_key ... ok
+test synapse::tests::to_headers_contains_axon_prefix_fields ... ok
+test terminal_info::tests::default_terminal_info_has_all_none ... ok
+test synapse::tests::header_round_trip_preserves_terminal_info ... ok
+test terminal_info::tests::round_trip_axon_prefix ... ok
+test synapse::tests::to_headers_contains_dendrite_prefix_fields ... ok
+test synapse::tests::to_headers_contains_top_level_keys ... ok
+test terminal_info::tests::round_trip_dendrite_prefix ... ok
+test terminal_info::tests::to_headers_omits_none_values ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 26 tests
+test app::tests::test_arrow_keys ... ok
+test app::tests::test_esc_closes_expanded ... ok
+test app::tests::test_expand_toggle ... ok
+test app::tests::test_panel_navigation ... ok
+test app::tests::test_panel_next_prev_cycle ... ok
+test app::tests::test_quit ... ok
+test app::tests::test_tab_resets_selection ... ok
+test network::tests::test_network_data_default ... ok
+test network::tests::test_network_data_fields ... ok
+test panels::network_overview::tests::test_brand_colors ... ok
+test event::tests::test_event_handler_creation ... ok
+test panels::delegate::tests::test_delegate_panel_empty ... ok
+test panels::neuron::tests::test_neuron_display_from_neuron_info ... ok
+test panels::delegate::tests::test_delegate_panel_with_data ... ok
+test panels::network_overview::tests::test_network_overview_renders_focused ... ok
+test panels::subnet::tests::test_subnet_panel_empty ... ok
+test panels::network_overview::tests::test_network_overview_renders_unfocused ... ok
+test panels::wallet::tests::test_wallet_empty_delegations ... ok
+test panels::neuron::tests::test_neuron_panel_default ... ok
+test panels::neuron::tests::test_neuron_panel_with_data ... ok
+test panels::subnet::tests::test_subnet_panel_with_data ... ok
+test panels::wallet::tests::test_wallet_panel_renders ... ok
+test ui::tests::test_draw_expanded_network ... ok
+test ui::tests::test_draw_default_app ... ok
+test ui::tests::test_draw_disconnected ... ok
+test ui::tests::test_draw_each_panel_focused ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 35 tests
+test keyfile::tests::argon2i_params_match_libsodium ... ok
+test keyfile::tests::invalid_prefix_fails ... ok
+test keyfile::tests::salt_matches_btwallet ... ok
+test mnemonic::tests::generate_12_word_mnemonic ... ok
+test keypair::tests::from_secret_key ... ok
+test mnemonic::tests::generate_24_word_mnemonic ... ok
+test mnemonic::tests::parse_invalid_mnemonic_fails ... ok
+test ss58::tests::decode_alice_address_format_42 ... ok
+test ss58::tests::decode_invalid_checksum ... ok
+test ss58::tests::encode_alice_address_format_42 ... ok
+test ss58::tests::encode_alice_polkadot_format_0 ... ok
+test ss58::tests::encode_with_custom_format ... ok
+test ss58::tests::round_trip_encode_decode ... ok
+test keypair::tests::dev_alice_address ... ok
+test mnemonic::tests::generated_mnemonic_produces_valid_keypair ... ok
+test mnemonic::tests::parse_valid_mnemonic ... ok
+test wallet::tests::custom_hotkey_name ... ok
+test keypair::tests::seed_hex_roundtrip ... ok
+test wallet::tests::sign_and_verify_with_hotkey ... ok
+test keypair::tests::sign_and_verify_roundtrip ... ok
+test keypair::tests::sign_verify_wrong_message_fails ... ok
+test wallet::tests::create_hotkey_and_read_back ... ok
+test mnemonic::tests::mnemonic_with_password_produces_different_key ... ok
+test keypair::tests::from_known_mnemonic ... ok
+test keypair::tests::alice_from_uri ... ok
+test keypair::tests::derive_hard_junction ... ok
+test keyfile::tests::encrypted_data_has_nacl_prefix ... ok
+test keyfile::tests::decrypt_python_created_coldkey ... ok
+test wallet::tests::create_coldkey_and_read_back ... ok
+test wallet::tests::coldkeypub_file_contains_ss58 ... ok
+test wallet::tests::sign_and_verify_with_coldkey ... ok
+test keyfile::tests::wrong_password_fails ... ok
+test wallet::tests::wrong_password_fails ... ok
+test keyfile::tests::round_trip_encrypt_decrypt ... ok
+test wallet::tests::encryption_roundtrip_with_keyfile ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 29.46s
+
+
+running 23 tests
+test queries::tests::hex_roundtrip ... ok
+test queries::tests::decode_hex_simple ... ok
+test queries::tests::blake2_128_known_input ... ok
+test queries::tests::scale_decode_u64_roundtrip ... ok
+test queries::tests::rpc_request_serialization ... ok
+test queries::tests::build_system_account_key_hex_address ... ok
+test queries::tests::ss58_decode_invalid_returns_error ... ok
+test types::tests::balance_add_sub ... ok
+test queries::tests::ss58_decode_hex_format ... ok
+test types::tests::balance_display ... ok
+test types::tests::axon_info_json_roundtrip ... ok
+test types::tests::balance_from_rao ... ok
+test types::tests::balance_from_tao ... ok
+test types::tests::balance_zero ... ok
+test types::tests::delegate_info_json_roundtrip ... ok
+test types::tests::network_config_finney ... ok
+test types::tests::network_config_local ... ok
+test types::tests::network_config_test ... ok
+test types::tests::registration_info_json_roundtrip ... ok
+test types::tests::stake_info_json_roundtrip ... ok
+test types::tests::subnet_info_json_roundtrip ... ok
+test types::tests::subnet_hyperparams_json_roundtrip ... ok
+test types::tests::terminal_info_default ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test bittensor-chain/src/client.rs - client::SubtensorClient (line 13) ... ignored
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.12s; merged doctests compilation took 0.11s
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test bittensor-core/src/balance.rs - balance::Balance (line 18) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.36s; merged doctests compilation took 0.34s
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test bittensor-metagraph/src/lib.rs - (line 8) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.32s; merged doctests compilation took 0.31s
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

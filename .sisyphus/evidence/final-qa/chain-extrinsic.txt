@@ -1,0 +1,6 @@
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.97s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_chain-9b12523a8cc9602c)
+     Running tests/integration.rs (target/debug/deps/integration-4557e54e8fd56563)
+   Doc-tests bittensor_chain
+cargo test: 35 passed, 63 filtered out (3 suites, 0.00s)

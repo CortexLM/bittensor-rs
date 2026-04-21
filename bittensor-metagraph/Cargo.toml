@@ -1,0 +1,21 @@
+[package]
+name = "bittensor-metagraph"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bittensor-core = { path = "../bittensor-core" }
+bittensor-chain = { path = "../bittensor-chain" }
+ndarray = { version = "0.16", features = ["serde"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[features]
+default = []
+ml-backend = []
+
+[dev-dependencies]
+tempfile = "3"

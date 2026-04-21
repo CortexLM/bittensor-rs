@@ -1,0 +1,65 @@
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+   Compiling bittensor-axon v0.1.0 (/root/llm-proxy/bittensor-axon)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.23s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_axon-00ccabb7759a7e3d)
+
+running 29 tests
+test config::tests::bind_addr_format ... ok
+test axon::tests::new_axon_with_defaults ... ok
+test config::tests::default_config ... ok
+test axon::tests::attach_handler ... ok
+test axon::tests::set_priority ... ok
+test axon::tests::attached_route_responds ... ok
+test axon::tests::blacklist_and_unblacklist ... ok
+test config::tests::external_ip_falls_back ... ok
+test axon::tests::unregistered_route_returns_404 ... ok
+test config::tests::config_serialization_roundtrip ... ok
+test axon::tests::start_and_stop ... ok
+test middleware::tests::blacklist_rejects_blacklisted_hotkey ... ok
+test middleware::tests::blacklist_passes_non_blacklisted_hotkey ... ok
+test middleware::tests::constant_time_eq_different_strings ... ok
+test middleware::tests::constant_time_eq_same_strings ... ok
+test middleware::tests::body_hash_passes_when_no_hash_header ... ok
+test middleware::tests::body_hash_passes_matching_hash ... ok
+test middleware::tests::body_hash_rejects_mismatch ... ok
+test middleware::tests::verification_skips_when_no_axon_hotkey ... ok
+test middleware::tests::priority_assigns_known_priority ... ok
+test middleware::tests::priority_defaults_to_zero_for_unknown_hotkey ... ok
+test middleware::tests::full_chain_rejects_blacklisted_after_verification ... ok
+test router::tests::registry_len ... ok
+test middleware::tests::verification_passes_with_signature_header ... ok
+test router::tests::registry_register_and_lookup ... ok
+test router::tests::unregistered_route_returns_404 ... ok
+test router::tests::register_synapse_route_creates_path ... ok
+test middleware::tests::verification_rejects_missing_signature_when_hotkey_set ... ok
+test middleware::tests::full_middleware_chain_passes_valid_request ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/integration.rs (target/debug/deps/integration-9f1e591824fff48c)
+
+running 15 tests
+test axon_struct_unsigned_request_bypasses_middleware ... ignored
+test oneshot_middleware_rejects_unsigned ... ok
+test oneshot_middleware_accepts_signed ... ok
+test sse_streaming_round_trip ... ok
+test unregistered_route_returns_404 ... ok
+test unsigned_request_passes_when_no_hotkey ... ok
+test multiple_synapse_routes ... ok
+test signed_sse_streaming_passes_verification ... ok
+test tampered_body_hash_returns_400 ... ok
+test unsigned_request_returns_401 ... ok
+test priority_header_in_response ... ok
+test priority_defaults_to_zero ... ok
+test signed_request_round_trip ... ok
+test late_blacklist_still_blocks ... ok
+test blacklisted_hotkey_returns_403 ... ok
+
+test result: ok. 14 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.78s
+
+   Doc-tests bittensor_axon
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

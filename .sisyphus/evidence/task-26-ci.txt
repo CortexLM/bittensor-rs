@@ -1,0 +1,6 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+--- CI YAML created with 8 jobs: fmt, clippy, test, build, doc, integration, pyo3, wasm

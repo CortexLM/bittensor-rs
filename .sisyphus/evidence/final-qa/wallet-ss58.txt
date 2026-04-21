@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_wallet-77f520e6351f6d36)
+   Doc-tests bittensor_wallet
+cargo test: 7 passed, 28 filtered out (2 suites, 14.46s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_wallet-77f520e6351f6d36)
+   Doc-tests bittensor_wallet
+cargo test: 7 passed, 28 filtered out (2 suites, 14.68s)

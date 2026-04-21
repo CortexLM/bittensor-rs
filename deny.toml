@@ -1,0 +1,37 @@
+[advisories]
+# Security vulnerability database check
+db-path = "~/.cargo/advisory-db"
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "warn"
+notice = "warn"
+
+[licenses]
+# Allow permissive licenses
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "ISC",
+  "MPL-2.0",
+]
+# Deny copyleft / GPL licenses
+deny = ["GPL-1.0", "GPL-2.0", "GPL-3.0", "AGPL-1.0", "AGPL-3.0", "LGPL-2.0", "LGPL-2.1", "LGPL-3.0", "EUPL-1.2", "CPAL-1.0"]
+# Flag unlicensed crates
+unlicensed = "deny"
+# Allow common license expressions with AND/OR
+private = { ignore = true }
+
+[bans]
+# Warn about multiple versions of same crate
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+
+[sources]
+# Only allow crates.io and specified registries
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

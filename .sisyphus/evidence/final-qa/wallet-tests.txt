@@ -1,0 +1,50 @@
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.47s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_wallet-77f520e6351f6d36)
+
+running 35 tests
+test keyfile::tests::invalid_prefix_fails ... ok
+test keyfile::tests::argon2i_params_match_libsodium ... ok
+test keyfile::tests::salt_matches_btwallet ... ok
+test mnemonic::tests::generate_12_word_mnemonic ... ok
+test keypair::tests::from_secret_key ... ok
+test mnemonic::tests::parse_invalid_mnemonic_fails ... ok
+test mnemonic::tests::generate_24_word_mnemonic ... ok
+test ss58::tests::decode_invalid_checksum ... ok
+test ss58::tests::decode_alice_address_format_42 ... ok
+test ss58::tests::encode_alice_address_format_42 ... ok
+test ss58::tests::encode_alice_polkadot_format_0 ... ok
+test ss58::tests::encode_with_custom_format ... ok
+test ss58::tests::round_trip_encode_decode ... ok
+test keypair::tests::dev_alice_address ... ok
+test mnemonic::tests::generated_mnemonic_produces_valid_keypair ... ok
+test mnemonic::tests::parse_valid_mnemonic ... ok
+test wallet::tests::create_hotkey_and_read_back ... ok
+test keypair::tests::seed_hex_roundtrip ... ok
+test wallet::tests::sign_and_verify_with_hotkey ... ok
+test keypair::tests::sign_and_verify_roundtrip ... ok
+test wallet::tests::custom_hotkey_name ... ok
+test keypair::tests::sign_verify_wrong_message_fails ... ok
+test keypair::tests::alice_from_uri ... ok
+test keypair::tests::from_known_mnemonic ... ok
+test mnemonic::tests::mnemonic_with_password_produces_different_key ... ok
+test keypair::tests::derive_hard_junction ... ok
+test keyfile::tests::encrypted_data_has_nacl_prefix ... ok
+test keyfile::tests::decrypt_python_created_coldkey ... ok
+test wallet::tests::coldkeypub_file_contains_ss58 ... ok
+test wallet::tests::create_coldkey_and_read_back ... ok
+test wallet::tests::sign_and_verify_with_coldkey ... ok
+test keyfile::tests::round_trip_encrypt_decrypt ... ok
+test keyfile::tests::wrong_password_fails ... ok
+test wallet::tests::encryption_roundtrip_with_keyfile ... ok
+test wallet::tests::wrong_password_fails ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.11s
+
+   Doc-tests bittensor_wallet
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

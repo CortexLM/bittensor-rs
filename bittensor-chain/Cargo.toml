@@ -1,0 +1,38 @@
+[package]
+name = "bittensor-chain"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+subxt = { workspace = true }
+parity-scale-codec = { workspace = true }
+bittensor-core = { path = "../bittensor-core" }
+subxt-signer = { workspace = true }
+tokio = { workspace = true }
+futures = "0.3"
+tracing = "0.1"
+thiserror = { workspace = true }
+
+# drand feature dependencies
+reqwest = { version = "0.12", features = ["json"], optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+blst = { version = "0.3", optional = true }
+sha2 = { version = "0.10", optional = true }
+lru = { version = "0.12", optional = true }
+
+# mev-shield feature dependencies
+ml-kem = { version = "0.2", optional = true }
+hex = { version = "0.4", optional = true }
+rand = { version = "0.8", optional = true }
+
+[features]
+default = ["storage-subscriptions"]
+storage-subscriptions = []
+drand = ["dep:reqwest", "dep:serde", "dep:serde_json", "dep:blst", "dep:sha2", "dep:lru"]
+mev-shield = ["dep:ml-kem", "dep:hex", "dep:serde", "dep:serde_json", "dep:rand", "dep:sha2"]
+integration-tests = []
+
+[dev-dependencies]
+tokio = { workspace = true }

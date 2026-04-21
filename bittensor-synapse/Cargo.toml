@@ -1,0 +1,11 @@
+[package]
+name = "bittensor-synapse"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha3 = "0.10"

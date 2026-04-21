@@ -1,0 +1,25 @@
+[package]
+name = "bittensor-tui"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "bittensor-tui"
+path = "src/main.rs"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+tokio = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+bittensor-core = { path = "../bittensor-core" }
+bittensor-chain = { path = "../bittensor-chain" }
+bittensor-wallet = { path = "../bittensor-wallet" }
+bittensor-metagraph = { path = "../bittensor-metagraph" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+rand = "0.8"

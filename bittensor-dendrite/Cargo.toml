@@ -1,0 +1,25 @@
+[package]
+name = "bittensor-dendrite"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tokio = { workspace = true }
+bittensor-core = { path = "../bittensor-core" }
+bittensor-synapse = { path = "../bittensor-synapse" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+futures = "0.3"
+tracing = "0.1"
+tokio-stream = "0.1"
+subxt-signer = { workspace = true }
+thiserror = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+wiremock = "0.6"
+axum = { version = "0.8", features = ["ws"] }
+bittensor-core = { path = "../bittensor-core" }

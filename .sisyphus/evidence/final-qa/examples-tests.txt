@@ -1,0 +1,8 @@
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
+   Compiling bittensor-dendrite v0.1.0 (/root/llm-proxy/bittensor-dendrite)
+   Compiling bittensor-axon v0.1.0 (/root/llm-proxy/bittensor-axon)
+   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
+   Compiling bittensor-examples v0.1.0 (/root/llm-proxy/bittensor-examples)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.89s

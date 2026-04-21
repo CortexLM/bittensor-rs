@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_synapse-b0e0d508791ab664)
+   Doc-tests bittensor_synapse
+cargo test: 4 passed, 19 filtered out (2 suites, 0.00s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_synapse-b0e0d508791ab664)
+   Doc-tests bittensor_synapse
+cargo test: 4 passed, 19 filtered out (2 suites, 0.00s)

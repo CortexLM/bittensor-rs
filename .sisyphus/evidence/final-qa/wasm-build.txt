@@ -1,0 +1,20 @@
+[INFO]: 🎯  Checking for the Wasm target...
+[INFO]: 🌀  Compiling to Wasm...
+   Compiling bittensor-synapse v0.1.0 (/root/llm-proxy/bittensor-synapse)
+   Compiling bittensor-wasm v0.1.0 (/root/llm-proxy/bittensor-wasm)
+    Finished `release` profile [optimized] target(s) in 1.63s
+[INFO]: ⬇️  Installing wasm-bindgen...
+[INFO]: Optimizing wasm binaries with `wasm-opt`...
+[INFO]: Optional fields missing from Cargo.toml: 'description', 'repository', and 'license'. These are not necessary, but recommended
+[INFO]: ✨   Done in 15.80s
+[INFO]: 📦   Your wasm pkg is ready to publish at /root/llm-proxy/bittensor-wasm/pkg.
+total 364
+drwxr-xr-x 2 root root   4096 Apr 19 10:04 .
+drwxr-xr-x 4 root root   4096 Apr 19 09:34 ..
+-rw-r--r-- 1 root root      1 Apr 19 10:04 .gitignore
+-rw-r--r-- 1 root root    713 Apr 19 10:04 README.md
+-rw-r--r-- 1 root root  20364 Apr 19 10:04 bittensor_wasm.d.ts
+-rw-r--r-- 1 root root  63726 Apr 19 10:04 bittensor_wasm.js
+-rw-r--r-- 1 root root 250418 Apr 19 10:04 bittensor_wasm_bg.wasm
+-rw-r--r-- 1 root root   8213 Apr 19 10:04 bittensor_wasm_bg.wasm.d.ts
+-rw-r--r-- 1 root root    279 Apr 19 10:04 package.json

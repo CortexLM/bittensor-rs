@@ -1,0 +1,48 @@
+=== bittensor-pyo3 Cargo.toml ===
+[package]
+name = "bittensor-pyo3"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.23" }
+pyo3-async-runtimes = { version = "0.23", features = ["tokio-runtime"] }
+tokio = { workspace = true }
+bittensor-core = { path = "../bittensor-core" }
+bittensor-wallet = { path = "../bittensor-wallet" }
+bittensor-chain = { path = "../bittensor-chain" }
+bittensor-synapse = { path = "../bittensor-synapse" }
+bittensor-axon = { path = "../bittensor-axon" }
+bittensor-dendrite = { path = "../bittensor-dendrite" }
+bittensor-metagraph = { path = "../bittensor-metagraph" }
+subxt = { workspace = true }
+subxt-signer = { workspace = true }
+serde_json = { workspace = true }
+axum = { version = "0.8", features = ["ws"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+futures = "0.3"
+
+[features]
+python = ["pyo3/extension-module"]
+drand = ["bittensor-chain/drand"]
+mev-shield = ["bittensor-chain/mev-shield"]
+
+=== cargo test -p bittensor-pyo3 ===
+   Compiling bittensor-pyo3 v0.1.0 (/root/llm-proxy/bittensor-pyo3)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.76s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_pyo3-322acbb555885680)
+   Doc-tests bittensor_pyo3
+cargo test: 6 passed (2 suites, 0.00s)
+
+=== cargo check -p bittensor-pyo3 --features python ===
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.12s
+cargo build (0 crates compiled)
+
+=== cargo clippy -p bittensor-pyo3 ===
+cargo clippy: No issues found

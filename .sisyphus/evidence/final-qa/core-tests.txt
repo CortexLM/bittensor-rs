@@ -1,0 +1,108 @@
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.28s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_core-d57482845a93ba2e)
+
+running 92 tests
+test balance::tests::add_balances ... ok
+test balance::tests::checked_div_by_zero ... ok
+test balance::tests::checked_sub_underflow ... ok
+test balance::tests::checked_add_overflow ... ok
+test balance::tests::checked_mul_overflow ... ok
+test balance::tests::default_is_zero ... ok
+test balance::tests::display_small_balance ... ok
+test balance::tests::display_zero ... ok
+test balance::tests::from_rao_identity ... ok
+test balance::tests::div_balances ... ok
+test balance::tests::from_str_integer ... ok
+test balance::tests::from_str_invalid ... ok
+test balance::tests::display_nine_decimal_places ... ok
+test balance::tests::from_tao_roundtrip ... ok
+test balance::tests::from_str_valid ... ok
+test balance::tests::mul_by_scalar ... ok
+test balance::tests::one_tao_equals_billion_rao ... ok
+test balance::tests::ordering ... ok
+test balance::tests::saturating_add ... ok
+test balance::tests::scale_codec_roundtrip ... ok
+test balance::tests::saturating_sub ... ok
+test balance::tests::serialization_roundtrip ... ok
+test balance::tests::sub_balances ... ok
+test balance::tests::zero_balance ... ok
+test config::tests::archive_network_config ... ok
+test config::tests::finney_network_config ... ok
+test config::tests::latent_lite_network_config ... ok
+test config::tests::local_network_config ... ok
+test config::tests::network_config_equality ... ok
+test config::tests::subtensor_config_default ... ok
+test config::tests::test_network_config ... ok
+test config::tests::network_config_serialization_roundtrip ... ok
+test config::tests::subtensor_config_builder ... ok
+test error::tests::delay_capped_at_max ... ok
+test error::tests::error_category_mapping ... ok
+test error::tests::delay_for_attempt_exponential_backoff ... ok
+test error::tests::error_display ... ok
+test error::tests::retry_config_non_retryable ... ok
+test error::tests::error_category_display ... ok
+test error::tests::retry_config_rate_limit ... ok
+test error::tests::retry_config_transient ... ok
+test error::tests::retry_config_serialization_roundtrip ... ok
+test error::tests::retryable_errors ... ok
+test pow::tests::compute_seal_deterministic ... ok
+test pow::tests::pow_solution_nonce_starts_at_zero ... ok
+test pow::tests::compute_seal_different_nonce ... ok
+test pow::tests::seal_below_threshold_less ... ok
+test pow::tests::seal_below_threshold_equal_returns_false ... ok
+test pow::tests::seal_meets_difficulty_zero_difficulty ... ok
+test pow::tests::seal_meets_difficulty_high_seal_fails ... ok
+test pow::tests::seal_meets_difficulty_low_seal_passes ... ok
+test pow::tests::solve_pow_easy_difficulty ... ok
+test pow::tests::threshold_decreases_with_difficulty ... ok
+test pow::tests::u256_div_u64_correctness ... ok
+test pow::tests::solve_pow_returns_correct_seal ... ok
+test types::tests::audit_info_scale_roundtrip ... ok
+test types::tests::axon_info_json_roundtrip ... ok
+test types::tests::axon_info_scale_roundtrip ... ok
+test types::tests::chain_identity_json_roundtrip ... ok
+test types::tests::neuron_certificate_scale_roundtrip ... ok
+test types::tests::prometheus_info_scale_roundtrip ... ok
+test types::tests::neuron_info_lite_scale_roundtrip ... ok
+test types::tests::delegate_info_json_roundtrip ... ok
+test types::tests::proposal_vote_data_json_roundtrip ... ok
+test types::tests::registration_info_json_roundtrip ... ok
+test types::tests::stake_info_with_balance ... ok
+test types::tests::subnet_hyperparams_scale_roundtrip ... ok
+test types::tests::subnet_info_scale_roundtrip ... ok
+test types::tests::subnet_state_json_roundtrip ... ok
+test types::tests::weight_commit_scale_roundtrip ... ok
+test weight_utils::tests::convert_chain_duplicate_dests ... ok
+test weight_utils::tests::convert_chain_all_zeros_filtered ... ok
+test weight_utils::tests::convert_chain_mismatched_lengths ... ok
+test weight_utils::tests::convert_chain_filters_zeros ... ok
+test weight_utils::tests::normalize_u16_all_equal ... ok
+test weight_utils::tests::convert_chain_valid ... ok
+test weight_utils::tests::normalize_u16_all_zeros ... ok
+test weight_utils::tests::normalize_u16_empty ... ok
+test weight_utils::tests::normalize_u16_large_values ... ok
+test weight_utils::tests::normalize_u16_mixed_negative_and_positive ... ok
+test weight_utils::tests::normalize_u16_multiple_values ... ok
+test weight_utils::tests::normalize_u16_negative_weights ... ok
+test weight_utils::tests::normalize_u16_single_nonzero ... ok
+test weight_utils::tests::normalize_u64_all_zeros ... ok
+test weight_utils::tests::normalize_u64_negative_clamped ... ok
+test weight_utils::tests::normalize_u64_proportional ... ok
+test weight_utils::tests::normalize_u64_single_nonzero ... ok
+test weight_utils::tests::process_all_zero_weights ... ok
+test weight_utils::tests::process_empty_weights ... ok
+test weight_utils::tests::process_mixed_weights ... ok
+test weight_utils::tests::process_negative_weights_uniform ... ok
+test pow::tests::solve_pow_medium_difficulty ... ok
+
+test result: ok. 92 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.00s
+
+   Doc-tests bittensor_core
+
+running 1 test
+test bittensor-core/src/balance.rs - balance::Balance (line 18) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.36s; merged doctests compilation took 0.35s

@@ -1,0 +1,50 @@
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
+   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
+   Compiling bittensor-tui v0.1.0 (/root/llm-proxy/bittensor-tui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 24.35s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_tui-9a3104cc88772f89)
+
+running 26 tests
+test app::tests::test_arrow_keys ... ok
+test app::tests::test_esc_closes_expanded ... ok
+test app::tests::test_panel_navigation ... ok
+test app::tests::test_expand_toggle ... ok
+test app::tests::test_tab_resets_selection ... ok
+test app::tests::test_quit ... ok
+test app::tests::test_panel_next_prev_cycle ... ok
+test network::tests::test_network_data_default ... ok
+test network::tests::test_network_data_fields ... ok
+test panels::network_overview::tests::test_brand_colors ... ok
+test event::tests::test_event_handler_creation ... ok
+test panels::delegate::tests::test_delegate_panel_empty ... ok
+test panels::delegate::tests::test_delegate_panel_with_data ... ok
+test panels::neuron::tests::test_neuron_display_from_neuron_info ... ok
+test panels::subnet::tests::test_subnet_panel_empty ... ok
+test panels::network_overview::tests::test_network_overview_renders_unfocused ... ok
+test panels::network_overview::tests::test_network_overview_renders_focused ... ok
+test panels::wallet::tests::test_wallet_empty_delegations ... ok
+test panels::neuron::tests::test_neuron_panel_default ... ok
+test panels::wallet::tests::test_wallet_panel_renders ... ok
+test panels::subnet::tests::test_subnet_panel_with_data ... ok
+test panels::neuron::tests::test_neuron_panel_with_data ... ok
+test ui::tests::test_draw_expanded_network ... ok
+test ui::tests::test_draw_default_app ... ok
+test ui::tests::test_draw_disconnected ... ok
+test ui::tests::test_draw_each_panel_focused ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (target/debug/deps/bittensor_tui-46e62f70728b155b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests bittensor_tui
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

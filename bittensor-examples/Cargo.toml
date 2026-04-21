@@ -1,0 +1,22 @@
+[package]
+name = "bittensor-examples"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+bittensor-core = { path = "../bittensor-core" }
+bittensor-wallet = { path = "../bittensor-wallet" }
+bittensor-chain = { path = "../bittensor-chain" }
+bittensor-axon = { path = "../bittensor-axon" }
+bittensor-dendrite = { path = "../bittensor-dendrite" }
+bittensor-synapse = { path = "../bittensor-synapse" }
+bittensor-metagraph = { path = "../bittensor-metagraph" }
+bittensor-tui = { path = "../bittensor-tui" }
+tokio = { workspace = true }
+subxt-signer = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ratatui = "0.29"
+crossterm = "0.28"

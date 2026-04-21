@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>bittensor-wasm browser example</title>
+    <!--
+        Build the WASM package first:
+          wasm-pack build bittensor-wasm --target web
+
+        Then serve this directory with any static file server:
+          python3 -m http.server 3180
+
+        Open http://localhost:3180/index.html
+    -->
+</head>
+<body>
+    <h1>bittensor-wasm demo</h1>
+    <button id="balance-btn">Get Balance</button>
+    <div id="output"></div>
+    <script type="module">
+        import init, { Balance, AxonInfo, get_balance } from '../../pkg/bittensor_wasm.js';
+
+        async function run() {
+            await init();
+
+            // Balance arithmetic
+            const bal = Balance.from_tao("1.5");
+            document.getElementById('output').innerHTML =
+                `<p>Balance: ${bal.display()}</p>`;
+
+            // Deserialize an AxonInfo from JSON
+            const info = AxonInfo.from_json(
+                JSON.stringify({ ip: "1.2.3.4", port: 8091, ip_type: 4,
+                                  protocol: 4, version: 0, hotkey: "5Grw...",
+                                  coldkey: "5FHw..." })
+            );
+            document.getElementById('output').innerHTML +=
+                `<p>Hotkey: ${info.hotkey()}</p>` +
+                `<p>Port: ${info.port()}</p>`;
+
+            // Get Balance button handler
+            document.getElementById('balance-btn').addEventListener('click', () => {
+                const tao = Balance.from_tao("2.5");
+                document.getElementById('output').innerHTML +=
+                    `<p>Button result: ${tao.display()} (${tao.rao()} rao)</p>`;
+            });
+        }
+
+        run();
+    </script>
+</body>
+</html>

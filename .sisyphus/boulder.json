@@ -1,0 +1,155 @@
+{
+  "active_plan": "/root/llm-proxy/.sisyphus/plans/bittensor-rs.md",
+  "started_at": "2026-04-19T05:44:41.612Z",
+  "session_ids": [
+    "ses_25bcba59bffe1PIj5zhLolJdNX",
+    "ses_25ad1f847ffeXIh2CUtCjuuRci",
+    "ses_25ad1d904ffeDjONjnV2GU3yFb",
+    "ses_25ad1b6ffffeVnxMMMEUeNiQTs",
+    "ses_25ad19c05ffeJUXOE1yBiMdxF2",
+    "ses_25a9b0208fferQ2VAWyjqhYiDn",
+    "ses_25a4e5408ffe8gRzlN1B03IkLR",
+    "ses_25a4e4510ffesvaRT1TLevs2yR",
+    "ses_25a4e3726ffe1ux2JJpnUihExR"
+  ],
+  "session_origins": {
+    "ses_25bcba59bffe1PIj5zhLolJdNX": "direct",
+    "ses_25ad1f847ffeXIh2CUtCjuuRci": "appended",
+    "ses_25ad1d904ffeDjONjnV2GU3yFb": "appended",
+    "ses_25ad1b6ffffeVnxMMMEUeNiQTs": "appended",
+    "ses_25ad19c05ffeJUXOE1yBiMdxF2": "appended",
+    "ses_25a9b0208fferQ2VAWyjqhYiDn": "direct",
+    "ses_25a4e5408ffe8gRzlN1B03IkLR": "appended",
+    "ses_25a4e4510ffesvaRT1TLevs2yR": "appended",
+    "ses_25a4e3726ffe1ux2JJpnUihExR": "appended"
+  },
+  "plan_name": "bittensor-rs",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Workspace Scaffolding + Crate Stubs",
+      "session_id": "ses_25bba2cd5ffe3F3g4cnPDhnfu6",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-19T05:46:03.071Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "bittensor-core: Shared Types, Errors, Config, Balance Arithmetic",
+      "session_id": "ses_25bb89385ffe467t0JqRN7T6Qz",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T05:50:19.284Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "NaCl Keyfile Compatibility Validation (CRITICAL)",
+      "session_id": "ses_25bb4078effetDbcHbzEWROgz7",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T05:57:48.497Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "bittensor-wallet: Full Wallet Management",
+      "session_id": "ses_25b838defffe385XQ5UymXODd7",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T07:00:45.996Z"
+    },
+    "todo:15": {
+      "task_key": "todo:15",
+      "task_label": "15",
+      "task_title": "bittensor-chain: Full Integration Tests",
+      "session_id": "ses_25b6243e9ffeKDqjkM3aEYggL3",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-19T07:26:38.201Z"
+    },
+    "todo:19": {
+      "task_key": "todo:19",
+      "task_label": "19",
+      "task_title": "bittensor-cli: Stake, Transfer, and Registration Commands",
+      "session_id": "ses_25b5008a2ffeXIGRHBkf8Xc13c",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-19T07:45:04.641Z"
+    },
+    "todo:20": {
+      "task_key": "todo:20",
+      "task_label": "20",
+      "task_title": "bittensor-cli: Subnet, Root, and Delegate Commands",
+      "session_id": "ses_25b48d888ffeMBhlSNUF8HM8Se",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-19T07:53:33.974Z"
+    },
+    "todo:21": {
+      "task_key": "todo:21",
+      "task_label": "21",
+      "task_title": "bittensor-pyo3: Core, Wallet, and Chain Bindings",
+      "session_id": "ses_25b41334effeUhelIQ0c4fvA6p",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T08:22:44.807Z"
+    },
+    "todo:22": {
+      "task_key": "todo:22",
+      "task_label": "22",
+      "task_title": "bittensor-pyo3: Axon, Dendrite, and Synapse Bindings",
+      "session_id": "ses_25b2295a7ffe3SNM5vW1LNccaD",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T08:46:57.556Z"
+    },
+    "todo:23": {
+      "task_key": "todo:23",
+      "task_label": "23",
+      "task_title": "bittensor-tui: Terminal UI with ratatui",
+      "session_id": "ses_25aff71adffe2MAE304LXkmVvL",
+      "agent": "Sisyphus-Junior",
+      "category": "visual-engineering",
+      "updated_at": "2026-04-19T09:13:10.227Z"
+    },
+    "todo:24": {
+      "task_key": "todo:24",
+      "task_label": "24",
+      "task_title": "bittensor-wasm: WASM-Compatible Subset",
+      "session_id": "ses_25af932caffeafG6ySXVKFxkG6",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-19T09:20:58.769Z"
+    },
+    "todo:25": {
+      "task_key": "todo:25",
+      "task_label": "25",
+      "task_title": "Documentation + Examples",
+      "session_id": "ses_25af138ccffeSCmLp6czoXhfmA",
+      "agent": "Sisyphus-Junior",
+      "category": "writing",
+      "updated_at": "2026-04-19T09:36:18.941Z"
+    },
+    "todo:26": {
+      "task_key": "todo:26",
+      "task_label": "26",
+      "task_title": "Final Workspace Integration + CI Pipeline",
+      "session_id": "ses_25adf6bf6ffeMxO3Gwf7txgJBh",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-19T09:55:25.308Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_25a4e4510ffesvaRT1TLevs2yR",
+      "agent": "general",
+      "updated_at": "2026-04-19T12:25:12.571Z"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+[package]
+name = "bittensor-core"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+parity-scale-codec = { workspace = true }
+subxt = { workspace = true }
+subxt-signer = { workspace = true }
+blake2 = "0.10"

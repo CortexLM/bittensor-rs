@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_dendrite-e629ae3180e398d6)
+     Running tests/integration.rs (target/debug/deps/integration-95dfaac19cfc0bd3)
+   Doc-tests bittensor_dendrite
+cargo test: 32 passed (3 suites, 1.79s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_dendrite-e629ae3180e398d6)
+     Running tests/integration.rs (target/debug/deps/integration-95dfaac19cfc0bd3)
+   Doc-tests bittensor_dendrite
+cargo test: 32 passed (3 suites, 1.84s)

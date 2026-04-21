@@ -1,0 +1,4 @@
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.04s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_chain-9b12523a8cc9602c)
+cargo test: 97 passed (1 suite, 0.01s)

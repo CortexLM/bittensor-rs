@@ -1,0 +1,22 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on artifact directory
+   Compiling hyper v1.9.0
+   Compiling bittensor-wasm v0.1.0 (/root/llm-proxy/bittensor-wasm)
+   Compiling subxt-signer v0.50.0
+   Compiling bittensor-core v0.1.0 (/root/llm-proxy/bittensor-core)
+   Compiling hyper-util v0.1.20
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
+   Compiling hyper-tls v0.6.0
+   Compiling axum v0.8.9
+   Compiling reqwest v0.12.28
+   Compiling bittensor-dendrite v0.1.0 (/root/llm-proxy/bittensor-dendrite)
+   Compiling bittensor-axon v0.1.0 (/root/llm-proxy/bittensor-axon)
+   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
+   Compiling bittensor-cli v0.1.0 (/root/llm-proxy/bittensor-cli)
+   Compiling bittensor-tui v0.1.0 (/root/llm-proxy/bittensor-tui)
+   Compiling bittensor-pyo3 v0.1.0 (/root/llm-proxy/bittensor-pyo3)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 29.55s
+cargo build (0 crates compiled)

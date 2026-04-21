@@ -1,0 +1,6 @@
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
+   Compiling bittensor-cli v0.1.0 (/root/llm-proxy/bittensor-cli)
+   Compiling bittensor-tui v0.1.0 (/root/llm-proxy/bittensor-tui)
+   Compiling bittensor-pyo3 v0.1.0 (/root/llm-proxy/bittensor-pyo3)
+    Finished `release` profile [optimized] target(s) in 27.32s

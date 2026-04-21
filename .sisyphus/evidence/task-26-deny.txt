@@ -1,0 +1,6 @@
+[advisories]
+# Security vulnerability database check
+db-path = "~/.cargo/advisory-db"
+vulnerability = "deny"
+unmaintained = "warn"
+--- deny.toml: allows MIT/Apache/BSD/CC0/ISC/MPL, denies GPL, flags unlicensed

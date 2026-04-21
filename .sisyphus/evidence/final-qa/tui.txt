@@ -1,0 +1,14 @@
+   Compiling bittensor-chain v0.1.0 (/root/llm-proxy/bittensor-chain)
+   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
+   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
+   Compiling bittensor-tui v0.1.0 (/root/llm-proxy/bittensor-tui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.05s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_tui-9a3104cc88772f89)
+     Running unittests src/main.rs (target/debug/deps/bittensor_tui-46e62f70728b155b)
+   Doc-tests bittensor_tui
+cargo test: 26 passed (3 suites, 0.01s)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running unittests src/lib.rs (target/debug/deps/bittensor_tui-9a3104cc88772f89)
+     Running unittests src/main.rs (target/debug/deps/bittensor_tui-46e62f70728b155b)
+   Doc-tests bittensor_tui
+cargo test: 26 passed (3 suites, 0.01s)

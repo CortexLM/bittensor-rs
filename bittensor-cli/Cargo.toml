@@ -1,0 +1,36 @@
+[package]
+name = "bittensor-cli"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "btcli-rs"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+bittensor-wallet = { path = "../bittensor-wallet" }
+bittensor-chain = { path = "../bittensor-chain" }
+bittensor-core = { path = "../bittensor-core" }
+bittensor-metagraph = { path = "../bittensor-metagraph" }
+tokio = { workspace = true }
+anyhow = "1"
+rpassword = "7"
+serde_yaml = "0.9"
+dirs = "5"
+serde = { workspace = true }
+serde_json = { workspace = true }
+subxt = { workspace = true }
+subxt-signer = { workspace = true }
+hex = "0.4"
+dialoguer = "0.11"
+ndarray = "0.16"
+
+[dev-dependencies]
+tempfile = "3"
+assert_cmd = "2"
+predicates = "3"
+
+[features]
+mev = ["bittensor-chain/mev-shield"]
