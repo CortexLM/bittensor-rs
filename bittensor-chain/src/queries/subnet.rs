@@ -750,4 +750,465 @@ mod tests {
         };
         assert!(!hp.liquid_alpha_enabled);
     }
+
+    #[tokio::test]
+    async fn get_subnet_info_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_info(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_hyperparameters_returns_metadata_defaults() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_hyperparameters(&client, 1u16).await;
+        assert!(result.is_ok());
+        let hp = result.unwrap().unwrap();
+        assert_eq!(hp.rho, 10);
+        assert_eq!(hp.kappa, 32767);
+        assert_eq!(hp.difficulty, 10000000);
+        assert_eq!(hp.burn, 100000000);
+        assert_eq!(hp.immunity_ratio, 4096);
+        assert_eq!(hp.min_burn, 500000);
+        assert_eq!(hp.max_burn, 100000000000);
+        assert_eq!(hp.max_weight_limit, 65535);
+        assert_eq!(hp.scaling_law_power, 50);
+        assert_eq!(hp.max_n, 256);
+        assert_eq!(hp.tempo, 360);
+        assert_eq!(hp.adjustment_interval, 100);
+        assert_eq!(hp.bonds_moving_avg, 900000);
+        assert_eq!(hp.alpha_high, 45875);
+        assert_eq!(hp.alpha_low, 58982);
+        assert!(!hp.liquid_alpha_enabled);
+    }
+
+    #[tokio::test]
+    async fn get_total_subnets_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_total_subnets(&client).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn subnet_exists_returns_false_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = subnet_exists(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_subnet_owner_returns_zero_account_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_owner(&client, 1u16).await;
+        assert!(result.is_ok());
+        let val = result.unwrap();
+        assert!(val.is_some());
+    }
+
+    #[tokio::test]
+    async fn get_subnet_name_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_name(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_owner_hotkey_returns_zero_account_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_owner_hotkey(&client, 1u16).await;
+        assert!(result.is_ok());
+        let val = result.unwrap();
+        assert!(val.is_some());
+        assert_eq!(val.unwrap().0, [0u8; 32]);
+    }
+
+    #[tokio::test]
+    async fn get_tempo_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_tempo(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 360);
+    }
+
+    #[tokio::test]
+    async fn get_subnetwork_n_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnetwork_n(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_mechanism_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_mechanism(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_is_network_member_returns_false() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_is_network_member(&client, &hotkey, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_network_registration_allowed_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_registration_allowed(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_network_pow_registration_allowed_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_pow_registration_allowed(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_network_registered_at_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_registered_at(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_min_allowed_uids_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_allowed_uids(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 64);
+    }
+
+    #[tokio::test]
+    async fn get_max_allowed_uids_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_allowed_uids(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 256);
+    }
+
+    #[tokio::test]
+    async fn get_max_allowed_validators_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_allowed_validators(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 128);
+    }
+
+    #[tokio::test]
+    async fn get_immunity_period_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_immunity_period(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 4096);
+    }
+
+    #[tokio::test]
+    async fn get_activity_cutoff_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_activity_cutoff(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 5000);
+    }
+
+    #[tokio::test]
+    async fn get_max_weights_limit_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_weights_limit(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 65535);
+    }
+
+    #[tokio::test]
+    async fn get_min_allowed_weights_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_allowed_weights(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1024);
+    }
+
+    #[tokio::test]
+    async fn get_adjustment_interval_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_adjustment_interval(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 100);
+    }
+
+    #[tokio::test]
+    async fn get_bonds_moving_average_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_bonds_moving_average(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 900000);
+    }
+
+    #[tokio::test]
+    async fn get_bonds_penalty_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_bonds_penalty(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 65535);
+    }
+
+    #[tokio::test]
+    async fn get_bonds_reset_on_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_bonds_reset_on(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_scaling_law_power_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_scaling_law_power(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 50);
+    }
+
+    #[tokio::test]
+    async fn get_target_registrations_per_interval_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_target_registrations_per_interval(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2);
+    }
+
+    #[tokio::test]
+    async fn get_adjustment_alpha_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_adjustment_alpha(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_liquid_alpha_on_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_liquid_alpha_on(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_yuma3_on_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_yuma3_on(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_alpha_values_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_alpha_values(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), (45875u16, 58982u16));
+    }
+
+    #[tokio::test]
+    async fn get_subtoken_enabled_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subtoken_enabled(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_serving_rate_limit_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_serving_rate_limit(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 50);
+    }
+
+    #[tokio::test]
+    async fn get_burn_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_burn(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 100000000);
+    }
+
+    #[tokio::test]
+    async fn get_difficulty_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_difficulty(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 10000000);
+    }
+
+    #[tokio::test]
+    async fn get_min_burn_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_burn(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 500000);
+    }
+
+    #[tokio::test]
+    async fn get_max_burn_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_burn(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 100000000000);
+    }
+
+    #[tokio::test]
+    async fn get_min_difficulty_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_difficulty(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 10000000);
+    }
+
+    #[tokio::test]
+    async fn get_max_difficulty_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_difficulty(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 4611686018427387903);
+    }
+
+    #[tokio::test]
+    async fn get_last_adjustment_block_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_last_adjustment_block(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_registrations_this_interval_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_registrations_this_interval(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_registrations_this_block_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_registrations_this_block(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_rao_recycled_for_registration_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_rao_recycled_for_registration(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_tx_rate_limit_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_tx_rate_limit(&client).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1000);
+    }
+
+    #[tokio::test]
+    async fn get_ema_price_halving_blocks_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_ema_price_halving_blocks(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 201600);
+    }
+
+    #[tokio::test]
+    async fn get_rho_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_rho(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 10);
+    }
+
+    #[tokio::test]
+    async fn get_kappa_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_kappa(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 32767);
+    }
+
+    #[tokio::test]
+    async fn get_alpha_sigmoid_steepness_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_alpha_sigmoid_steepness(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1000);
+    }
+
+    #[tokio::test]
+    async fn get_voting_power_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_voting_power(&client, 1u16, &hotkey).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_voting_power_tracking_enabled_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_voting_power_tracking_enabled(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_max_registrations_per_block_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_registrations_per_block(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn get_validator_prune_len_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_validator_prune_len(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_locked_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_locked(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_largest_locked_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_largest_locked(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_transfer_toggle_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_transfer_toggle(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
 }

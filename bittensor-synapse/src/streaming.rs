@@ -96,4 +96,36 @@ mod tests {
         let result = TestStreamingSynapse::process_chunk(chunk);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn streaming_synapse_creation() {
+        let synapse = TestStreamingSynapse {
+            name_val: "StreamingTest".to_string(),
+            timeout_val: 30.0,
+            dendrite_info: TerminalInfo::default(),
+            axon_info: TerminalInfo::default(),
+            computed_hash: String::new(),
+            total: 0,
+            header: 0,
+        };
+        assert_eq!(synapse.name(), "StreamingTest");
+        assert_eq!(synapse.timeout(), 30.0);
+        assert_eq!(synapse.computed_body_hash(), "");
+    }
+
+    #[test]
+    fn process_chunk_empty_data() {
+        let chunk = b"";
+        let result = TestStreamingSynapse::process_chunk(chunk);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "");
+    }
+
+    #[test]
+    fn process_chunk_multibyte_utf8() {
+        let chunk = "日本語".as_bytes();
+        let result = TestStreamingSynapse::process_chunk(chunk);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "日本語");
+    }
 }

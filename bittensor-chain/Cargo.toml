@@ -36,3 +36,6 @@ integration-tests = []
 
 [dev-dependencies]
 tokio = { workspace = true }
+subxt-rpcs = { version = "0.50", features = ["mock-rpc-client"] }
+serde_json = { workspace = true }
+bittensor-wallet = { path = "../bittensor-wallet" }

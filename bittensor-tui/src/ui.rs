@@ -241,4 +241,52 @@ mod tests {
             let _terminal = draw_app(&app);
         }
     }
+
+    #[test]
+    fn test_draw_expanded_wallet() {
+        let mut app = App::new();
+        app.expanded = true;
+        app.active_panel = Panel::Wallet;
+        let _terminal = draw_app(&app);
+    }
+
+    #[test]
+    fn test_draw_expanded_subnet() {
+        let mut app = App::new();
+        app.expanded = true;
+        app.active_panel = Panel::Subnet;
+        let _terminal = draw_app(&app);
+    }
+
+    #[test]
+    fn test_draw_expanded_delegate() {
+        let mut app = App::new();
+        app.expanded = true;
+        app.active_panel = Panel::Delegate;
+        let _terminal = draw_app(&app);
+    }
+
+    #[test]
+    fn test_draw_expanded_neuron() {
+        let mut app = App::new();
+        app.expanded = true;
+        app.active_panel = Panel::Neuron;
+        let _terminal = draw_app(&app);
+    }
+
+    #[test]
+    fn test_draw_small_terminal() {
+        let app = App::new();
+        let backend = TestBackend::new(40, 12);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal.draw(|frame| draw(frame, &app)).unwrap();
+    }
+
+    #[test]
+    fn test_draw_disconnected_with_error() {
+        let mut app = App::new();
+        app.network_data.connected = false;
+        app.network_data.last_error = Some("timeout".into());
+        let _terminal = draw_app(&app);
+    }
 }

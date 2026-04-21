@@ -301,4 +301,173 @@ mod tests {
         let v: u64 = 0;
         assert_eq!(v, 0);
     }
+
+    #[tokio::test]
+    async fn get_balance_returns_zero_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let account = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_balance(&client, &account).await;
+        assert!(result.is_ok(), "get_balance should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_stake_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
+        let result = get_stake(&client, &coldkey, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_stake should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_stake_info_for_coldkey_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_stake_info_for_coldkey(&client, &coldkey).await;
+        assert!(result.is_ok(), "get_stake_info_for_coldkey should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_total_network_stake_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_total_network_stake(&client).await;
+        assert!(result.is_ok(), "get_total_network_stake should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_total_balance_returns_zero_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let account = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_total_balance(&client, &account).await;
+        assert!(result.is_ok(), "get_total_balance should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_owned_hotkeys_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_owned_hotkeys(&client, &coldkey).await;
+        assert!(result.is_ok(), "get_owned_hotkeys should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_total_hotkey_alpha_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_total_hotkey_alpha(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_total_hotkey_alpha should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_total_hotkey_alpha_last_epoch_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_total_hotkey_alpha_last_epoch(&client, &hotkey, 0u16).await;
+        assert!(
+            result.is_ok(),
+            "get_total_hotkey_alpha_last_epoch should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_token_symbol_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_token_symbol(&client, 0u16).await;
+        assert!(result.is_ok(), "get_token_symbol should succeed: {:?}", result.err());
+        assert!(!result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_subnet_tao_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_tao(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_tao should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_tao_provided_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_tao_provided(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_tao_provided should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_alpha_in_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_alpha_in(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_alpha_in should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_alpha_in_provided_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_alpha_in_provided(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_alpha_in_provided should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_alpha_out_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_alpha_out(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_alpha_out should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_alpha_in_emission_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_alpha_in_emission(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_alpha_in_emission should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_alpha_out_emission_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_alpha_out_emission(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_alpha_out_emission should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_tao_in_emission_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_tao_in_emission(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_tao_in_emission should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_root_alpha_dividends_per_subnet_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_root_alpha_dividends_per_subnet(&client, 0u16, &hotkey).await;
+        assert!(
+            result.is_ok(),
+            "get_root_alpha_dividends_per_subnet should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_total_issuance_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_total_issuance(&client).await;
+        assert!(result.is_ok(), "get_total_issuance should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
 }

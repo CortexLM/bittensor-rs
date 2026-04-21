@@ -214,4 +214,109 @@ mod tests {
         };
         assert_eq!(wci.netuid, 1);
     }
+
+    #[tokio::test]
+    async fn get_weights_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_weights(&client, 0u16, 0u16).await;
+        assert!(result.is_ok(), "get_weights should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_weights_min_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_weights_min(&client, 0u16).await;
+        assert!(result.is_ok(), "get_weights_min should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 1024);
+    }
+
+    #[tokio::test]
+    async fn get_weights_max_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_weights_max(&client, 0u16).await;
+        assert!(result.is_ok(), "get_weights_max should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 65535);
+    }
+
+    #[tokio::test]
+    async fn get_weights_set_rate_limit_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_weights_set_rate_limit(&client, 0u16).await;
+        assert!(result.is_ok(), "get_weights_set_rate_limit should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 100);
+    }
+
+    #[tokio::test]
+    async fn get_weight_commits_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_weight_commits(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_weight_commits should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_timelocked_weight_commits_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_timelocked_weight_commits(&client, 0u16, 0u64).await;
+        assert!(result.is_ok(), "get_timelocked_weight_commits should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_crv3_weight_commits_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_crv3_weight_commits(&client, 0u16, 0u64).await;
+        assert!(result.is_ok(), "get_crv3_weight_commits should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_crv3_weight_commits_v2_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_crv3_weight_commits_v2(&client, 0u16, 0u64).await;
+        assert!(result.is_ok(), "get_crv3_weight_commits_v2 should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_commit_reveal_weights_enabled_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_commit_reveal_weights_enabled(&client, 0u16).await;
+        assert!(
+            result.is_ok(),
+            "get_commit_reveal_weights_enabled should succeed: {:?}",
+            result.err()
+        );
+        assert!(result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_commit_reveal_weights_version_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_commit_reveal_weights_version(&client).await;
+        assert!(
+            result.is_ok(),
+            "get_commit_reveal_weights_version should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 4);
+    }
+
+    #[tokio::test]
+    async fn get_reveal_period_epochs_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_reveal_period_epochs(&client, 0u16).await;
+        assert!(result.is_ok(), "get_reveal_period_epochs should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn get_weights_version_key_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_weights_version_key(&client, 0u16).await;
+        assert!(result.is_ok(), "get_weights_version_key should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
 }

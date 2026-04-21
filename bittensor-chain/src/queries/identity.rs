@@ -140,4 +140,57 @@ mod tests {
         let v: Option<u64> = None;
         assert!(v.is_none());
     }
+
+    #[tokio::test]
+    async fn get_identity_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_identity(&client, &hotkey).await;
+        assert!(result.is_ok(), "get_identity should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_identities_v2_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_identities_v2(&client, &hotkey).await;
+        assert!(result.is_ok(), "get_identities_v2 should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_subnet_identities_v3_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = super::get_subnet_identities_v3(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnet_identities_v3 should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_neuron_certificates_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_neuron_certificates(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_neuron_certificates should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_axons_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_axons(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_axons should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_prometheus_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_prometheus(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_prometheus should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
 }

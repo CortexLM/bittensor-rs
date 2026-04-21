@@ -395,4 +395,55 @@ mod tests {
         // Key should be 16+16+16+32 = 80 bytes = 160 hex chars + "0x" prefix
         assert_eq!(key.len(), 2 + 80 * 2);
     }
+
+    #[test]
+    fn next_id_increments() {
+        let a = next_id();
+        let b = next_id();
+        assert!(b > a);
+    }
+
+    #[test]
+    fn decode_hex_with_0x_prefix() {
+        let bytes = decode_hex("0xdeadbeef").unwrap();
+        assert_eq!(bytes, vec![0xde, 0xad, 0xbe, 0xef]);
+    }
+
+    #[test]
+    fn decode_hex_without_prefix() {
+        let bytes = decode_hex("deadbeef").unwrap();
+        assert_eq!(bytes, vec![0xde, 0xad, 0xbe, 0xef]);
+    }
+
+    #[test]
+    fn decode_hex_inner_invalid_chars() {
+        let result = decode_hex_inner("ZZZZ");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn ss58_decode_wrong_length_returns_error() {
+        let result = ss58_decode("0x00ff");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rpc_request_id_field() {
+        let req = RpcRequest {
+            jsonrpc: "2.0",
+            id: 42,
+            method: "some_method".to_string(),
+            params: vec![],
+        };
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("\"id\":42"));
+    }
+
+    #[test]
+    fn blake2_128_known_value() {
+        let hash = blake2_128(b"Account");
+        assert_eq!(hash.len(), 16);
+        let hash2 = blake2_128(b"Account");
+        assert_eq!(hash, hash2, "blake2_128 should be deterministic");
+    }
 }

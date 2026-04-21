@@ -93,4 +93,13 @@ mod tests {
             1u64,
         );
     }
+
+    #[test]
+    fn commit_timelocked_weights_call_construction() {
+        let commit =
+            subtensor::runtime_types::bounded_collections::bounded_vec::BoundedVec(vec![0u8; 32]);
+        let _call = subtensor::tx()
+            .subtensor_module()
+            .commit_timelocked_weights(1u16, commit, 1000u64, 1u16);
+    }
 }

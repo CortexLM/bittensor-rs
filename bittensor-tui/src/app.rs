@@ -232,4 +232,55 @@ mod tests {
         app.handle_key(crossterm::event::KeyCode::Tab);
         assert_eq!(app.selected_index, 0);
     }
+
+    #[test]
+    fn test_default_app() {
+        let app = App::default();
+        assert_eq!(app.active_panel, Panel::NetworkOverview);
+        assert!(!app.should_quit);
+        assert!(!app.expanded);
+        assert_eq!(app.selected_index, 0);
+        assert_eq!(app.term_size, (80, 24));
+    }
+
+    #[test]
+    fn test_q_in_expanded_closes_expand() {
+        let mut app = App::new();
+        app.expanded = true;
+        app.handle_key(crossterm::event::KeyCode::Char('q'));
+        assert!(!app.expanded);
+        assert!(!app.should_quit);
+    }
+
+    #[test]
+    fn test_uppercase_q_quit() {
+        let mut app = App::new();
+        app.handle_key(crossterm::event::KeyCode::Char('Q'));
+        assert!(app.should_quit);
+    }
+
+    #[test]
+    fn test_down_does_not_overflow() {
+        let mut app = App::new();
+        for _ in 0..1000 {
+            app.handle_key(crossterm::event::KeyCode::Down);
+        }
+    }
+
+    #[test]
+    fn test_backtab_cycles() {
+        let mut app = App::new();
+        app.active_panel = Panel::NetworkOverview;
+        app.handle_key(crossterm::event::KeyCode::BackTab);
+        assert_eq!(app.active_panel, Panel::Neuron);
+    }
+
+    #[test]
+    fn test_unknown_key_ignored() {
+        let mut app = App::new();
+        let prev = app.active_panel;
+        app.handle_key(crossterm::event::KeyCode::Char('z'));
+        assert_eq!(app.active_panel, prev);
+        assert!(!app.should_quit);
+    }
 }

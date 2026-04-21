@@ -471,3 +471,269 @@ impl StreamingSynapse {
         format!("StreamingSynapse(name='{}', timeout={})", self.inner.name(), self.inner.timeout())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn terminal_info_new_defaults() {
+        let ti = TerminalInfo::new(None, None, None, None, None, None, None, None, None, None);
+        assert_eq!(ti.status_code(), None);
+        assert_eq!(ti.status_message(), None);
+        assert_eq!(ti.process_time(), None);
+        assert_eq!(ti.ip(), None);
+        assert_eq!(ti.port(), None);
+        assert_eq!(ti.version(), None);
+        assert_eq!(ti.nonce(), None);
+        assert_eq!(ti.uuid(), None);
+        assert_eq!(ti.hotkey(), None);
+        assert_eq!(ti.signature(), None);
+    }
+
+    #[test]
+    fn terminal_info_new_with_values() {
+        let ti = TerminalInfo::new(
+            Some(200),
+            Some("OK".to_string()),
+            Some(0.5),
+            Some("127.0.0.1".to_string()),
+            Some(8090),
+            Some(4),
+            Some(12345),
+            Some("uuid-1".to_string()),
+            Some("hk".to_string()),
+            Some("sig".to_string()),
+        );
+        assert_eq!(ti.status_code(), Some(200));
+        assert_eq!(ti.status_message(), Some("OK"));
+        assert_eq!(ti.process_time(), Some(0.5));
+        assert_eq!(ti.ip(), Some("127.0.0.1"));
+        assert_eq!(ti.port(), Some(8090));
+        assert_eq!(ti.version(), Some(4));
+        assert_eq!(ti.nonce(), Some(12345));
+        assert_eq!(ti.uuid(), Some("uuid-1"));
+        assert_eq!(ti.hotkey(), Some("hk"));
+        assert_eq!(ti.signature(), Some("sig"));
+    }
+
+    #[test]
+    fn terminal_info_setters() {
+        let mut ti = TerminalInfo::new(None, None, None, None, None, None, None, None, None, None);
+        ti.set_status_code(Some(404));
+        ti.set_status_message(Some("Not Found".to_string()));
+        ti.set_process_time(Some(1.0));
+        ti.set_ip(Some("10.0.0.1".to_string()));
+        ti.set_port(Some(443));
+        ti.set_version(Some(2));
+        ti.set_nonce(Some(999));
+        ti.set_uuid(Some("u2".to_string()));
+        ti.set_hotkey(Some("hk2".to_string()));
+        ti.set_signature(Some("sig2".to_string()));
+        assert_eq!(ti.status_code(), Some(404));
+        assert_eq!(ti.status_message(), Some("Not Found"));
+        assert_eq!(ti.process_time(), Some(1.0));
+        assert_eq!(ti.ip(), Some("10.0.0.1"));
+        assert_eq!(ti.port(), Some(443));
+        assert_eq!(ti.version(), Some(2));
+        assert_eq!(ti.nonce(), Some(999));
+        assert_eq!(ti.uuid(), Some("u2"));
+        assert_eq!(ti.hotkey(), Some("hk2"));
+        assert_eq!(ti.signature(), Some("sig2"));
+    }
+
+    #[test]
+    fn terminal_info_to_headers() {
+        let ti = TerminalInfo::new(
+            Some(200),
+            Some("OK".to_string()),
+            None,
+            None,
+            None,
+            None,
+            Some(42),
+            None,
+            Some("hk".to_string()),
+            None,
+        );
+        let headers = ti.to_headers("bt_header_axon_");
+        assert_eq!(headers.get("bt_header_axon_status_code").unwrap(), "200");
+        assert_eq!(headers.get("bt_header_axon_status_message").unwrap(), "OK");
+        assert_eq!(headers.get("bt_header_axon_nonce").unwrap(), "42");
+        assert_eq!(headers.get("bt_header_axon_hotkey").unwrap(), "hk");
+        assert!(!headers.contains_key("bt_header_axon_process_time"));
+    }
+
+    #[test]
+    fn terminal_info_from_headers_manual() {
+        let mut headers = HashMap::new();
+        headers.insert("bt_header_dendrite_status_code".to_string(), "200".to_string());
+        headers.insert("bt_header_dendrite_nonce".to_string(), "77".to_string());
+        let inner = RustTerminalInfo::from_headers_with_prefix(&headers, "bt_header_dendrite_");
+        let ti = TerminalInfo { inner };
+        assert_eq!(ti.status_code(), Some(200));
+        assert_eq!(ti.nonce(), Some(77));
+    }
+
+    #[test]
+    fn terminal_info_repr() {
+        let ti = TerminalInfo::new(None, None, None, None, None, None, None, None, None, None);
+        let repr = ti.__repr__();
+        assert!(repr.contains("TerminalInfo"));
+    }
+
+    #[test]
+    fn terminal_info_clone() {
+        let ti = TerminalInfo::new(
+            Some(200),
+            Some("OK".to_string()),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        let ti2 = ti.clone();
+        assert_eq!(ti.status_code(), ti2.status_code());
+        assert_eq!(ti.status_message(), ti2.status_message());
+    }
+
+    #[test]
+    fn synapse_new_defaults() {
+        let s = Synapse::new("Synapse", 12.0);
+        assert_eq!(s.name(), "Synapse");
+        assert_eq!(s.timeout(), 12.0);
+        assert_eq!(s.computed_body_hash(), "");
+        assert_eq!(s.total_size(), 0);
+        assert_eq!(s.header_size(), 0);
+    }
+
+    #[test]
+    fn synapse_new_custom() {
+        let s = Synapse::new("TextPrompt", 30.0);
+        assert_eq!(s.name(), "TextPrompt");
+        assert_eq!(s.timeout(), 30.0);
+    }
+
+    #[test]
+    fn synapse_setters() {
+        let mut s = Synapse::new("X", 5.0);
+        s.set_name("Y".to_string());
+        s.set_timeout(60.0);
+        s.set_computed_body_hash("hash123".to_string());
+        s.set_total_size(1024);
+        s.set_header_size(256);
+        assert_eq!(s.name(), "Y");
+        assert_eq!(s.timeout(), 60.0);
+        assert_eq!(s.computed_body_hash(), "hash123");
+        assert_eq!(s.total_size(), 1024);
+        assert_eq!(s.header_size(), 256);
+    }
+
+    #[test]
+    fn synapse_body_hash() {
+        let hash = Synapse::body_hash(b"hello world");
+        assert!(!hash.is_empty());
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn synapse_body_hash_empty() {
+        let hash = Synapse::body_hash(b"");
+        assert!(!hash.is_empty());
+    }
+
+    #[test]
+    fn synapse_body_hash_deterministic() {
+        let h1 = Synapse::body_hash(b"test data");
+        let h2 = Synapse::body_hash(b"test data");
+        assert_eq!(h1, h2);
+    }
+
+    #[test]
+    fn synapse_to_headers_contains_name() {
+        let s = Synapse::new("TestSyn", 12.0);
+        let headers = s.to_headers();
+        assert_eq!(headers.get(keys::NAME).unwrap(), "TestSyn");
+        assert!(headers.contains_key(keys::TIMEOUT));
+    }
+
+    #[test]
+    fn synapse_repr() {
+        let s = Synapse::new("TestSyn", 5.0);
+        let repr = s.__repr__();
+        assert!(repr.contains("Synapse"));
+        assert!(repr.contains("TestSyn"));
+    }
+
+    #[test]
+    fn synapse_clone() {
+        let s = Synapse::new("X", 10.0);
+        let s2 = s.clone();
+        assert_eq!(s.name(), s2.name());
+        assert_eq!(s.timeout(), s2.timeout());
+    }
+
+    #[test]
+    fn streaming_synapse_new_defaults() {
+        let ss = StreamingSynapse::new("StreamingSynapse", 12.0);
+        assert_eq!(ss.name(), "StreamingSynapse");
+        assert_eq!(ss.timeout(), 12.0);
+    }
+
+    #[test]
+    fn streaming_synapse_new_custom() {
+        let ss = StreamingSynapse::new("StreamTest", 60.0);
+        assert_eq!(ss.name(), "StreamTest");
+        assert_eq!(ss.timeout(), 60.0);
+    }
+
+    #[test]
+    fn streaming_synapse_setters() {
+        let mut ss = StreamingSynapse::new("X", 5.0);
+        ss.set_name("Y".to_string());
+        ss.set_timeout(30.0);
+        assert_eq!(ss.name(), "Y");
+        assert_eq!(ss.timeout(), 30.0);
+    }
+
+    #[test]
+    fn streaming_synapse_process_chunk_valid_utf8() {
+        let ss = StreamingSynapse::new("S", 12.0);
+        let result = ss.process_chunk(b"hello");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "hello");
+    }
+
+    #[test]
+    fn streaming_synapse_process_chunk_invalid_utf8() {
+        let ss = StreamingSynapse::new("S", 12.0);
+        let result = ss.process_chunk(&[0xff, 0xfe, 0xfd]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn streaming_synapse_to_headers() {
+        let ss = StreamingSynapse::new("StreamTest", 12.0);
+        let headers = ss.to_headers();
+        assert_eq!(headers.get(keys::NAME).unwrap(), "StreamTest");
+    }
+
+    #[test]
+    fn streaming_synapse_repr() {
+        let ss = StreamingSynapse::new("S", 12.0);
+        let repr = ss.__repr__();
+        assert!(repr.contains("StreamingSynapse"));
+        assert!(repr.contains("S"));
+    }
+
+    #[test]
+    fn streaming_synapse_clone() {
+        let ss = StreamingSynapse::new("S", 12.0);
+        let ss2 = ss.clone();
+        assert_eq!(ss.name(), ss2.name());
+    }
+}

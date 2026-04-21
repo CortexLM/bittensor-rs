@@ -298,3 +298,323 @@ impl SubtensorClient {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bittensor_wallet::prelude::Keypair;
+
+    #[test]
+    fn client_new_is_disconnected() {
+        let client = SubtensorClient::new();
+        assert!(client.inner.is_none());
+    }
+
+    #[test]
+    fn client_repr_disconnected() {
+        let client = SubtensorClient::new();
+        assert_eq!(client.__repr__(), "SubtensorClient(disconnected)");
+    }
+
+    #[test]
+    fn client_require_client_fails_when_disconnected() {
+        let client = SubtensorClient::new();
+        let result = client.require_client();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn tx_success_py_block_hash_format() {
+        let inner = bittensor_chain::extrinsics::TxSuccess {
+            block_hash: Default::default(),
+            extrinsic_hash: Default::default(),
+        };
+        let tx = TxSuccessPy { inner };
+        let bh = tx.block_hash();
+        assert!(bh.starts_with("0x"));
+        assert_eq!(bh.len(), 66);
+    }
+
+    #[test]
+    fn tx_success_py_extrinsic_hash_format() {
+        let inner = bittensor_chain::extrinsics::TxSuccess {
+            block_hash: Default::default(),
+            extrinsic_hash: Default::default(),
+        };
+        let tx = TxSuccessPy { inner };
+        let eh = tx.extrinsic_hash();
+        assert!(eh.starts_with("0x"));
+        assert_eq!(eh.len(), 66);
+    }
+
+    #[test]
+    fn tx_success_py_repr() {
+        let inner = bittensor_chain::extrinsics::TxSuccess {
+            block_hash: Default::default(),
+            extrinsic_hash: Default::default(),
+        };
+        let tx = TxSuccessPy { inner };
+        let repr = tx.__repr__();
+        assert!(repr.contains("TxSuccess"));
+        assert!(repr.contains("block_hash="));
+        assert!(repr.contains("extrinsic_hash="));
+    }
+
+    #[test]
+    fn tx_success_py_clone() {
+        let inner = bittensor_chain::extrinsics::TxSuccess {
+            block_hash: Default::default(),
+            extrinsic_hash: Default::default(),
+        };
+        let tx = TxSuccessPy { inner };
+        let tx2 = tx.clone();
+        assert_eq!(tx.block_hash(), tx2.block_hash());
+        assert_eq!(tx.extrinsic_hash(), tx2.extrinsic_hash());
+    }
+
+    #[test]
+    fn parse_account_id_valid_ss58() {
+        let kp = Keypair::from_seed_hex(
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        )
+        .unwrap();
+        let ss58 = kp.ss58_address();
+        let result = parse_account_id(&ss58);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_account_id_invalid_string() {
+        let result = parse_account_id("not_a_valid_ss58_address");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_account_id_empty_string() {
+        let result = parse_account_id("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_signer_hex_seed_without_prefix() {
+        let seed = "0000000000000000000000000000000000000000000000000000000000000001";
+        let result = parse_signer(seed, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_signer_hex_seed_with_prefix() {
+        let seed = "0x0000000000000000000000000000000000000000000000000000000000000001";
+        let result = parse_signer(seed, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_signer_invalid_hex() {
+        let result = parse_signer("zzzzzzzz", None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_signer_short_string_not_mnemonic() {
+        let result = parse_signer("short", None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_signer_valid_mnemonic() {
+        let mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let result = parse_signer(mnemonic, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_signer_invalid_mnemonic_words() {
+        let result =
+            parse_signer("not valid words but enough of them to pass length check maybe", None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_signer_mnemonic_with_password() {
+        let mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let result = parse_signer(mnemonic, Some("mypassword"));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_signer_24_word_mnemonic() {
+        let mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
+        let result = parse_signer(mnemonic, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_signer_very_short_input() {
+        let result = parse_signer("a", None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_account_id_polkadot_format_0() {
+        let address = "15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5";
+        let result = parse_account_id(address);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_account_id_truncated_ss58() {
+        let result = parse_account_id("5GrwvaE");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_balance_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client
+                .get_balance(py, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string());
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn get_total_balance_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.get_total_balance(
+                py,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+            );
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn get_total_stake_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.get_total_stake(py);
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn get_stake_info_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client
+                .get_stake_info(py, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string());
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn get_metagraph_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.get_metagraph(py, 1);
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn add_stake_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.add_stake(
+                py,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+                1,
+                1000,
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                None,
+            );
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn remove_stake_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.remove_stake(
+                py,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+                1,
+                1000,
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                None,
+            );
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn transfer_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.transfer(
+                py,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+                1000,
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                None,
+            );
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
+    fn register_disconnected() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let client = SubtensorClient { inner: None };
+            let result = client.register(
+                py,
+                1,
+                "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY".to_string(),
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                None,
+            );
+            assert!(result.is_err());
+        });
+    }
+
+    // --- TxSuccessPy non-zero hash ---
+    #[test]
+    fn tx_success_py_nonzero_hash_encoding() {
+        let block_bytes: [u8; 32] = [
+            0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let ext_bytes: [u8; 32] = [
+            0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let inner = bittensor_chain::extrinsics::TxSuccess {
+            block_hash: subxt::utils::H256::from(block_bytes),
+            extrinsic_hash: subxt::utils::H256::from(ext_bytes),
+        };
+        let tx = TxSuccessPy { inner };
+        let bh = tx.block_hash();
+        assert!(bh.starts_with("0x"));
+        assert_eq!(bh.len(), 66);
+        assert!(bh.contains("abcdef01234567"));
+
+        let eh = tx.extrinsic_hash();
+        assert!(eh.starts_with("0x"));
+        assert_eq!(eh.len(), 66);
+        assert!(eh.contains("ffeeddccbbaa9988"));
+    }
+}

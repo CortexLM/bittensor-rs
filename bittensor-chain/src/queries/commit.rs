@@ -163,4 +163,57 @@ mod tests {
         let v: u32 = 0;
         assert_eq!(v, 0);
     }
+
+    #[tokio::test]
+    async fn get_weight_commit_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_weight_commit(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_weight_commit should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_weight_reveal_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_weight_reveal(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_weight_reveal should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_commitment_of_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_commitment_of(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_commitment_of should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_last_commitment_returns_zero_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_last_commitment(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_last_commitment should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_used_space_of_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_used_space_of(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_used_space_of should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_max_space_returns_default_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_space(&client).await;
+        assert!(result.is_ok(), "get_max_space should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 3100);
+    }
 }

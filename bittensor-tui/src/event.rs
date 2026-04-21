@@ -79,4 +79,56 @@ mod tests {
     async fn test_event_handler_creation() {
         let _handler = EventHandler::new(Duration::from_millis(100));
     }
+
+    #[tokio::test]
+    async fn test_try_recv_returns_none_when_no_events() {
+        let mut handler = EventHandler::new(Duration::from_millis(100));
+        // No events have been sent (no terminal attached), so try_recv should return None
+        let result = handler.try_recv();
+        assert!(result.is_none(), "try_recv should return None when no events are pending");
+    }
+
+    #[tokio::test]
+    async fn test_event_handler_new_with_various_tick_rates() {
+        let _h1 = EventHandler::new(Duration::from_millis(1));
+        let _h2 = EventHandler::new(Duration::from_millis(500));
+        let _h3 = EventHandler::new(Duration::from_secs(1));
+        let _h4 = EventHandler::new(Duration::from_secs(10));
+    }
+
+    #[test]
+    fn test_event_key_variant() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let key = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
+        let event = Event::Key(key);
+        assert!(matches!(event, Event::Key(k) if k.code == KeyCode::Char('a')));
+    }
+
+    #[test]
+    fn test_event_resize_variant() {
+        let event = Event::Resize(80, 24);
+        assert!(matches!(event, Event::Resize(w, h) if w == 80 && h == 24));
+    }
+
+    #[test]
+    fn test_event_quit_variant() {
+        let event = Event::Quit;
+        assert!(matches!(event, Event::Quit));
+    }
+
+    #[test]
+    fn test_event_debug_format() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let key_event = Event::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
+        let debug_str = format!("{key_event:?}");
+        assert!(debug_str.contains("Key"));
+
+        let resize_event = Event::Resize(120, 40);
+        let debug_str = format!("{resize_event:?}");
+        assert!(debug_str.contains("Resize"));
+
+        let quit_event = Event::Quit;
+        let debug_str = format!("{quit_event:?}");
+        assert!(debug_str.contains("Quit"));
+    }
 }

@@ -195,4 +195,63 @@ mod tests {
         // Will fail because there's no local node, but the function should handle it
         assert!(result.is_err() || result.is_ok());
     }
+
+    #[tokio::test]
+    async fn metagraph_sync_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_metagraph_sync(&config, 1, None).await;
+        assert!(result.is_err(), "sync with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn metagraph_sync_local_with_output_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let out_path = dir.path().join("mg.json").to_string_lossy().to_string();
+        let result = exec_metagraph_sync(&config, 1, Some(out_path)).await;
+        assert!(result.is_err(), "sync with output path and no local node should fail");
+    }
+
+    #[test]
+    fn parse_metagraph_show_no_json() {
+        use clap::Parser;
+        let cli =
+            crate::Cli::try_parse_from(["btcli-rs", "metagraph", "show", "--netuid", "3"]).unwrap();
+        match cli.command {
+            crate::Command::Metagraph { command: MetagraphCommand::Show { netuid, json, .. } } => {
+                assert_eq!(netuid, 3);
+                assert!(!json);
+            }
+            other => panic!("expected Metagraph::Show, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_metagraph_sync_without_output() {
+        use clap::Parser;
+        let cli =
+            crate::Cli::try_parse_from(["btcli-rs", "metagraph", "sync", "--netuid", "7"]).unwrap();
+        match cli.command {
+            crate::Command::Metagraph { command: MetagraphCommand::Sync { netuid, output } } => {
+                assert_eq!(netuid, 7);
+                assert!(output.is_none());
+            }
+            other => panic!("expected Metagraph::Sync, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn metagraph_sync_command_debug_format() {
+        let cmd = MetagraphCommand::Sync { netuid: 42, output: Some("/tmp/sync.json".to_string()) };
+        assert!(format!("{cmd:?}").contains("Sync"));
+    }
 }

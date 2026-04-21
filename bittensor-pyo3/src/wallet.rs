@@ -181,3 +181,116 @@ impl Wallet {
         format!("Wallet(name='{}', path='{}')", self.inner.name, self.inner.path.display())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bittensor_wallet::prelude::Keypair;
+    use std::path::PathBuf;
+
+    #[test]
+    fn wallet_with_path_fields() {
+        let inner = RustWallet::with_path("mywallet", PathBuf::from("/tmp/test_wallets"));
+        let w = Wallet { inner };
+        assert_eq!(w.name(), "mywallet");
+        assert_eq!(w.hotkey_name(), "default");
+        assert!(w.path().contains("test_wallets"));
+    }
+
+    #[test]
+    fn wallet_name_getter() {
+        let inner = RustWallet::with_path("alice", PathBuf::from("/tmp/w"));
+        let w = Wallet { inner };
+        assert_eq!(w.name(), "alice");
+    }
+
+    #[test]
+    fn wallet_hotkey_name_getter() {
+        let inner = RustWallet::with_path("bob", PathBuf::from("/tmp/w2"));
+        let w = Wallet { inner };
+        assert_eq!(w.hotkey_name(), "default");
+    }
+
+    #[test]
+    fn wallet_path_getter() {
+        let inner = RustWallet::with_path("carol", PathBuf::from("/custom/path"));
+        let w = Wallet { inner };
+        let path_str = w.path();
+        assert!(path_str.contains("custom") || path_str.contains("path"));
+    }
+
+    #[test]
+    fn wallet_repr() {
+        let inner = RustWallet::with_path("test", PathBuf::from("/tmp/w"));
+        let w = Wallet { inner };
+        let repr = w.__repr__();
+        assert!(repr.contains("Wallet(name='test'"));
+        assert!(repr.contains("path="));
+    }
+
+    #[test]
+    fn wallet_verify_valid_signature() {
+        let kp = Keypair::from_seed_hex(
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        )
+        .unwrap();
+        let message = b"hello bittensor";
+        let sig = kp.sign(message);
+        let sig_hex = hex::encode(sig.0);
+        let pk_hex = hex::encode(kp.public_key().0);
+        let result = Wallet::verify(message, &sig_hex, &pk_hex).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn wallet_verify_tampered_message() {
+        let kp = Keypair::from_seed_hex(
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        )
+        .unwrap();
+        let message = b"original message";
+        let sig = kp.sign(message);
+        let sig_hex = hex::encode(sig.0);
+        let pk_hex = hex::encode(kp.public_key().0);
+        let result = Wallet::verify(b"tampered message", &sig_hex, &pk_hex).unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn wallet_verify_wrong_public_key() {
+        let kp = Keypair::from_seed_hex(
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+        )
+        .unwrap();
+        let message = b"test";
+        let sig = kp.sign(message);
+        let sig_hex = hex::encode(sig.0);
+        let wrong_pk = hex::encode([0u8; 32]);
+        let result = Wallet::verify(message, &sig_hex, &wrong_pk).unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn wallet_verify_bad_hex_signature() {
+        let result = Wallet::verify(b"msg", "zzzz", &"00".repeat(32));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn wallet_verify_bad_hex_public_key() {
+        let result = Wallet::verify(b"msg", &"00".repeat(64), "zzzz");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn wallet_verify_short_signature() {
+        let result = Wallet::verify(b"msg", "aabb", &"00".repeat(32));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn wallet_verify_short_public_key() {
+        let result = Wallet::verify(b"msg", &"00".repeat(64), "aabb");
+        assert!(result.is_err());
+    }
+}

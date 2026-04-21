@@ -182,4 +182,23 @@ mod tests {
             .proxy()
             .remove_announcement(to_multi_address(real), subxt::utils::H256::zero());
     }
+
+    #[test]
+    fn create_pure_proxy_call_construction() {
+        let proxy_type = subtensor::runtime_types::subtensor_runtime_common::ProxyType::Any;
+        let _call = subtensor::tx().proxy().create_pure(proxy_type, 0u32, 0u16);
+    }
+
+    #[test]
+    fn kill_pure_proxy_call_construction() {
+        let spawner = subxt::utils::AccountId32::from([1u8; 32]);
+        let proxy_type = subtensor::runtime_types::subtensor_runtime_common::ProxyType::Any;
+        let _call = subtensor::tx().proxy().kill_pure(
+            to_multi_address(spawner),
+            proxy_type,
+            0u16,
+            0u32,
+            0u32,
+        );
+    }
 }

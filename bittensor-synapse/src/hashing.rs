@@ -54,4 +54,25 @@ mod tests {
         let hash3 = sha3_256_hex(b"test datb");
         assert_ne!(hash1, hash3);
     }
+
+    #[test]
+    fn long_input_sha3_256() {
+        let data = vec![0xABu8; 10_000];
+        let hash = sha3_256_hex(&data);
+        assert_eq!(hash.len(), 64);
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn single_byte_sha3_256() {
+        let hash = sha3_256_hex(b"a");
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn output_is_lowercase_hex() {
+        let hash = sha3_256_hex(b"test");
+        assert_eq!(hash, hash.to_lowercase());
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+    }
 }

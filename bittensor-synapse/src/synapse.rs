@@ -297,4 +297,44 @@ mod tests {
         let result = parse_header(&headers, "nonexistent");
         assert!(result.is_err());
     }
+
+    #[test]
+    fn parse_header_f64_invalid_value() {
+        let mut headers = HashMap::new();
+        headers.insert("timeout".to_string(), "not_a_float".to_string());
+        let result = parse_header_f64(&headers, "timeout");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_header_u64_invalid_value() {
+        let mut headers = HashMap::new();
+        headers.insert("total_size".to_string(), "not_a_number".to_string());
+        let result = parse_header_u64(&headers, "total_size");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn from_headers_default_returns_error() {
+        let headers = HashMap::new();
+        let result = TestSynapse::from_headers(&headers);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn to_headers_sets_computed_body_hash() {
+        let syn = make_test_synapse();
+        let headers = syn.to_headers();
+        let hash = headers.get(keys::COMPUTED_BODY_HASH).unwrap();
+        assert!(!hash.is_empty());
+    }
+
+    #[test]
+    fn to_headers_header_size_is_positive() {
+        let syn = make_test_synapse();
+        let headers = syn.to_headers();
+        let size_str = headers.get(keys::HEADER_SIZE).unwrap();
+        let size: usize = size_str.parse().unwrap();
+        assert!(size > 0);
+    }
 }

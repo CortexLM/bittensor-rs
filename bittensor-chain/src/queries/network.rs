@@ -161,4 +161,112 @@ mod tests {
         let b = Balance::from_rao(1_500_000_000);
         assert!((b.to_tao() - 1.5).abs() < 1e-10);
     }
+
+    #[tokio::test]
+    async fn get_network_block_returns_nonzero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_block(&client).await;
+        assert!(result.is_ok(), "get_network_block should succeed: {:?}", result.err());
+        assert!(result.unwrap() >= 1);
+    }
+
+    #[tokio::test]
+    async fn get_network_hash_rate_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_hash_rate(&client).await;
+        assert!(result.is_ok(), "get_network_hash_rate should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_current_weight_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_current_weight(&client, 0u16, 0u16).await;
+        assert!(result.is_ok(), "get_current_weight should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_total_issuance_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_total_issuance(&client, 0u16).await;
+        assert!(result.is_ok(), "get_total_issuance should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_block_hash_returns_some() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_block_hash(&client, 1u64).await;
+        assert!(result.is_ok(), "get_block_hash should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn get_total_networks_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_total_networks(&client).await;
+        assert!(result.is_ok(), "get_total_networks should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_block_emission_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_block_emission(&client).await;
+        assert!(result.is_ok(), "get_block_emission should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap().to_rao(), 1_000_000_000);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_limit_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_limit(&client).await;
+        assert!(result.is_ok(), "get_subnet_limit should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 128);
+    }
+
+    #[tokio::test]
+    async fn get_network_immunity_period_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_immunity_period(&client).await;
+        assert!(result.is_ok(), "get_network_immunity_period should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 1_296_000);
+    }
+
+    #[tokio::test]
+    async fn get_network_rate_limit_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_network_rate_limit(&client).await;
+        assert!(result.is_ok(), "get_network_rate_limit should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 7200);
+    }
+
+    #[tokio::test]
+    async fn get_nominator_min_required_stake_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_nominator_min_required_stake(&client).await;
+        assert!(
+            result.is_ok(),
+            "get_nominator_min_required_stake should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap().to_rao(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnetwork_n_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnetwork_n(&client, 0u16).await;
+        assert!(result.is_ok(), "get_subnetwork_n should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_networks_added_returns_false() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_networks_added(&client, 0u16).await;
+        assert!(result.is_ok(), "get_networks_added should succeed: {:?}", result.err());
+        assert!(!result.unwrap());
+    }
 }

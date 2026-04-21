@@ -204,14 +204,49 @@ mod tests {
     }
 
     #[test]
+    fn test_resolve_mainnet() {
+        let config = resolve_network_config("mainnet").unwrap();
+        assert_eq!(config.name, "finney");
+    }
+
+    #[test]
     fn test_resolve_test() {
         let config = resolve_network_config("test").unwrap();
         assert_eq!(config.name, "test");
     }
 
     #[test]
+    fn test_resolve_testnet() {
+        let config = resolve_network_config("testnet").unwrap();
+        assert_eq!(config.name, "test");
+    }
+
+    #[test]
+    fn test_resolve_local() {
+        let config = resolve_network_config("local").unwrap();
+        assert_eq!(config.name, "local");
+    }
+
+    #[test]
+    fn test_resolve_archive() {
+        let config = resolve_network_config("archive").unwrap();
+        assert_eq!(config.name, "archive");
+    }
+
+    #[test]
+    fn test_resolve_latent_lite() {
+        let config = resolve_network_config("latent-lite").unwrap();
+        assert_eq!(config.name, "latent-lite");
+    }
+
+    #[test]
     fn test_resolve_unknown_fails() {
         assert!(resolve_network_config("invalid").is_err());
+    }
+
+    #[test]
+    fn test_resolve_empty_fails() {
+        assert!(resolve_network_config("").is_err());
     }
 
     #[test]
@@ -223,10 +258,19 @@ mod tests {
     }
 
     #[test]
+    fn test_metagraph_new_custom_netuid() {
+        let mg = Metagraph::new("test", 42);
+        assert!(mg.inner.is_none());
+        assert_eq!(mg.network, "test");
+        assert_eq!(mg.netuid, 42);
+    }
+
+    #[test]
     fn test_metagraph_repr_not_synced() {
         let mg = Metagraph::new("finney", 1);
         let repr = mg.__repr__();
         assert!(repr.contains("not synced"));
+        assert!(repr.contains("finney"));
     }
 
     #[test]
@@ -235,5 +279,48 @@ mod tests {
         let mg = Metagraph { inner: Some(inner), network: "finney".to_string(), netuid: 1 };
         let repr = mg.__repr__();
         assert!(repr.contains("n=0"));
+        assert!(repr.contains("netuid=1"));
+    }
+
+    #[test]
+    fn test_metagraph_require_inner_fails_when_not_synced() {
+        let mg = Metagraph::new("finney", 1);
+        let result = mg.require_inner();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_metagraph_len_fails_when_not_synced() {
+        let mg = Metagraph::new("finney", 1);
+        let result = mg.__len__();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_metagraph_netuid_fails_when_not_synced() {
+        let mg = Metagraph::new("finney", 1);
+        let result = mg.netuid();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_metagraph_block_fails_when_not_synced() {
+        let mg = Metagraph::new("finney", 1);
+        let result = mg.block();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_metagraph_synced_len() {
+        let inner = bittensor_metagraph::Metagraph::new(5);
+        let mg = Metagraph { inner: Some(inner), network: "finney".to_string(), netuid: 5 };
+        assert_eq!(mg.__len__().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_metagraph_synced_netuid() {
+        let inner = bittensor_metagraph::Metagraph::new(9);
+        let mg = Metagraph { inner: Some(inner), network: "test".to_string(), netuid: 9 };
+        assert_eq!(mg.netuid().unwrap(), 9);
     }
 }

@@ -11,6 +11,9 @@ pub mod extrinsics;
 pub mod generated;
 pub mod queries;
 
+#[cfg(test)]
+pub mod test_utils;
+
 #[cfg(feature = "drand")]
 pub mod drand;
 

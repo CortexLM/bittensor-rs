@@ -86,3 +86,46 @@ fn bittensor_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn module_types_import_correctly() {
+        use crate::axon::{Axon, AxonConfig};
+        use crate::chain_client::{SubtensorClient, TxSuccessPy};
+        use crate::core_types::{
+            AxonInfo, Balance, BittensorError, DelegateInfo, MetagraphInfo, NetworkConfig,
+            NeuronCertificate, NeuronInfo, NeuronInfoLite, PrometheusInfo, StakeInfo,
+            SubnetHyperparameters, SubnetInfo,
+        };
+        use crate::dendrite::{Dendrite, DendriteConfig};
+        use crate::metagraph::Metagraph;
+        use crate::synapse::{StreamingSynapse, Synapse, TerminalInfo};
+        use crate::wallet::Wallet;
+
+        let _ = std::mem::size_of::<Balance>();
+        let _ = std::mem::size_of::<NetworkConfig>();
+        let _ = std::mem::size_of::<AxonInfo>();
+        let _ = std::mem::size_of::<Wallet>();
+        let _ = std::mem::size_of::<SubtensorClient>();
+        let _ = std::mem::size_of::<TxSuccessPy>();
+        let _ = std::mem::size_of::<TerminalInfo>();
+        let _ = std::mem::size_of::<Synapse>();
+        let _ = std::mem::size_of::<StreamingSynapse>();
+        let _ = std::mem::size_of::<AxonConfig>();
+        let _ = std::mem::size_of::<Axon>();
+        let _ = std::mem::size_of::<DendriteConfig>();
+        let _ = std::mem::size_of::<Dendrite>();
+        let _ = std::mem::size_of::<Metagraph>();
+        let _ = std::mem::size_of::<StakeInfo>();
+        let _ = std::mem::size_of::<DelegateInfo>();
+        let _ = std::mem::size_of::<NeuronInfo>();
+        let _ = std::mem::size_of::<NeuronInfoLite>();
+        let _ = std::mem::size_of::<SubnetInfo>();
+        let _ = std::mem::size_of::<SubnetHyperparameters>();
+        let _ = std::mem::size_of::<MetagraphInfo>();
+        let _ = std::mem::size_of::<NeuronCertificate>();
+        let _ = std::mem::size_of::<PrometheusInfo>();
+        let _ = std::mem::size_of::<BittensorError>();
+    }
+}

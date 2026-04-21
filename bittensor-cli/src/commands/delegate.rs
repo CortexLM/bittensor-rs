@@ -299,6 +299,7 @@ fn parse_tao_to_rao(amount: &str) -> Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bittensor_wallet::prelude::Wallet;
     use tempfile::TempDir;
 
     #[test]
@@ -492,5 +493,61 @@ mod tests {
         };
         let result = exec_my_delegates(&config, Some("pw".into())).await;
         assert!(result.is_err(), "my delegates with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn delegate_list_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_delegate_list(&config).await;
+        assert!(result.is_err(), "delegate list with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn delegate_add_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_delegate_add(
+            &config,
+            "5FakeHKAddress111111111111111111111",
+            "1.0",
+            0,
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "delegate add with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn delegate_remove_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_delegate_remove(
+            &config,
+            "5FakeHKAddress111111111111111111111",
+            "1.0",
+            0,
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "delegate remove with created wallet but no chain should fail");
     }
 }

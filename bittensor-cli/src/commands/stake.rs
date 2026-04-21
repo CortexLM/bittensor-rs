@@ -468,6 +468,7 @@ fn parse_tao_to_rao(amount: &str) -> Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bittensor_wallet::prelude::Wallet;
     use tempfile::TempDir;
 
     #[test]
@@ -756,5 +757,136 @@ mod tests {
         };
         let result = exec_stake_get(&config, "5FakeHK", 0).await;
         assert!(result.is_err(), "stake get on nonexistent wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_add_no_wallet() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_stake_add(&config, "5FakeHK", 0, "1.0", Some("pw".into())).await;
+        assert!(result.is_err(), "stake add on nonexistent wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_remove_no_wallet() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_stake_remove(&config, "5FakeHK", 0, "1.0", Some("pw".into())).await;
+        assert!(result.is_err(), "stake remove on nonexistent wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_move_no_wallet() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result =
+            exec_stake_move(&config, "5OriginHK", "5DestHK", 0, 1, "1.0", Some("pw".into())).await;
+        assert!(result.is_err(), "stake move on nonexistent wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_swap_no_wallet() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_stake_swap(&config, "5FakeHK", 0, 1, "1.0", Some("pw".into())).await;
+        assert!(result.is_err(), "stake swap on nonexistent wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn set_auto_stake_no_wallet() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_set_auto_stake(&config, "5FakeHK", 0, Some("pw".into())).await;
+        assert!(result.is_err(), "set auto stake on nonexistent wallet should fail");
+    }
+
+    // --- Tests with a created wallet (covers wallet creation + coldkey decryption + chain failure) ---
+
+    #[tokio::test]
+    async fn stake_add_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_stake_add(
+            &config,
+            "5FakeHKAddress111111111111111111111",
+            0,
+            "1.0",
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "stake add with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_remove_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_stake_remove(
+            &config,
+            "5FakeHKAddress111111111111111111111111",
+            0,
+            "1.0",
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "stake remove with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn stake_move_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_stake_move(
+            &config,
+            "5OriginHK1111111111111111111111111",
+            "5DestHK111111111111111111111111111",
+            0,
+            1,
+            "1.0",
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "stake move with created wallet but no chain should fail");
     }
 }

@@ -937,4 +937,376 @@ mod tests {
         assert_eq!(restored.rho(), 10);
         assert!(!restored.liquid_alpha_enabled());
     }
+
+    // -----------------------------------------------------------------------
+    // Additional Balance tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn balance_saturating_add_overflow() {
+        let a = Balance::from_rao(u64::MAX);
+        let b = Balance::from_rao(1);
+        let sum = a.add(&b);
+        assert_eq!(sum.to_rao(), u64::MAX);
+    }
+
+    #[test]
+    fn balance_saturating_sub_underflow() {
+        let a = Balance::from_rao(5);
+        let b = Balance::from_rao(10);
+        let diff = a.sub(&b);
+        assert_eq!(diff.to_rao(), 0);
+    }
+
+    #[test]
+    fn balance_partial_cmp_ordering() {
+        let small = Balance::from_rao(100);
+        let big = Balance::from_rao(200);
+        assert!(small < big);
+        assert!(big > small);
+        assert_eq!(small, Balance::from_rao(100));
+    }
+
+    #[test]
+    fn balance_display_max_u64() {
+        let b = Balance::from_rao(u64::MAX);
+        let s = b.display();
+        assert!(s.contains("18446744073"));
+    }
+
+    #[test]
+    fn balance_default_trait() {
+        let b = Balance::default();
+        assert_eq!(b.to_rao(), 0);
+    }
+
+    #[test]
+    fn balance_from_tao_zero() {
+        let b = Balance::from_tao(0.0);
+        assert_eq!(b.to_rao(), 0);
+    }
+
+    #[test]
+    fn balance_from_tao_fractional() {
+        let b = Balance::from_tao(0.5);
+        assert_eq!(b.to_rao(), 500_000_000);
+    }
+
+    // -----------------------------------------------------------------------
+    // Additional AxonInfo tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn axon_info_all_getters() {
+        let info =
+            AxonInfo::new(2130706433, 8090, 4, 1, 200, "hotkey123".into(), "coldkey456".into());
+        assert_eq!(info.ip(), 2130706433);
+        assert_eq!(info.port(), 8090);
+        assert_eq!(info.ip_type(), 4);
+        assert_eq!(info.protocol(), 1);
+        assert_eq!(info.version(), 200);
+        assert_eq!(info.hotkey(), "hotkey123");
+        assert_eq!(info.coldkey(), "coldkey456");
+    }
+
+    #[test]
+    fn axon_info_from_json_roundtrip_all_fields() {
+        let info = AxonInfo::new(12345, 99, 6, 1, 42, "hk".into(), "ck".into());
+        let json = info.to_json().unwrap();
+        let restored = AxonInfo::from_json(&json).unwrap();
+        assert_eq!(restored.ip(), 12345);
+        assert_eq!(restored.port(), 99);
+        assert_eq!(restored.ip_type(), 6);
+        assert_eq!(restored.protocol(), 1);
+        assert_eq!(restored.version(), 42);
+        assert_eq!(restored.hotkey(), "hk");
+        assert_eq!(restored.coldkey(), "ck");
+    }
+
+    // -----------------------------------------------------------------------
+    // NeuronInfoLite tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn neuron_info_lite_json_roundtrip() {
+        let data = NeuronInfoLiteData {
+            uid: 42,
+            hotkey: "hk_lite".into(),
+            coldkey: "ck_lite".into(),
+            active: true,
+            incentive: 500,
+            stake_rao: 3_000_000_000,
+        };
+        let info = NeuronInfoLite { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = NeuronInfoLite::from_json(&json).unwrap();
+        assert_eq!(restored.uid(), 42);
+        assert_eq!(restored.hotkey(), "hk_lite");
+        assert_eq!(restored.coldkey(), "ck_lite");
+        assert!(restored.active());
+        assert_eq!(restored.incentive(), 500);
+        assert_eq!(restored.stake_rao(), 3_000_000_000);
+        let diff = (restored.stake_tao() - 3.0).abs();
+        assert!(diff < 1e-10);
+    }
+
+    #[test]
+    fn neuron_info_lite_inactive_zero_stake() {
+        let data = NeuronInfoLiteData {
+            uid: 0,
+            hotkey: "".into(),
+            coldkey: "".into(),
+            active: false,
+            incentive: 0,
+            stake_rao: 0,
+        };
+        let info = NeuronInfoLite { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = NeuronInfoLite::from_json(&json).unwrap();
+        assert!(!restored.active());
+        assert_eq!(restored.stake_rao(), 0);
+        assert_eq!(restored.stake_tao(), 0.0);
+    }
+
+    #[test]
+    fn neuron_info_lite_from_serde_value() {
+        let v = serde_json::json!({
+            "uid": 7,
+            "hotkey": "hk",
+            "coldkey": "ck",
+            "active": true,
+            "incentive": 100,
+            "stakeRao": 999
+        });
+        let info = NeuronInfoLite::from_serde_value(v).unwrap();
+        assert_eq!(info.uid(), 7);
+        assert_eq!(info.stake_rao(), 999);
+    }
+
+    // -----------------------------------------------------------------------
+    // SubnetInfo full getter tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn subnet_info_all_getters() {
+        let data = SubnetInfoData {
+            netuid: 5,
+            name: "subnet5".into(),
+            owner_hotkey: "owner_hk".into(),
+            tempo: 200,
+            maximum_uid: 512,
+            modality: 1,
+            network_uid: 5,
+        };
+        let info = SubnetInfo { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = SubnetInfo::from_json(&json).unwrap();
+        assert_eq!(restored.netuid(), 5);
+        assert_eq!(restored.name(), "subnet5");
+        assert_eq!(restored.owner_hotkey(), "owner_hk");
+        assert_eq!(restored.tempo(), 200);
+        assert_eq!(restored.maximum_uid(), 512);
+        assert_eq!(restored.modality(), 1);
+        assert_eq!(restored.network_uid(), 5);
+    }
+
+    // -----------------------------------------------------------------------
+    // SubnetHyperparams full getter tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn subnet_hyperparams_all_getters() {
+        let data = SubnetHyperparamsData {
+            rho: 20,
+            kappa: 1000,
+            difficulty: 5000,
+            burn: 200,
+            immunity_ratio: 30,
+            min_burn: 100,
+            max_burn: 400,
+            weights_rate_limit: 50,
+            weights_version: 2,
+            weights_min_stake: 10,
+            max_weight_limit: 500,
+            scaling_law_power: 75,
+            subnetwork_n: 128,
+            max_n: 2048,
+            blocks_since_last_step: 99,
+            tempo: 400,
+            adjustment_alpha: 250,
+            adjustment_interval: 50,
+            bonds_moving_avg: 800,
+            alpha_high: 70,
+            alpha_low: 30,
+            liquid_alpha_enabled: true,
+        };
+        let info = SubnetHyperparams { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = SubnetHyperparams::from_json(&json).unwrap();
+        assert_eq!(restored.rho(), 20);
+        assert_eq!(restored.kappa(), 1000);
+        assert_eq!(restored.difficulty(), 5000);
+        assert_eq!(restored.burn(), 200);
+        assert_eq!(restored.immunity_ratio(), 30);
+        assert_eq!(restored.min_burn(), 100);
+        assert_eq!(restored.max_burn(), 400);
+        assert_eq!(restored.weights_rate_limit(), 50);
+        assert_eq!(restored.weights_version(), 2);
+        assert_eq!(restored.tempo(), 400);
+        assert!(restored.liquid_alpha_enabled());
+    }
+
+    // -----------------------------------------------------------------------
+    // StakeInfo full getter tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn stake_info_all_getters() {
+        let data = StakeInfoData {
+            hotkey: "hk_stake".into(),
+            coldkey: "ck_stake".into(),
+            stake: 7_500_000_000,
+        };
+        let info = StakeInfo { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = StakeInfo::from_json(&json).unwrap();
+        assert_eq!(restored.hotkey(), "hk_stake");
+        assert_eq!(restored.coldkey(), "ck_stake");
+        assert_eq!(restored.stake_rao(), 7_500_000_000);
+        let diff = (restored.stake_tao() - 7.5).abs();
+        assert!(diff < 1e-10);
+    }
+
+    // -----------------------------------------------------------------------
+    // DelegateInfo full getter tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn delegate_info_all_getters() {
+        let data = DelegateInfoData {
+            delegate_ss58: "5Delegate".into(),
+            delegate_hotkey: "del_hk".into(),
+            total_stake: 2_000_000_000,
+            nominators: vec![("nom_a".into(), 1_000_000_000), ("nom_b".into(), 500_000_000)],
+            owner_hotkey: "own_hk".into(),
+            take: 15,
+            owner_ss58: "5Owner".into(),
+            registrations: vec![1, 2, 3],
+            validator_permits: vec![1, 2],
+        };
+        let info = DelegateInfo { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = DelegateInfo::from_json(&json).unwrap();
+        assert_eq!(restored.delegate_ss58(), "5Delegate");
+        assert_eq!(restored.delegate_hotkey(), "del_hk");
+        assert_eq!(restored.total_stake_rao(), 2_000_000_000);
+        let diff = (restored.total_stake_tao() - 2.0).abs();
+        assert!(diff < 1e-10);
+        assert_eq!(restored.owner_hotkey(), "own_hk");
+        assert_eq!(restored.take(), 15);
+        assert_eq!(restored.owner_ss58(), "5Owner");
+        assert_eq!(restored.nominator_count(), 2);
+    }
+
+    // -----------------------------------------------------------------------
+    // TerminalInfo full tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn terminal_info_json_roundtrip() {
+        let inner = bittensor_synapse::TerminalInfo {
+            status_code: Some(200),
+            status_message: Some("OK".into()),
+            process_time: Some(0.42),
+            ip: Some("127.0.0.1".into()),
+            port: Some(8080),
+            version: Some(5),
+            nonce: Some(12345),
+            uuid: Some("uuid-1234".into()),
+            hotkey: Some("5Hotkey".into()),
+            signature: Some("0xsig".into()),
+        };
+        let info = TerminalInfo { inner };
+        let json = info.to_json().unwrap();
+        let restored = TerminalInfo::from_json(&json).unwrap();
+        assert_eq!(restored.status_code(), Some(200));
+        assert_eq!(restored.status_message(), Some("OK".to_string()));
+        assert_eq!(restored.process_time(), Some(0.42));
+        assert_eq!(restored.ip(), Some("127.0.0.1".to_string()));
+        assert_eq!(restored.port(), Some(8080));
+        assert_eq!(restored.version(), Some(5));
+        assert_eq!(restored.nonce(), Some(12345));
+        assert_eq!(restored.uuid(), Some("uuid-1234".to_string()));
+        assert_eq!(restored.hotkey(), Some("5Hotkey".to_string()));
+        assert_eq!(restored.signature(), Some("0xsig".to_string()));
+    }
+
+    #[test]
+    fn terminal_info_default_all_none() {
+        let info = TerminalInfo::default();
+        assert!(info.status_code().is_none());
+        assert!(info.status_message().is_none());
+        assert!(info.process_time().is_none());
+        assert!(info.ip().is_none());
+        assert!(info.port().is_none());
+        assert!(info.version().is_none());
+        assert!(info.nonce().is_none());
+        assert!(info.uuid().is_none());
+        assert!(info.hotkey().is_none());
+        assert!(info.signature().is_none());
+    }
+
+    #[test]
+    fn terminal_info_json_roundtrip_empty() {
+        let info = TerminalInfo::new();
+        let json = info.to_json().unwrap();
+        let restored = TerminalInfo::from_json(&json).unwrap();
+        assert!(restored.status_code().is_none());
+        assert!(restored.hotkey().is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // RegistrationInfo additional tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn registration_info_all_getters() {
+        let data = RegistrationInfoData {
+            netuid: 3,
+            hotkey: "hk_reg".into(),
+            block: 500,
+            burn: 2_500_000_000,
+        };
+        let info = RegistrationInfo { inner: data };
+        let json = info.to_json().unwrap();
+        let restored = RegistrationInfo::from_json(&json).unwrap();
+        assert_eq!(restored.netuid(), 3);
+        assert_eq!(restored.hotkey(), "hk_reg");
+        assert_eq!(restored.block(), 500);
+        assert_eq!(restored.burn_rao(), 2_500_000_000);
+        let diff = (restored.burn_tao() - 2.5).abs();
+        assert!(diff < 1e-10);
+    }
+
+    // -----------------------------------------------------------------------
+    // NetworkConfig additional tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn network_config_chain_id() {
+        let cfg = NetworkConfig::finney();
+        assert_eq!(cfg.chain_id(), 42);
+        let cfg = NetworkConfig::test();
+        assert_eq!(cfg.chain_id(), 42);
+        let cfg = NetworkConfig::local();
+        assert_eq!(cfg.chain_id(), 42);
+    }
+
+    #[test]
+    fn network_config_ws_urls() {
+        let finney = NetworkConfig::finney();
+        assert!(finney.ws_url().starts_with("wss://"));
+        let local = NetworkConfig::local();
+        assert!(local.ws_url().starts_with("ws://"));
+    }
 }

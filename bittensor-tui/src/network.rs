@@ -139,4 +139,122 @@ mod tests {
         assert_eq!(data.subnet_ids.len(), 3);
         assert!(data.connected);
     }
+
+    #[test]
+    fn test_network_data_default_uses_balance_zero() {
+        let data = NetworkData::default();
+        assert_eq!(data.total_stake, Balance::ZERO);
+        assert_eq!(data.total_issuance, Balance::ZERO);
+    }
+
+    #[test]
+    fn test_network_data_default_all_fields() {
+        let data = NetworkData::default();
+        assert_eq!(data.block_height, 0);
+        assert_eq!(data.total_stake, Balance::ZERO);
+        assert_eq!(data.total_issuance, Balance::ZERO);
+        assert_eq!(data.network_hash_rate, 0);
+        assert!(!data.connected);
+        assert!(data.subnet_ids.is_empty());
+        assert!(data.last_error.is_none());
+    }
+
+    #[test]
+    fn test_network_fetcher_new() {
+        let fetcher = NetworkFetcher::new(NetworkConfig::finney(), 30);
+        assert_eq!(fetcher.refresh_secs, 30);
+    }
+
+    #[test]
+    fn test_network_fetcher_new_with_various_refresh_rates() {
+        let f1 = NetworkFetcher::new(NetworkConfig::finney(), 1);
+        assert_eq!(f1.refresh_secs, 1);
+
+        let f2 = NetworkFetcher::new(NetworkConfig::test(), 60);
+        assert_eq!(f2.refresh_secs, 60);
+
+        let f3 = NetworkFetcher::new(NetworkConfig::local(), 300);
+        assert_eq!(f3.refresh_secs, 300);
+    }
+
+    #[test]
+    fn test_network_data_construction_all_fields() {
+        let data = NetworkData {
+            block_height: 999,
+            total_stake: Balance::from_tao(42.0),
+            total_issuance: Balance::from_tao(7.0),
+            network_hash_rate: 1234,
+            connected: true,
+            subnet_ids: vec![0, 1, 2, 18],
+            last_error: Some("timeout".into()),
+        };
+        assert_eq!(data.block_height, 999);
+        assert_eq!(data.total_stake, Balance::from_tao(42.0));
+        assert_eq!(data.total_issuance, Balance::from_tao(7.0));
+        assert_eq!(data.network_hash_rate, 1234);
+        assert!(data.connected);
+        assert_eq!(data.subnet_ids, vec![0, 1, 2, 18]);
+        assert_eq!(data.last_error.as_deref(), Some("timeout"));
+    }
+
+    #[test]
+    fn test_network_data_clone() {
+        let original = NetworkData {
+            block_height: 100,
+            total_stake: Balance::from_tao(50.0),
+            total_issuance: Balance::from_tao(25.0),
+            network_hash_rate: 10,
+            connected: true,
+            subnet_ids: vec![5, 6],
+            last_error: Some("err".into()),
+        };
+        let cloned = original.clone();
+        assert_eq!(cloned.block_height, original.block_height);
+        assert_eq!(cloned.total_stake, original.total_stake);
+        assert_eq!(cloned.total_issuance, original.total_issuance);
+        assert_eq!(cloned.network_hash_rate, original.network_hash_rate);
+        assert_eq!(cloned.connected, original.connected);
+        assert_eq!(cloned.subnet_ids, original.subnet_ids);
+        assert_eq!(cloned.last_error, original.last_error);
+    }
+
+    #[test]
+    fn test_network_data_debug_format() {
+        let data = NetworkData {
+            block_height: 1,
+            total_stake: Balance::ZERO,
+            total_issuance: Balance::ZERO,
+            network_hash_rate: 0,
+            connected: false,
+            subnet_ids: vec![],
+            last_error: None,
+        };
+        let debug_str = format!("{data:?}");
+        assert!(debug_str.contains("NetworkData"));
+    }
+
+    #[test]
+    fn test_network_data_field_mutation() {
+        let mut data = NetworkData::default();
+        data.block_height = 500;
+        assert_eq!(data.block_height, 500);
+
+        data.total_stake = Balance::from_tao(100.0);
+        assert_eq!(data.total_stake, Balance::from_tao(100.0));
+
+        data.total_issuance = Balance::from_tao(200.0);
+        assert_eq!(data.total_issuance, Balance::from_tao(200.0));
+
+        data.network_hash_rate = 999;
+        assert_eq!(data.network_hash_rate, 999);
+
+        data.connected = true;
+        assert!(data.connected);
+
+        data.subnet_ids = vec![10, 20, 30];
+        assert_eq!(data.subnet_ids, vec![10, 20, 30]);
+
+        data.last_error = Some("connection refused".into());
+        assert_eq!(data.last_error.as_deref(), Some("connection refused"));
+    }
 }

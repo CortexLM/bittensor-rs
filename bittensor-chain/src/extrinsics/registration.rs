@@ -133,4 +133,33 @@ mod tests {
         let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
         let _call = subtensor::tx().subtensor_module().register_network(hotkey);
     }
+
+    #[test]
+    fn pow_register_call_construction() {
+        let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
+        let coldkey = subxt::utils::AccountId32::from([2u8; 32]);
+        let _call = subtensor::tx().subtensor_module().register(
+            1u16,
+            100u64,
+            0u64,
+            vec![0u8; 32],
+            hotkey,
+            coldkey,
+        );
+    }
+
+    #[test]
+    fn set_subnet_identity_call_construction() {
+        let _call = subtensor::tx().subtensor_module().set_subnet_identity(
+            1u16,
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+        );
+    }
 }

@@ -219,4 +219,31 @@ mod tests {
         assert_eq!(restored.status_message, Some("Timeout".to_string()));
         assert_eq!(restored.nonce, Some(99999));
     }
+
+    #[test]
+    fn from_headers_with_invalid_values_yields_none() {
+        let mut headers = HashMap::new();
+        headers.insert("bt_header_axon_status_code".to_string(), "not_a_number".to_string());
+        headers.insert("bt_header_axon_nonce".to_string(), "also_not_a_number".to_string());
+        headers.insert("bt_header_axon_hotkey".to_string(), "5ValidKey".to_string());
+        let restored = TerminalInfo::from_headers_with_prefix(&headers, "bt_header_axon_");
+        assert!(restored.status_code.is_none());
+        assert!(restored.nonce.is_none());
+        assert_eq!(restored.hotkey, Some("5ValidKey".to_string()));
+    }
+
+    #[test]
+    fn new_has_all_none() {
+        let info = TerminalInfo::new();
+        assert!(info.status_code.is_none());
+        assert!(info.status_message.is_none());
+        assert!(info.process_time.is_none());
+        assert!(info.ip.is_none());
+        assert!(info.port.is_none());
+        assert!(info.version.is_none());
+        assert!(info.nonce.is_none());
+        assert!(info.uuid.is_none());
+        assert!(info.hotkey.is_none());
+        assert!(info.signature.is_none());
+    }
 }

@@ -320,6 +320,7 @@ fn parse_comma_u16(input: &str) -> Result<Vec<u16>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bittensor_wallet::prelude::Wallet;
     use tempfile::TempDir;
 
     #[test]
@@ -504,5 +505,122 @@ mod tests {
         };
         let result = exec_subnet_create(&config, Some("pw".into())).await;
         assert!(result.is_err(), "subnet create with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn subnet_set_identity_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let args = SubnetIdentityArgs {
+            netuid: 1,
+            name: "foo",
+            github_repo: "bar",
+            contact: "baz",
+            url: "qux",
+            discord: "dis",
+            description: "desc",
+        };
+        let result = exec_subnet_set_identity(&config, &args, Some("pw".into())).await;
+        assert!(result.is_err(), "subnet set-identity with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn subnet_list_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_subnet_list(&config).await;
+        assert!(result.is_err(), "subnet list with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn subnet_info_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_subnet_info(&config, 1).await;
+        assert!(result.is_err(), "subnet info with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn subnet_hyperparameters_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_subnet_hyperparameters(&config, 1).await;
+        assert!(result.is_err(), "subnet hyperparameters with no local node should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_overflow() {
+        assert!(parse_comma_u16("65536").is_err(), "u16 overflow should fail");
+        assert!(parse_comma_u16("1,70000").is_err(), "u16 overflow in list should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_trailing_comma() {
+        let vals = parse_comma_u16("1,2,").unwrap();
+        assert_eq!(vals, vec![1, 2], "trailing comma should be ignored");
+    }
+
+    #[test]
+    fn parse_comma_u16_leading_comma() {
+        let vals = parse_comma_u16(",1,2").unwrap();
+        assert_eq!(vals, vec![1, 2], "leading comma should be ignored");
+    }
+
+    #[tokio::test]
+    async fn subnet_create_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_subnet_create(&config, Some("".into())).await;
+        assert!(result.is_err(), "subnet create with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn subnet_set_identity_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let args = SubnetIdentityArgs {
+            netuid: 1,
+            name: "foo",
+            github_repo: "bar",
+            contact: "baz",
+            url: "qux",
+            discord: "dis",
+            description: "desc",
+        };
+        let result = exec_subnet_set_identity(&config, &args, Some("".into())).await;
+        assert!(
+            result.is_err(),
+            "subnet set-identity with created wallet but no chain should fail"
+        );
     }
 }

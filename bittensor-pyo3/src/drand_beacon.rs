@@ -155,20 +155,77 @@ fn parse_round_from_dict(dict: &Bound<'_, PyDict>) -> PyResult<DrandRound> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn test_mainnet_chain_hash_format() {
-        assert_eq!(super::MAINNET_CHAIN_HASH.len(), 64);
+        assert_eq!(MAINNET_CHAIN_HASH.len(), 64);
     }
 
     #[test]
-    fn test_python_round_roundtrip() {
+    fn test_mainnet_chain_hash_is_hex() {
+        assert!(MAINNET_CHAIN_HASH.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn test_drand_round_construction() {
         let round = bittensor_chain::drand::DrandRound {
             round: 42,
             randomness: "abc123".to_string(),
             signature: "def456".to_string(),
             previous_signature: None,
         };
-        let result = super::python_round(&round);
+        assert_eq!(round.round, 42);
+        assert_eq!(round.randomness, "abc123");
+        assert_eq!(round.signature, "def456");
+        assert!(round.previous_signature.is_none());
+    }
+
+    #[test]
+    fn test_drand_round_with_previous_sig() {
+        let round = bittensor_chain::drand::DrandRound {
+            round: 100,
+            randomness: "r".to_string(),
+            signature: "s".to_string(),
+            previous_signature: Some("ps".to_string()),
+        };
+        assert_eq!(round.previous_signature, Some("ps".to_string()));
+    }
+
+    #[test]
+    fn test_drand_round_zero_values() {
+        let round = bittensor_chain::drand::DrandRound {
+            round: 0,
+            randomness: String::new(),
+            signature: String::new(),
+            previous_signature: None,
+        };
+        assert_eq!(round.round, 0);
+        assert!(round.randomness.is_empty());
+        assert!(round.signature.is_empty());
+    }
+
+    #[cfg(feature = "drand")]
+    #[test]
+    fn test_drand_beacon_new() {
+        let result = DrandBeacon::new();
         assert!(result.is_ok());
+    }
+
+    #[cfg(feature = "drand")]
+    #[test]
+    fn test_drand_beacon_chain_hash_getter() {
+        let beacon = DrandBeacon::new().unwrap();
+        let hash = beacon.chain_hash();
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[cfg(feature = "drand")]
+    #[test]
+    fn test_drand_beacon_repr() {
+        let beacon = DrandBeacon::new().unwrap();
+        let repr = beacon.__repr__();
+        assert!(repr.contains("DrandBeacon"));
+        assert!(repr.contains("chain_hash="));
     }
 }

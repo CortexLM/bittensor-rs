@@ -170,4 +170,42 @@ mod tests {
         let v: u8 = 0;
         assert_eq!(v, 0);
     }
+
+    #[tokio::test]
+    async fn get_proxies_returns_empty_vec_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let delegator = subxt::utils::AccountId32::from([0u8; 32]);
+        let delegate = subxt::utils::AccountId32::from([1u8; 32]);
+        let result = super::get_proxies(&client, &delegator, &delegate, None).await;
+        assert!(result.is_ok(), "get_proxies should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_pure_proxy_returns_none() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let proxy_account = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_pure_proxy(&client, &proxy_account).await;
+        assert!(result.is_ok(), "get_pure_proxy should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_proxy_returns_some_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let delegator = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_proxy(&client, &delegator).await;
+        assert!(result.is_ok(), "get_proxy should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn get_check_permissions_returns_false_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let delegator = subxt::utils::AccountId32::from([0u8; 32]);
+        let delegate = subxt::utils::AccountId32::from([1u8; 32]);
+        let result = super::get_check_permissions(&client, &delegator, &delegate, 0u8).await;
+        assert!(result.is_ok(), "get_check_permissions should succeed: {:?}", result.err());
+        assert!(!result.unwrap());
+    }
 }

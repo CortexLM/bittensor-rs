@@ -151,4 +151,28 @@ mod tests {
         let cfg = Config::resolve(None, Some("test-wallet"), Some("/tmp/wallets")).unwrap();
         assert_eq!(cfg.wallet_dir(), PathBuf::from("/tmp/wallets/test-wallet"));
     }
+
+    #[test]
+    fn resolve_archive_network() {
+        let cfg = Config::resolve(Some("archive"), None, None).unwrap();
+        assert_eq!(cfg.network.name, "archive");
+    }
+
+    #[test]
+    fn resolve_latent_lite_network() {
+        let cfg = Config::resolve(Some("latent-lite"), None, None).unwrap();
+        assert_eq!(cfg.network.name, "latent-lite");
+    }
+
+    #[test]
+    fn default_network_is_finney() {
+        let cfg = Config::resolve(None, None, None).unwrap();
+        assert_eq!(cfg.network.name, "finney");
+    }
+
+    #[test]
+    fn default_wallet_base_includes_bittensor() {
+        let cfg = Config::resolve(None, None, None).unwrap();
+        assert!(cfg.wallet_path.to_string_lossy().contains("bittensor"));
+    }
 }

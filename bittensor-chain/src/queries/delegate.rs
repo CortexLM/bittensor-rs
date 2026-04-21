@@ -346,4 +346,210 @@ mod tests {
         assert!(u16::MIN == 0);
         assert!(u16::MAX == 65535);
     }
+
+    #[tokio::test]
+    async fn get_delegates_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_delegates(&client).await;
+        assert!(result.is_ok(), "get_delegates should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_delegate_take_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_delegate_take(&client, &hotkey).await;
+        assert!(result.is_ok(), "get_delegate_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 11796);
+    }
+
+    #[tokio::test]
+    async fn get_delegated_info_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_delegated_info(&client, &coldkey).await;
+        assert!(result.is_ok(), "get_delegated_info should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_max_delegate_take_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_delegate_take(&client).await;
+        assert!(result.is_ok(), "get_max_delegate_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 11796);
+    }
+
+    #[tokio::test]
+    async fn get_min_delegate_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_delegate_take(&client).await;
+        assert!(result.is_ok(), "get_min_delegate_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_childkey_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_childkey_take(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_childkey_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_max_childkey_take_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_childkey_take(&client).await;
+        assert!(result.is_ok(), "get_max_childkey_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 11796);
+    }
+
+    #[tokio::test]
+    async fn get_min_childkey_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_min_childkey_take(&client).await;
+        assert!(result.is_ok(), "get_min_childkey_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_child_keys_returns_defaults() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_pending_child_keys(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_pending_child_keys should succeed: {:?}", result.err());
+        let (keys, cooldown) = result.unwrap();
+        assert!(keys.is_empty());
+        assert_eq!(cooldown, 0);
+    }
+
+    #[tokio::test]
+    async fn get_child_keys_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_child_keys(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_child_keys should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_parent_keys_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_parent_keys(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_parent_keys should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_staking_hotkeys_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_staking_hotkeys(&client, &coldkey).await;
+        assert!(result.is_ok(), "get_staking_hotkeys should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_num_staking_coldkeys_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_num_staking_coldkeys(&client).await;
+        assert!(result.is_ok(), "get_num_staking_coldkeys should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_auto_stake_destination_returns_none() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_auto_stake_destination(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_auto_stake_destination should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn get_last_tx_block_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_last_tx_block(&client, &hotkey).await;
+        assert!(result.is_ok(), "get_last_tx_block should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_last_tx_block_child_key_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_last_tx_block_child_key_take(&client, &hotkey).await;
+        assert!(
+            result.is_ok(),
+            "get_last_tx_block_child_key_take should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_last_tx_block_delegate_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_last_tx_block_delegate_take(&client, &hotkey).await;
+        assert!(
+            result.is_ok(),
+            "get_last_tx_block_delegate_take should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_staking_operation_rate_limiter_returns_false() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let coldkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
+        let result = get_staking_operation_rate_limiter(&client, &coldkey, &hotkey, 0u16).await;
+        assert!(
+            result.is_ok(),
+            "get_staking_operation_rate_limiter should succeed: {:?}",
+            result.err()
+        );
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_tx_delegate_take_rate_limit_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_tx_delegate_take_rate_limit(&client).await;
+        assert!(
+            result.is_ok(),
+            "get_tx_delegate_take_rate_limit should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 216000);
+    }
+
+    #[tokio::test]
+    async fn get_tx_childkey_take_rate_limit_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_tx_childkey_take_rate_limit(&client).await;
+        assert!(
+            result.is_ok(),
+            "get_tx_childkey_take_rate_limit should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 216000);
+    }
+
+    #[tokio::test]
+    async fn get_owner_returns_some_zero_account() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_owner(&client, &hotkey).await;
+        assert!(result.is_ok(), "get_owner should succeed: {:?}", result.err());
+        let owner = result.unwrap();
+        assert!(owner.is_some());
+        assert_eq!(owner.unwrap(), subxt::utils::AccountId32::from([0u8; 32]));
+    }
 }

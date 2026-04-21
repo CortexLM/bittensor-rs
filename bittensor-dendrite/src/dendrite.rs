@@ -486,5 +486,369 @@ mod tests {
                 dendrite.client.post(format!("http://127.0.0.1:{port}")).send().await.unwrap();
             assert!(resp.status().is_server_error());
         }
+
+        #[tokio::test]
+        async fn query_with_synapse_401_returns_signing_error() {
+            use bittensor_synapse::{Synapse, TerminalInfo};
+
+            #[derive(Debug, serde::Serialize)]
+            struct PingSynapse {
+                message: String,
+                timeout_val: f64,
+                dendrite_info: TerminalInfo,
+                axon_info: TerminalInfo,
+                computed_hash: String,
+                total: u64,
+                header: u64,
+            }
+
+            impl Synapse for PingSynapse {
+                type Output = String;
+
+                fn name(&self) -> &str {
+                    &self.message
+                }
+                fn timeout(&self) -> f64 {
+                    self.timeout_val
+                }
+                fn set_timeout(&mut self, t: f64) {
+                    self.timeout_val = t;
+                }
+                fn dendrite(&self) -> &TerminalInfo {
+                    &self.dendrite_info
+                }
+                fn set_dendrite(&mut self, info: TerminalInfo) {
+                    self.dendrite_info = info;
+                }
+                fn axon(&self) -> &TerminalInfo {
+                    &self.axon_info
+                }
+                fn set_axon(&mut self, info: TerminalInfo) {
+                    self.axon_info = info;
+                }
+                fn computed_body_hash(&self) -> &str {
+                    &self.computed_hash
+                }
+                fn set_computed_body_hash(&mut self, h: String) {
+                    self.computed_hash = h;
+                }
+                fn total_size(&self) -> u64 {
+                    self.total
+                }
+                fn set_total_size(&mut self, s: u64) {
+                    self.total = s;
+                }
+                fn header_size(&self) -> u64 {
+                    self.header
+                }
+                fn set_header_size(&mut self, s: u64) {
+                    self.header = s;
+                }
+            }
+
+            let server = MockServer::start().await;
+            let port = server.address().port();
+
+            Mock::given(method("POST"))
+                .respond_with(ResponseTemplate::new(401))
+                .mount(&server)
+                .await;
+
+            let axon = test_axon(port);
+            let keypair = subxt_signer::sr25519::dev::alice();
+            let dendrite =
+                Dendrite::new(DendriteConfig::default().with_timeout_secs(5).with_hotkey(keypair))
+                    .unwrap();
+
+            let synapse = PingSynapse {
+                message: "ping".into(),
+                timeout_val: 5.0,
+                dendrite_info: TerminalInfo::default(),
+                axon_info: TerminalInfo::default(),
+                computed_hash: String::new(),
+                total: 0,
+                header: 0,
+            };
+
+            let result = dendrite.query(synapse, &axon).await;
+            assert!(result.is_err());
+            match result.unwrap_err() {
+                BittensorError::Signing(_) => {}
+                other => panic!("expected Signing error, got {other:?}"),
+            }
+        }
+
+        #[tokio::test]
+        async fn query_with_synapse_non_2xx_returns_rpc_error() {
+            use bittensor_synapse::{Synapse, TerminalInfo};
+
+            #[derive(Debug, serde::Serialize)]
+            struct PingSynapse {
+                message: String,
+                timeout_val: f64,
+                dendrite_info: TerminalInfo,
+                axon_info: TerminalInfo,
+                computed_hash: String,
+                total: u64,
+                header: u64,
+            }
+
+            impl Synapse for PingSynapse {
+                type Output = String;
+
+                fn name(&self) -> &str {
+                    &self.message
+                }
+                fn timeout(&self) -> f64 {
+                    self.timeout_val
+                }
+                fn set_timeout(&mut self, t: f64) {
+                    self.timeout_val = t;
+                }
+                fn dendrite(&self) -> &TerminalInfo {
+                    &self.dendrite_info
+                }
+                fn set_dendrite(&mut self, info: TerminalInfo) {
+                    self.dendrite_info = info;
+                }
+                fn axon(&self) -> &TerminalInfo {
+                    &self.axon_info
+                }
+                fn set_axon(&mut self, info: TerminalInfo) {
+                    self.axon_info = info;
+                }
+                fn computed_body_hash(&self) -> &str {
+                    &self.computed_hash
+                }
+                fn set_computed_body_hash(&mut self, h: String) {
+                    self.computed_hash = h;
+                }
+                fn total_size(&self) -> u64 {
+                    self.total
+                }
+                fn set_total_size(&mut self, s: u64) {
+                    self.total = s;
+                }
+                fn header_size(&self) -> u64 {
+                    self.header
+                }
+                fn set_header_size(&mut self, s: u64) {
+                    self.header = s;
+                }
+            }
+
+            let server = MockServer::start().await;
+            let port = server.address().port();
+
+            Mock::given(method("POST"))
+                .respond_with(ResponseTemplate::new(503))
+                .mount(&server)
+                .await;
+
+            let axon = test_axon(port);
+            let keypair = subxt_signer::sr25519::dev::alice();
+            let dendrite =
+                Dendrite::new(DendriteConfig::default().with_timeout_secs(5).with_hotkey(keypair))
+                    .unwrap();
+
+            let synapse = PingSynapse {
+                message: "ping".into(),
+                timeout_val: 5.0,
+                dendrite_info: TerminalInfo::default(),
+                axon_info: TerminalInfo::default(),
+                computed_hash: String::new(),
+                total: 0,
+                header: 0,
+            };
+
+            let result = dendrite.query(synapse, &axon).await;
+            assert!(result.is_err());
+            match result.unwrap_err() {
+                BittensorError::Rpc(_) => {}
+                other => panic!("expected Rpc error, got {other:?}"),
+            }
+        }
+
+        #[tokio::test]
+        async fn query_with_synapse_200_returns_synapse() {
+            use bittensor_synapse::{Synapse, TerminalInfo};
+
+            #[derive(Debug, serde::Serialize)]
+            struct PingSynapse {
+                message: String,
+                timeout_val: f64,
+                dendrite_info: TerminalInfo,
+                axon_info: TerminalInfo,
+                computed_hash: String,
+                total: u64,
+                header: u64,
+            }
+
+            impl Synapse for PingSynapse {
+                type Output = String;
+
+                fn name(&self) -> &str {
+                    &self.message
+                }
+                fn timeout(&self) -> f64 {
+                    self.timeout_val
+                }
+                fn set_timeout(&mut self, t: f64) {
+                    self.timeout_val = t;
+                }
+                fn dendrite(&self) -> &TerminalInfo {
+                    &self.dendrite_info
+                }
+                fn set_dendrite(&mut self, info: TerminalInfo) {
+                    self.dendrite_info = info;
+                }
+                fn axon(&self) -> &TerminalInfo {
+                    &self.axon_info
+                }
+                fn set_axon(&mut self, info: TerminalInfo) {
+                    self.axon_info = info;
+                }
+                fn computed_body_hash(&self) -> &str {
+                    &self.computed_hash
+                }
+                fn set_computed_body_hash(&mut self, h: String) {
+                    self.computed_hash = h;
+                }
+                fn total_size(&self) -> u64 {
+                    self.total
+                }
+                fn set_total_size(&mut self, s: u64) {
+                    self.total = s;
+                }
+                fn header_size(&self) -> u64 {
+                    self.header
+                }
+                fn set_header_size(&mut self, s: u64) {
+                    self.header = s;
+                }
+            }
+
+            let server = MockServer::start().await;
+            let port = server.address().port();
+
+            Mock::given(method("POST"))
+                .respond_with(ResponseTemplate::new(200))
+                .mount(&server)
+                .await;
+
+            let axon = test_axon(port);
+            let keypair = subxt_signer::sr25519::dev::alice();
+            let dendrite =
+                Dendrite::new(DendriteConfig::default().with_timeout_secs(5).with_hotkey(keypair))
+                    .unwrap();
+
+            let synapse = PingSynapse {
+                message: "ping".into(),
+                timeout_val: 5.0,
+                dendrite_info: TerminalInfo::default(),
+                axon_info: TerminalInfo::default(),
+                computed_hash: String::new(),
+                total: 0,
+                header: 0,
+            };
+
+            let result = dendrite.query(synapse, &axon).await;
+            assert!(result.is_ok());
+            let returned = result.unwrap();
+            assert_eq!(returned.name(), "ping");
+        }
+
+        #[tokio::test]
+        async fn query_with_synapse_timeout_returns_timeout_error() {
+            use bittensor_synapse::{Synapse, TerminalInfo};
+
+            #[derive(Debug, serde::Serialize)]
+            struct PingSynapse {
+                message: String,
+                timeout_val: f64,
+                dendrite_info: TerminalInfo,
+                axon_info: TerminalInfo,
+                computed_hash: String,
+                total: u64,
+                header: u64,
+            }
+
+            impl Synapse for PingSynapse {
+                type Output = String;
+
+                fn name(&self) -> &str {
+                    &self.message
+                }
+                fn timeout(&self) -> f64 {
+                    self.timeout_val
+                }
+                fn set_timeout(&mut self, t: f64) {
+                    self.timeout_val = t;
+                }
+                fn dendrite(&self) -> &TerminalInfo {
+                    &self.dendrite_info
+                }
+                fn set_dendrite(&mut self, info: TerminalInfo) {
+                    self.dendrite_info = info;
+                }
+                fn axon(&self) -> &TerminalInfo {
+                    &self.axon_info
+                }
+                fn set_axon(&mut self, info: TerminalInfo) {
+                    self.axon_info = info;
+                }
+                fn computed_body_hash(&self) -> &str {
+                    &self.computed_hash
+                }
+                fn set_computed_body_hash(&mut self, h: String) {
+                    self.computed_hash = h;
+                }
+                fn total_size(&self) -> u64 {
+                    self.total
+                }
+                fn set_total_size(&mut self, s: u64) {
+                    self.total = s;
+                }
+                fn header_size(&self) -> u64 {
+                    self.header
+                }
+                fn set_header_size(&mut self, s: u64) {
+                    self.header = s;
+                }
+            }
+
+            let server = MockServer::start().await;
+            let port = server.address().port();
+
+            Mock::given(method("POST"))
+                .respond_with(
+                    ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(10)),
+                )
+                .mount(&server)
+                .await;
+
+            let axon = test_axon(port);
+            let keypair = subxt_signer::sr25519::dev::alice();
+            let dendrite =
+                Dendrite::new(DendriteConfig::default().with_timeout_secs(1).with_hotkey(keypair))
+                    .unwrap();
+
+            let synapse = PingSynapse {
+                message: "ping".into(),
+                timeout_val: 1.0,
+                dendrite_info: TerminalInfo::default(),
+                axon_info: TerminalInfo::default(),
+                computed_hash: String::new(),
+                total: 0,
+                header: 0,
+            };
+
+            let result = dendrite.query(synapse, &axon).await;
+            assert!(result.is_err());
+            match result.unwrap_err() {
+                BittensorError::Timeout(_) => {}
+                other => panic!("expected Timeout error, got {other:?}"),
+            }
+        }
     }
 }

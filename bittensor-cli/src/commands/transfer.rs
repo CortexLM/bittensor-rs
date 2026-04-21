@@ -303,6 +303,30 @@ mod tests {
         assert!(result.is_err(), "transfer multiple with no wallet should fail");
     }
 
+    #[tokio::test]
+    async fn transfer_zero_amount_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_transfer(&config, "5Dest", "0", Some("pw".into())).await;
+        assert!(result.is_err(), "transfer with zero amount and no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn transfer_multiple_zero_amounts_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_transfer_multiple(&config, "5A,5B", "0,0", Some("pw".into())).await;
+        assert!(result.is_err(), "transfer multiple with zero amounts and no wallet should fail");
+    }
+
     #[test]
     fn parse_multiple_destinations_amounts() {
         let dests: Vec<&str> = "5A,5B,5C".split(',').map(|s| s.trim()).collect();
@@ -318,5 +342,45 @@ mod tests {
         let dests: Vec<&str> = "5A,5B".split(',').map(|s| s.trim()).collect();
         let amts: Vec<&str> = "1.0,2.0,3.0".split(',').map(|s| s.trim()).collect();
         assert_ne!(dests.len(), amts.len());
+    }
+
+    // --- Created-wallet chain-fails tests (exercise keypair decryption path) ---
+
+    async fn setup_wallet(name: &str, dir: &std::path::Path) -> Config {
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: name.to_string(),
+            wallet_path: dir.to_path_buf(),
+        };
+        let mut wallet =
+            bittensor_wallet::prelude::Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        config
+    }
+
+    #[tokio::test]
+    async fn transfer_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = setup_wallet("xfer-test", dir.path()).await;
+        let result = exec_transfer(&config, "5DestFake", "1.0", Some("".into())).await;
+        assert!(result.is_err(), "transfer with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn transfer_multiple_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = setup_wallet("xfer-multi", dir.path()).await;
+        let result = exec_transfer_multiple(&config, "5A,5B", "1.0,2.0", Some("".into())).await;
+        assert!(result.is_err(), "transfer multiple with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn transfer_multiple_mismatched_with_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = setup_wallet("xfer-mismatch", dir.path()).await;
+        // This exercises the bail path after wallet decryption succeeds
+        let result = exec_transfer_multiple(&config, "5A,5B,5C", "1.0,2.0", Some("".into())).await;
+        assert!(result.is_err(), "transfer multiple with mismatched counts should fail");
     }
 }

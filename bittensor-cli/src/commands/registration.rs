@@ -391,6 +391,7 @@ fn parse_comma_u16(input: &str) -> Result<Vec<u16>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bittensor_wallet::prelude::Wallet;
     use tempfile::TempDir;
 
     #[test]
@@ -647,5 +648,134 @@ mod tests {
         };
         let result = exec_root_register(&config, Some("pw".into())).await;
         assert!(result.is_err(), "root_register with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn root_set_weights_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_set_weights(&config, 1, "1,2", "10,20", 0, Some("pw".into())).await;
+        assert!(result.is_err(), "root set_weights with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn root_claim_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_claim_root(&config, "1,3", Some("pw".into())).await;
+        assert!(result.is_err(), "root claim with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn root_get_weights_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_get_weights(&config, 1, 5).await;
+        assert!(result.is_err(), "root get_weights with no local node should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_overflow() {
+        assert!(parse_comma_u16("65536").is_err(), "u16 overflow should fail");
+        assert!(parse_comma_u16("1,70000").is_err(), "u16 overflow in list should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_trailing_comma() {
+        let vals = parse_comma_u16("1,2,").unwrap();
+        assert_eq!(vals, vec![1, 2], "trailing comma should be ignored");
+    }
+
+    #[test]
+    fn parse_comma_u16_leading_comma() {
+        let vals = parse_comma_u16(",1,2").unwrap();
+        assert_eq!(vals, vec![1, 2], "leading comma should be ignored");
+    }
+
+    #[tokio::test]
+    async fn register_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_register(&config, 1, Some("".into())).await;
+        assert!(result.is_err(), "register with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn burned_register_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_burned_register(&config, 1, Some("".into())).await;
+        assert!(result.is_err(), "burned_register with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn root_register_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_root_register(&config, Some("".into())).await;
+        assert!(result.is_err(), "root_register with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn root_set_weights_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_set_weights(&config, 1, "1,2", "10,20", 0, Some("".into())).await;
+        assert!(result.is_err(), "root set_weights with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn root_claim_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_claim_root(&config, "1,3", Some("".into())).await;
+        assert!(result.is_err(), "root claim with created wallet but no chain should fail");
     }
 }

@@ -233,4 +233,115 @@ mod tests {
         let v: u64 = 0;
         assert_eq!(v, 0);
     }
+
+    #[tokio::test]
+    async fn get_metagraph_returns_defaults_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_metagraph(&client, 0u16).await;
+        assert!(result.is_ok(), "get_metagraph should succeed: {:?}", result.err());
+        let info = result.unwrap();
+        assert_eq!(info.netuid, 0);
+        assert_eq!(info.n, 0);
+        assert_eq!(info.stake.to_rao(), 0);
+        assert_eq!(info.total_issuance.to_rao(), 0);
+        assert_eq!(info.total_weight, 0);
+        assert_eq!(info.total_bond, 0);
+    }
+
+    #[tokio::test]
+    async fn get_selective_metagraph_returns_same_as_metagraph() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_selective_metagraph(&client, 0u16).await;
+        assert!(result.is_ok(), "get_selective_metagraph should succeed: {:?}", result.err());
+        let info = result.unwrap();
+        assert_eq!(info.netuid, 0);
+    }
+
+    #[tokio::test]
+    async fn get_subnet_owner_cut_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_subnet_owner_cut(&client).await;
+        assert!(result.is_ok(), "get_subnet_owner_cut should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 11796);
+    }
+
+    #[tokio::test]
+    async fn get_root_prop_returns_some_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_root_prop(&client, 0u16).await;
+        assert!(result.is_ok(), "get_root_prop should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn get_first_emission_block_number_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_first_emission_block_number(&client, 0u16).await;
+        assert!(
+            result.is_ok(),
+            "get_first_emission_block_number should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_server_emission_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_pending_server_emission(&client, 0u16).await;
+        assert!(result.is_ok(), "get_pending_server_emission should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_validator_emission_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_pending_validator_emission(&client, 0u16).await;
+        assert!(
+            result.is_ok(),
+            "get_pending_validator_emission should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_root_alpha_divs_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_pending_root_alpha_divs(&client, 0u16).await;
+        assert!(result.is_ok(), "get_pending_root_alpha_divs should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_owner_cut_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_pending_owner_cut(&client, 0u16).await;
+        assert!(result.is_ok(), "get_pending_owner_cut should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_blocks_since_last_step_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_blocks_since_last_step(&client, 0u16).await;
+        assert!(result.is_ok(), "get_blocks_since_last_step should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_last_mechanism_step_block_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_last_mechanism_step_block(&client, 0u16).await;
+        assert!(result.is_ok(), "get_last_mechanism_step_block should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_recycle_or_burn_returns_some_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_recycle_or_burn(&client, 0u16).await;
+        assert!(result.is_ok(), "get_recycle_or_burn should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_some());
+    }
 }

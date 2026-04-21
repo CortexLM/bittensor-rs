@@ -664,4 +664,201 @@ mod tests {
         let v: Vec<u16> = Vec::new();
         assert!(v.is_empty());
     }
+
+    #[tokio::test]
+    async fn get_neuron_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_neuron(&client, 1u16, 0u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_neuron_lite_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_neuron_lite(&client, 1u16, 0u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_uid_for_hotkey_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_uid_for_hotkey(&client, &hotkey, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_neuron_for_pubkey_and_subnet_returns_none_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_neuron_for_pubkey_and_subnet(&client, &hotkey, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn get_neuron_count_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_neuron_count(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_max_neurons_returns_metadata_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_max_neurons(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 256);
+    }
+
+    #[tokio::test]
+    async fn get_neurons_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_neurons(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<NeuronInfoLite>::new());
+    }
+
+    #[tokio::test]
+    async fn get_rank_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_rank(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_trust_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_trust(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_consensus_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_consensus(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_incentive_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_incentive(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_dividends_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_dividends(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_emission_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_emission(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u64>::new());
+    }
+
+    #[tokio::test]
+    async fn get_active_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_active(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<bool>::new());
+    }
+
+    #[tokio::test]
+    async fn get_last_update_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_last_update(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u64>::new());
+    }
+
+    #[tokio::test]
+    async fn get_validator_permit_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_validator_permit(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<bool>::new());
+    }
+
+    #[tokio::test]
+    async fn get_validator_trust_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_validator_trust(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_bonds_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_bonds(&client, 1u16, 0u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<(u16, u16)>::new());
+    }
+
+    #[tokio::test]
+    async fn get_block_at_registration_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_block_at_registration(&client, 1u16, 0u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_uids_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = get_uids(&client, 1u16, &hotkey).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_keys_returns_zero_account_for_empty_mock() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_keys(&client, 1u16, 0u16).await;
+        assert!(result.is_ok());
+        let val = result.unwrap();
+        assert!(val.is_some());
+        assert_eq!(val.unwrap().0, [0u8; 32]);
+    }
+
+    #[tokio::test]
+    async fn get_loaded_emission_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_loaded_emission(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<(subxt::utils::AccountId32, u64, u64)>::new());
+    }
+
+    #[tokio::test]
+    async fn get_pruning_scores_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_pruning_scores(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
+
+    #[tokio::test]
+    async fn get_stake_weight_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = get_stake_weight(&client, 1u16).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Vec::<u16>::new());
+    }
 }

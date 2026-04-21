@@ -437,3 +437,218 @@ fn ip_from_u64(ip: u64) -> String {
     let d = ip as u8;
     format!("{a}.{b}.{c}.{d}")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dendrite_config_new_defaults() {
+        let dc = DendriteConfig::new(12, 100, None);
+        assert_eq!(dc.timeout_secs(), 12);
+        assert_eq!(dc.max_connections(), 100);
+        assert_eq!(dc.hotkey_seed(), None);
+    }
+
+    #[test]
+    fn dendrite_config_new_custom() {
+        let dc = DendriteConfig::new(30, 50, Some("abcdef".to_string()));
+        assert_eq!(dc.timeout_secs(), 30);
+        assert_eq!(dc.max_connections(), 50);
+        assert_eq!(dc.hotkey_seed(), Some("abcdef"));
+    }
+
+    #[test]
+    fn dendrite_config_setters() {
+        let mut dc = DendriteConfig::new(12, 100, None);
+        dc.set_timeout_secs(60);
+        dc.set_max_connections(200);
+        dc.set_hotkey_seed(Some("seed".to_string()));
+        assert_eq!(dc.timeout_secs(), 60);
+        assert_eq!(dc.max_connections(), 200);
+        assert_eq!(dc.hotkey_seed(), Some("seed"));
+    }
+
+    #[test]
+    fn dendrite_config_set_hotkey_seed_to_none() {
+        let mut dc = DendriteConfig::new(12, 100, Some("old".to_string()));
+        dc.set_hotkey_seed(None);
+        assert_eq!(dc.hotkey_seed(), None);
+    }
+
+    #[test]
+    fn dendrite_config_repr() {
+        let dc = DendriteConfig::new(12, 100, None);
+        let repr = dc.__repr__();
+        assert!(repr.contains("DendriteConfig"));
+        assert!(repr.contains("12"));
+        assert!(repr.contains("100"));
+    }
+
+    #[test]
+    fn dendrite_config_clone() {
+        let dc = DendriteConfig::new(12, 100, Some("seed".to_string()));
+        let dc2 = dc.clone();
+        assert_eq!(dc.timeout_secs(), dc2.timeout_secs());
+        assert_eq!(dc.max_connections(), dc2.max_connections());
+        assert_eq!(dc.hotkey_seed(), dc2.hotkey_seed());
+    }
+
+    #[test]
+    fn dendrite_new_default_config() {
+        let d = Dendrite::new(None);
+        assert_eq!(d.__repr__(), "Dendrite(timeout_secs=12, max_connections=100)");
+    }
+
+    #[test]
+    fn dendrite_new_custom_config() {
+        let dc = DendriteConfig::new(30, 50, None);
+        let d = Dendrite::new(Some(dc));
+        assert_eq!(d.__repr__(), "Dendrite(timeout_secs=30, max_connections=50)");
+    }
+
+    #[test]
+    fn dendrite_repr() {
+        let dc = DendriteConfig::new(99, 1, None);
+        let d = Dendrite::new(Some(dc));
+        let repr = d.__repr__();
+        assert!(repr.contains("Dendrite"));
+        assert!(repr.contains("99"));
+    }
+
+    #[test]
+    fn ip_from_u64_localhost() {
+        let ip = ip_from_u64(2130706433);
+        assert_eq!(ip, "127.0.0.1");
+    }
+
+    #[test]
+    fn ip_from_u64_zero() {
+        let ip = ip_from_u64(0);
+        assert_eq!(ip, "0.0.0.0");
+    }
+
+    #[test]
+    fn ip_from_u64_class_a() {
+        let ip = ip_from_u64(16777343);
+        assert_eq!(ip, "1.0.0.127");
+    }
+
+    #[test]
+    fn build_axon_url_http() {
+        let ai = RustAxonInfo {
+            ip: 0,
+            port: 8080,
+            ip_type: 4,
+            protocol: 0,
+            version: 0,
+            hotkey: String::new(),
+            coldkey: String::new(),
+        };
+        let url = build_axon_url(&ai);
+        assert!(url.starts_with("http://"));
+        assert!(url.contains("8080"));
+    }
+
+    #[test]
+    fn build_axon_url_https() {
+        let ai = RustAxonInfo {
+            ip: 2130706433,
+            port: 443,
+            ip_type: 4,
+            protocol: 1,
+            version: 0,
+            hotkey: String::new(),
+            coldkey: String::new(),
+        };
+        let url = build_axon_url(&ai);
+        assert!(url.starts_with("https://"));
+        assert!(url.contains("443"));
+    }
+
+    #[test]
+    fn parse_keypair_valid_seed() {
+        let seed = "0000000000000000000000000000000000000000000000000000000000000001";
+        let result = parse_keypair(seed);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_keypair_invalid_hex() {
+        let result = parse_keypair("zzzz");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_keypair_short_seed() {
+        let result = parse_keypair("aabb");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_axon_url_ip_zero_uses_localhost() {
+        let ai = RustAxonInfo {
+            ip: 0,
+            port: 9999,
+            ip_type: 4,
+            protocol: 0,
+            version: 0,
+            hotkey: String::new(),
+            coldkey: String::new(),
+        };
+        let url = build_axon_url(&ai);
+        assert!(url.contains("127.0.0.1"));
+        assert_eq!(url, "http://127.0.0.1:9999");
+    }
+
+    #[test]
+    fn build_axon_url_nonzero_ip() {
+        let ai = RustAxonInfo {
+            ip: 16885943,
+            port: 443,
+            ip_type: 4,
+            protocol: 0,
+            version: 0,
+            hotkey: String::new(),
+            coldkey: String::new(),
+        };
+        let url = build_axon_url(&ai);
+        assert!(url.starts_with("http://"));
+        assert!(url.contains(":443"));
+        assert!(!url.contains("127.0.0.1"));
+    }
+
+    #[test]
+    fn build_axon_url_protocol_one_is_https() {
+        let ai = RustAxonInfo {
+            ip: 0,
+            port: 8080,
+            ip_type: 4,
+            protocol: 1,
+            version: 0,
+            hotkey: String::new(),
+            coldkey: String::new(),
+        };
+        let url = build_axon_url(&ai);
+        assert!(url.starts_with("https://"));
+    }
+
+    #[test]
+    fn ip_from_u64_max_octets() {
+        let ip = ip_from_u64(0xFF_FF_FF_FF);
+        assert_eq!(ip, "255.255.255.255");
+    }
+
+    #[test]
+    fn ip_from_u64_mixed_octets() {
+        let ip = ip_from_u64(0xC0_A8_01_01);
+        assert_eq!(ip, "192.168.1.1");
+    }
+
+    #[test]
+    fn parse_keypair_valid_seed_with_0x_prefix() {
+        let seed = "0x0000000000000000000000000000000000000000000000000000000000000001";
+        let result = parse_keypair(seed);
+        assert!(result.is_ok());
+    }
+}

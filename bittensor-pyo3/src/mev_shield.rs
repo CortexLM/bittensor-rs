@@ -111,10 +111,43 @@ mod tests {
         assert!(hex_decode("xyz0").is_err());
     }
 
+    #[test]
+    fn test_hex_decode_empty_string() {
+        let result = hex_decode("").unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_hex_decode_single_byte() {
+        let result = hex_decode("ff").unwrap();
+        assert_eq!(result, vec![0xff]);
+    }
+
+    #[test]
+    fn test_hex_decode_with_prefix_empty() {
+        let result = hex_decode("0x").unwrap();
+        assert!(result.is_empty());
+    }
+
     #[cfg(feature = "mev-shield")]
     #[test]
     fn test_mev_shield_repr() {
         let shield = MevShield::new();
         assert_eq!(shield.__repr__(), "MevShield()");
+    }
+
+    #[cfg(feature = "mev-shield")]
+    #[test]
+    fn test_mev_shield_new() {
+        let _shield = MevShield::new();
+    }
+
+    #[cfg(feature = "mev-shield")]
+    #[test]
+    fn test_mev_shield_encrypt_returns_error() {
+        let shield = MevShield::new();
+        let result = shield.encrypt_extrinsic("0xdeadbeef", "password");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("NextKey"));
     }
 }

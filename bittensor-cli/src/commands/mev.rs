@@ -135,4 +135,38 @@ mod tests {
         let bytes = hex::decode("0x1234".trim_start_matches("0x")).unwrap();
         assert_eq!(bytes, vec![0x12, 0x34]);
     }
+
+    #[test]
+    fn prompt_password_returns_provided_value() {
+        let result = prompt_password(Some("my-pass".to_string()));
+        assert_eq!(result.unwrap(), "my-pass");
+    }
+
+    #[tokio::test]
+    async fn exec_submit_encrypted_no_wallet_fails() {
+        let dir = tempfile::TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_submit_encrypted(&config, "0x1234", Some("pass".to_string())).await;
+        assert!(result.is_err(), "submit-encrypted with no wallet should fail");
+    }
+
+    #[test]
+    fn parse_mev_submit_encrypted_no_password() {
+        use clap::Parser;
+        let cli = crate::Cli::try_parse_from(["btcli-rs", "mev", "submit-encrypted", "0xdeadbeef"])
+            .unwrap();
+        match cli.command {
+            crate::Command::Mev {
+                command: MevCommand::SubmitEncrypted { extrinsic_hex, password },
+            } => {
+                assert_eq!(extrinsic_hex, "0xdeadbeef");
+                assert!(password.is_none());
+            }
+            other => panic!("expected Mev::SubmitEncrypted, got {other:?}"),
+        }
+    }
 }

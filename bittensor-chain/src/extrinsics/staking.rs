@@ -197,4 +197,22 @@ mod tests {
             1_000_000_000u64,
         );
     }
+
+    #[test]
+    fn add_stake_multiple_call_construction() {
+        let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
+        let _call = subtensor::tx().subtensor_module().add_stake(hotkey, 1u16, 1_000_000_000u64);
+    }
+
+    #[test]
+    fn unstake_multiple_call_construction() {
+        let hotkey = subxt::utils::AccountId32::from([2u8; 32]);
+        let _call = subtensor::tx().subtensor_module().remove_stake(hotkey, 1u16, 500_000_000u64);
+    }
+
+    #[test]
+    fn set_auto_stake_call_construction() {
+        let hotkey = subxt::utils::AccountId32::from([1u8; 32]);
+        let _call = subtensor::tx().subtensor_module().set_coldkey_auto_stake_hotkey(1u16, hotkey);
+    }
 }

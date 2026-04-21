@@ -238,6 +238,7 @@ pub(crate) fn parse_comma_u16(input: &str) -> Result<Vec<u16>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bittensor_wallet::prelude::Wallet;
     use tempfile::TempDir;
 
     #[test]
@@ -368,5 +369,105 @@ mod tests {
             exec_set_weights(&config, 1, "1,2", "10,20", 0, None, None, true, Some("pw".into()))
                 .await;
         assert!(result.is_err(), "set_weights with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn set_weights_mismatched_dests_weights_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result =
+            exec_set_weights(&config, 1, "1,2,3", "10,20", 0, None, None, true, Some("pw".into()))
+                .await;
+        assert!(result.is_err(), "set_weights with mismatched dests/weights should fail");
+    }
+
+    #[tokio::test]
+    async fn get_weights_all_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_get_weights(&config, 1, None).await;
+        assert!(result.is_err(), "get_weights with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn get_weights_by_uid_local_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_get_weights(&config, 1, Some(5)).await;
+        assert!(result.is_err(), "get_weights by uid with no local node should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_overflow() {
+        assert!(parse_comma_u16("65536").is_err(), "u16 overflow should fail");
+        assert!(parse_comma_u16("1,70000").is_err(), "u16 overflow in list should fail");
+    }
+
+    #[test]
+    fn parse_comma_u16_trailing_comma() {
+        let vals = parse_comma_u16("1,2,").unwrap();
+        assert_eq!(vals, vec![1, 2], "trailing comma should be ignored");
+    }
+
+    #[test]
+    fn parse_comma_u16_leading_comma() {
+        let vals = parse_comma_u16(",1,2").unwrap();
+        assert_eq!(vals, vec![1, 2], "leading comma should be ignored");
+    }
+
+    #[tokio::test]
+    async fn set_weights_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result =
+            exec_set_weights(&config, 1, "1,2", "10,20", 0, None, None, true, Some("".into()))
+                .await;
+        assert!(result.is_err(), "set_weights with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn root_set_weights_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "test-wallet".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let wallet_dir_str = config.wallet_dir().to_string_lossy().to_string();
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_set_weights(
+            &config,
+            1,
+            "1,2",
+            "10,20",
+            0,
+            Some(config.wallet_name.clone()),
+            Some(wallet_dir_str),
+            true,
+            Some("".into()),
+        )
+        .await;
+        assert!(result.is_err(), "root set_weights with created wallet but no chain should fail");
     }
 }

@@ -102,4 +102,54 @@ mod tests {
         let v: u16 = 0;
         assert_eq!(v, 0);
     }
+
+    #[tokio::test]
+    async fn get_children_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_children(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_children should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_childkey_take_returns_zero() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_childkey_take(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_childkey_take should succeed: {:?}", result.err());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_pending_child_key_cooldown_returns_default() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let result = super::get_pending_child_key_cooldown(&client).await;
+        assert!(
+            result.is_ok(),
+            "get_pending_child_key_cooldown should succeed: {:?}",
+            result.err()
+        );
+        assert_eq!(result.unwrap(), 7200);
+    }
+
+    #[tokio::test]
+    async fn get_parent_keys_returns_empty_vec() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_parent_keys(&client, &hotkey, 0u16).await;
+        assert!(result.is_ok(), "get_parent_keys should succeed: {:?}", result.err());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_pending_child_keys_returns_defaults() {
+        let client = crate::test_utils::mock_client_empty().await;
+        let hotkey = subxt::utils::AccountId32::from([0u8; 32]);
+        let result = super::get_pending_child_keys(&client, 0u16, &hotkey).await;
+        assert!(result.is_ok(), "get_pending_child_keys should succeed: {:?}", result.err());
+        let (keys, cooldown) = result.unwrap();
+        assert!(keys.is_empty());
+        assert_eq!(cooldown, 0);
+    }
 }

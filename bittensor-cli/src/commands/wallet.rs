@@ -1296,6 +1296,82 @@ mod tests {
     }
 
     #[test]
+    fn prompt_password_returns_provided_value() {
+        let result = prompt_password(Some("my-secret".to_string()));
+        assert_eq!(result.unwrap(), "my-secret");
+    }
+
+    #[tokio::test]
+    async fn balance_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_balance(&config, None, false).await;
+        assert!(result.is_err(), "balance with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn balance_all_no_wallets_dir_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_balance(&config, None, true).await;
+        assert!(result.is_err(), "balance --all with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn overview_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_overview(&config, None, false).await;
+        assert!(result.is_err(), "overview with no local node should fail");
+    }
+
+    #[tokio::test]
+    async fn overview_all_no_wallets_dir_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_overview(&config, None, true).await;
+        assert!(result.is_err(), "overview --all with no local node should fail");
+    }
+
+    #[test]
+    fn parse_wallet_list_command() {
+        use clap::Parser;
+        let cli = crate::Cli::try_parse_from(["btcli-rs", "wallet", "list"]).unwrap();
+        match cli.command {
+            crate::Command::Wallet { command: WalletCommand::List } => {}
+            other => panic!("expected Wallet::List, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_wallet_show_command() {
+        use clap::Parser;
+        let cli = crate::Cli::try_parse_from(["btcli-rs", "wallet", "show"]).unwrap();
+        match cli.command {
+            crate::Command::Wallet { command: WalletCommand::Show { password } } => {
+                assert!(password.is_none());
+            }
+            other => panic!("expected Wallet::Show, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn wallet_command_all_variants_parseable() {
         // Verify every WalletCommand variant name is recognized by clap
         let variants = [
@@ -1328,5 +1404,158 @@ mod tests {
             let result = crate::Cli::try_parse_from(args);
             assert!(result.is_ok(), "variant '{v}' should be parseable");
         }
+    }
+
+    #[tokio::test]
+    async fn swap_coldkey_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_swap_coldkey(&config, "5FakeAddr", Some("pw".into())).await;
+        assert!(result.is_err(), "swap coldkey with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn create_hotkey_derived_no_wallet_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_create_hotkey(&config, "miner", Some("pw".into()), false).await;
+        assert!(result.is_err(), "create-hotkey derived with no wallet should fail");
+    }
+
+    #[tokio::test]
+    async fn regen_coldkeypub_valid_address_succeeds() {
+        let dir = TempDir::new().expect("tempdir");
+        let setup_config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "addr-source".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        exec_create(&setup_config, true, None).await.expect("create source wallet");
+
+        let valid_addr = std::fs::read_to_string(setup_config.wallet_dir().join("coldkeypub"))
+            .expect("read coldkeypub")
+            .trim()
+            .to_string();
+
+        let dir2 = TempDir::new().expect("tempdir2");
+        let config2 = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "regen-pub-test".to_string(),
+            wallet_path: dir2.path().to_path_buf(),
+        };
+        let result = exec_regen_coldkeypub(&config2, &valid_addr).await;
+        assert!(result.is_ok(), "regen-coldkeypub with valid address should succeed");
+
+        let written = std::fs::read_to_string(config2.wallet_dir().join("coldkeypub"))
+            .expect("read written coldkeypub");
+        assert_eq!(written.trim(), valid_addr, "written coldkeypub should match input address");
+    }
+
+    #[tokio::test]
+    async fn regen_coldkey_valid_mnemonic_yes_succeeds() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "regen-ck-test".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        let mnemonic = wallet.create_coldkey("").expect("create coldkey for mnemonic");
+        let mnemonic_str = mnemonic.to_string();
+
+        let dir2 = TempDir::new().expect("tempdir2");
+        let config2 = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "regen-ck-test".to_string(),
+            wallet_path: dir2.path().to_path_buf(),
+        };
+        let result = exec_regen_coldkey(&config2, &mnemonic_str, Some("".to_string()), true).await;
+        assert!(result.is_ok(), "regen-coldkey with valid mnemonic and --yes should succeed");
+
+        let orig_addr = std::fs::read_to_string(config.wallet_dir().join("coldkeypub"))
+            .expect("read orig coldkeypub");
+        let regen_addr = std::fs::read_to_string(config2.wallet_dir().join("coldkeypub"))
+            .expect("read regen coldkeypub");
+        assert_eq!(
+            orig_addr.trim(),
+            regen_addr.trim(),
+            "regenerated coldkeypub should match original"
+        );
+    }
+
+    #[tokio::test]
+    async fn regen_hotkey_valid_mnemonic_succeeds() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "regen-hk-test".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result = exec_regen_hotkey(
+            &config,
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+            "test-hk",
+        )
+        .await;
+        assert!(result.is_ok(), "regen-hotkey with valid mnemonic should succeed");
+
+        let hotkey_path = config.wallet_dir().join("hotkeys").join("test-hk");
+        assert!(hotkey_path.exists(), "regen hotkey file should exist");
+    }
+
+    #[tokio::test]
+    async fn regen_coldkey_invalid_mnemonic_yes_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "ghost".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let result =
+            exec_regen_coldkey(&config, "invalid mnemonic words here", Some("pw".into()), true)
+                .await;
+        assert!(result.is_err(), "regen-coldkey with invalid mnemonic should fail");
+    }
+
+    #[tokio::test]
+    async fn swap_coldkey_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "swap-test".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_swap_coldkey(&config, "5FakeNewColdkey", Some("".into())).await;
+        assert!(result.is_err(), "swap coldkey with created wallet but no chain should fail");
+    }
+
+    #[tokio::test]
+    async fn create_hotkey_derived_created_wallet_chain_fails() {
+        let dir = TempDir::new().expect("tempdir");
+        let config = Config {
+            network: bittensor_core::config::NetworkConfig::local(),
+            wallet_name: "hk-derived-test".to_string(),
+            wallet_path: dir.path().to_path_buf(),
+        };
+        let mut wallet = Wallet::with_path(&config.wallet_name, config.wallet_dir());
+        wallet.create_coldkey("").expect("create coldkey");
+        wallet.create_hotkey().expect("create hotkey");
+        let result = exec_create_hotkey(&config, "derived-hk", Some("".into()), false).await;
+        assert!(result.is_ok(), "create-hotkey derived with created wallet should succeed");
+        assert!(
+            config.wallet_dir().join("hotkeys").join("derived-hk").exists(),
+            "derived hotkey file should exist"
+        );
     }
 }
