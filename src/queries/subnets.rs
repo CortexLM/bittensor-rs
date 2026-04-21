@@ -1,0 +1,756 @@
+use crate::chain::BittensorClient;
+use crate::core::constants::RAOPERTAO;
+use crate::types::SubnetInfo;
+use crate::utils::balance_newtypes::Rao;
+use crate::utils::decoders::{
+    decode_account_id32, decode_bool, decode_u128, decode_u16, decode_u64,
+};
+use anyhow::Result;
+use parity_scale_codec::Encode;
+use subxt::dynamic::Value;
+
+const SUBTENSOR_MODULE: &str = "SubtensorModule";
+
+/// Check if commit-reveal mechanism is enabled for a subnet
+pub async fn commit_reveal_enabled(client: &BittensorClient, netuid: u16) -> Result<bool> {
+    match client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "CommitRevealWeightsEnabled",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await
+    {
+        Ok(Some(val)) => {
+            let result = decode_bool(&val).unwrap_or(false);
+            tracing::info!(
+                "CommitRevealWeightsEnabled for netuid {}: {} (raw value: {:?})",
+                netuid,
+                result,
+                val
+            );
+            Ok(result)
+        }
+        Ok(None) => {
+            // Storage key doesn't exist - this likely means commit-reveal IS enabled
+            // because on newer chains, the default is true
+            tracing::warn!(
+                "CommitRevealWeightsEnabled storage not found for netuid {} - defaulting to TRUE (safe default)",
+                netuid
+            );
+            Ok(true)
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to query CommitRevealWeightsEnabled for netuid {}: {} - defaulting to TRUE (safe default)",
+                netuid, e
+            );
+            Ok(true)
+        }
+    }
+}
+
+/// Get the number of mechanisms for a subnet
+/// Returns the count of mechanisms (0 to count-1 are valid mechanism IDs)
+/// Default is 1 (only mechanism 0 exists)
+pub async fn get_mechanism_count(client: &BittensorClient, netuid: u16) -> Result<u8> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MechanismCountCurrent",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        // MechId is stored as u8
+        if let Some(count) = val.as_u128() {
+            return Ok(count as u8);
+        }
+    }
+    // Default is 1 mechanism (mechanism 0)
+    Ok(1)
+}
+
+/// Get the recycle/burn amount for a subnet
+pub async fn recycle(client: &BittensorClient, netuid: u16) -> Result<Option<u128>> {
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Burn", vec![Value::u128(netuid as u128)])
+        .await?
+    {
+        return Ok(decode_u128(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Get the reveal period epochs for a subnet
+pub async fn get_subnet_reveal_period_epochs(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "RevealPeriodEpochs",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Check if a subnet is active (FirstEmissionBlockNumber > 0)
+pub async fn is_subnet_active(client: &BittensorClient, netuid: u16) -> Result<bool> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "FirstEmissionBlockNumber",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        if let Ok(block_num) = decode_u64(&val) {
+            return Ok(block_num > 0);
+        }
+    }
+    Ok(false)
+}
+
+/// Get all subnet infos using storage
+pub async fn all_subnets(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
+    let total = total_subnets(client).await.unwrap_or(0);
+    let mut res = Vec::with_capacity(total as usize);
+    for netuid in 0u16..total {
+        if let Some(info) = subnet_info(client, netuid).await? {
+            res.push(info);
+        }
+    }
+    Ok(res)
+}
+
+/// Get subnet information using targeted storage reads
+pub async fn subnet_info(client: &BittensorClient, netuid: u16) -> Result<Option<SubnetInfo>> {
+    // If subnet does not exist, return None
+    if !subnet_exists(client, netuid).await.unwrap_or(false) {
+        return Ok(None);
+    }
+
+    // neuron_count from SubnetworkN
+    let n_val = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?;
+    let neuron_count: u64 = n_val.and_then(|v| decode_u64(&v).ok()).unwrap_or(0);
+
+    let mut emission_rao = Rao::ZERO;
+    for uid in 0..neuron_count {
+        if let Some(ev) = client
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "Emission",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
+            .await?
+        {
+            if let Ok(e) = decode_u64(&ev) {
+                emission_rao = emission_rao.saturating_add(Rao::from(e as u128));
+            }
+        }
+    }
+
+    let mut total_stake = Rao::ZERO;
+    for uid in 0..neuron_count {
+        if let Some(hotkey_val) = client
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "Keys",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
+            .await?
+        {
+            if let Ok(hk) = decode_account_id32(&hotkey_val) {
+                if let Some(alpha_val) = client
+                    .storage_with_keys(
+                        SUBTENSOR_MODULE,
+                        "TotalHotkeyAlpha",
+                        vec![Value::from_bytes(hk.encode()), Value::u128(netuid as u128)],
+                    )
+                    .await?
+                {
+                    if let Ok(a) = decode_u128(&alpha_val) {
+                        total_stake = total_stake.saturating_add(Rao::from(a));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(Some(SubnetInfo {
+        netuid,
+        neuron_count,
+        total_stake,
+        emission: emission_rao,
+        name: None,
+        description: None,
+    }))
+}
+
+/// Get all subnets information
+pub async fn all_subnets_info(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
+    all_subnets(client).await
+}
+
+/// Get neuron count for a subnet
+pub async fn subnet_n(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    let result = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?;
+
+    if let Some(value) = result {
+        Ok(decode_u64(&value).ok())
+    } else {
+        Ok(None)
+    }
+}
+
+/// Extract if subnet exists
+pub async fn subnet_exists(client: &BittensorClient, netuid: u16) -> Result<bool> {
+    let keys = vec![Value::u128(netuid as u128)];
+    let result = client
+        .storage_with_keys(SUBTENSOR_MODULE, "NetworksAdded", keys)
+        .await?;
+    if let Some(value) = result {
+        decode_bool(&value).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to decode NetworksAdded for subnet {}: {}",
+                netuid,
+                e
+            )
+        })
+    } else {
+        Ok(false)
+    }
+}
+
+/// Get total number of subnets
+pub async fn total_subnets(client: &BittensorClient) -> Result<u16> {
+    let total_val = client
+        .storage(SUBTENSOR_MODULE, "TotalNetworks", None)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("TotalNetworks storage entry not found"))?;
+    decode_u16(&total_val).map_err(|e| anyhow::anyhow!("Failed to decode TotalNetworks: {}", e))
+}
+
+/// Hyperparameters
+pub async fn difficulty(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "Difficulty",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn tempo(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "Tempo", vec![Value::u128(netuid as u128)])
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn min_allowed_weights(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MinAllowedWeights",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn max_weight_limit(client: &BittensorClient, netuid: u16) -> Result<Option<u16>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MaxWeightsLimit",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        if let Ok(v) = decode_u64(&val) {
+            return Ok(Some(v as u16));
+        }
+    }
+    Ok(None)
+}
+pub async fn immunity_period(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "ImmunityPeriod",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn weights_rate_limit(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "WeightsSetRateLimit",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn blocks_since_last_step(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "BlocksSinceLastStep",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+pub async fn blocks_since_last_update(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "BlocksSinceLastUpdate",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Subnet owner hotkey
+pub async fn subnet_owner_hotkey(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<sp_core::crypto::AccountId32>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetOwnerHotkey",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_account_id32(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Subnet validator permits
+pub async fn subnet_validator_permits(client: &BittensorClient, netuid: u16) -> Result<Vec<bool>> {
+    let n_val = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetworkN",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?;
+    let n: u64 = n_val.and_then(|v| decode_u64(&v).ok()).unwrap_or(0);
+    let mut permits = Vec::with_capacity(n as usize);
+    for uid in 0..n {
+        let val = client
+            .storage_with_keys(
+                SUBTENSOR_MODULE,
+                "ValidatorPermit",
+                vec![Value::u128(netuid as u128), Value::u128(uid as u128)],
+            )
+            .await?;
+        let is_permit = match val {
+            Some(v) => decode_bool(&v).unwrap_or(false),
+            None => false,
+        };
+        permits.push(is_permit);
+    }
+    Ok(permits)
+}
+
+/// Mechanism info
+pub async fn mechanism_count(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MechanismCountCurrent",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+pub async fn mechanism_emission_split(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MechanismEmissionSplit",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Get subnet burn cost (runtime API)
+pub async fn subnet_burn_cost(client: &BittensorClient, _netuid: u16) -> Result<Rao> {
+    let cost_val = client
+        .runtime_api(
+            "SubnetRegistrationRuntimeApi",
+            "get_network_registration_cost",
+            vec![],
+        )
+        .await?
+        .ok_or_else(|| {
+            anyhow::anyhow!("Failed to retrieve network registration cost from runtime API")
+        })?;
+    let cost_u64 = decode_u64(&cost_val).map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to decode network registration cost (TaoCurrency): {}",
+            e
+        )
+    })?;
+    Ok(Rao::from(cost_u64 as u128))
+}
+
+/// Get subnet Alpha price in RAO via runtime API (SN0 fixed to 1 TAO)
+pub async fn get_subnet_price(client: &BittensorClient, netuid: u16) -> Result<Rao> {
+    if netuid == 0 {
+        return Ok(Rao::from(RAOPERTAO));
+    }
+    if let Some(val) = client
+        .runtime_api(
+            "SwapRuntimeApi",
+            "current_alpha_price",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return crate::utils::decoders::decode_u128(&val)
+            .map(Rao::from)
+            .map_err(|e| anyhow::anyhow!("Failed to decode price: {}", e));
+    }
+    let sqrt_price = super::liquidity::get_current_subnet_price_rao(client, netuid).await?;
+    Ok(Rao::from(sqrt_price))
+}
+
+/// Get prices for all subnets
+pub async fn get_subnet_prices(
+    client: &BittensorClient,
+) -> Result<std::collections::HashMap<u16, Rao>> {
+    let total = total_subnets(client).await.unwrap_or(0);
+    let mut map = std::collections::HashMap::new();
+    for netuid in 0u16..total {
+        map.insert(
+            netuid,
+            get_subnet_price(client, netuid).await.unwrap_or(Rao::ZERO),
+        );
+    }
+    Ok(map)
+}
+
+/// Calculate next epoch start block
+pub async fn get_next_epoch_start_block(
+    client: &BittensorClient,
+    netuid: u16,
+    block: Option<u64>,
+) -> Result<Option<u64>> {
+    let current_block = if let Some(b) = block {
+        b
+    } else {
+        client
+            .block_number()
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?
+    };
+    let blocks_since = super::subnets::blocks_since_last_step(client, netuid)
+        .await?
+        .unwrap_or(0);
+    let tempo = super::subnets::tempo(client, netuid).await?.unwrap_or(0);
+    if current_block > 0 && tempo > 0 {
+        Ok(Some(
+            current_block
+                .saturating_sub(blocks_since)
+                .saturating_add(tempo)
+                .saturating_add(1),
+        ))
+    } else {
+        Ok(None)
+    }
+}
+
+pub async fn subnet_tao_in_emission(client: &BittensorClient, netuid: u16) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetTaoInEmission",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+pub async fn block_emission(client: &BittensorClient) -> Result<Option<u64>> {
+    if let Some(val) = client
+        .storage_with_keys(SUBTENSOR_MODULE, "BlockEmission", vec![])
+        .await?
+    {
+        return Ok(decode_u64(&val).ok());
+    }
+    Ok(None)
+}
+
+pub async fn subnet_emission_percent(client: &BittensorClient, netuid: u16) -> Result<Option<f64>> {
+    let sub = subnet_tao_in_emission(client, netuid).await?.unwrap_or(0);
+    let total = block_emission(client).await?.unwrap_or(0);
+    if total == 0 {
+        return Ok(None);
+    }
+    Ok(Some((sub as f64) / (total as f64)))
+}
+
+/// Get the owner (coldkey) of a subnet
+/// Reads SubtensorModule::SubnetOwner storage
+pub async fn get_subnet_owner(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<Option<sp_core::crypto::AccountId32>> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetOwner",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return Ok(decode_account_id32(&val).ok());
+    }
+    Ok(None)
+}
+
+/// Get the network lock cost (burn cost to register a new subnet)
+/// Reads SubtensorModule::NetworkLockReductionInterval and NetworkMinLockCost
+pub async fn get_subnet_burn_cost(client: &BittensorClient) -> Result<u128> {
+    Ok(subnet_burn_cost(client, 0).await?.as_u128())
+}
+
+/// Get emission value for a specific subnet (RAO per block)
+/// Reads SubtensorModule::EmissionValues storage
+pub async fn get_subnet_emission_value(client: &BittensorClient, netuid: u16) -> Result<u128> {
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "EmissionValues",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        return decode_u128(&val)
+            .map_err(|e| anyhow::anyhow!("Failed to decode EmissionValues: {}", e));
+    }
+    Ok(0)
+}
+
+/// Get all subnets info (alias for all_subnets_info with richer data)
+pub async fn get_all_subnets_info(client: &BittensorClient) -> Result<Vec<SubnetInfo>> {
+    all_subnets_info(client).await
+}
+
+/// Get DynamicInfo for a specific subnet
+pub async fn get_dynamic_info(
+    client: &BittensorClient,
+    netuid: u16,
+) -> Result<crate::types::DynamicInfo> {
+    use crate::types::DynamicInfo;
+
+    let mut info = DynamicInfo::new(netuid);
+
+    if !subnet_exists(client, netuid).await.unwrap_or(false) {
+        return Err(anyhow::anyhow!("Subnet {} does not exist", netuid));
+    }
+
+    info.tempo = tempo(client, netuid).await?.unwrap_or(0);
+    info.blocks_since_last_step = blocks_since_last_step(client, netuid).await?.unwrap_or(0);
+    info.is_active = crate::queries::subnets::is_subnet_active(client, netuid)
+        .await
+        .unwrap_or(false);
+
+    if let Some(n) = subnet_n(client, netuid).await? {
+        info.subnet_n = n;
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "MaxAllowedUids",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        if let Ok(max_n) = decode_u64(&val) {
+            info.max_n = max_n;
+        }
+    }
+
+    info.emission_value = get_subnet_emission_value(client, netuid).await.unwrap_or(0);
+
+    if let Ok(Some(burn)) = recycle(client, netuid).await {
+        info.burn = burn;
+    }
+
+    if let Some(owner_ck) = get_subnet_owner(client, netuid).await? {
+        info.owner_coldkey = crate::utils::ss58::encode_ss58(&owner_ck);
+    }
+
+    if let Some(owner_hk) = subnet_owner_hotkey(client, netuid).await? {
+        info.owner_hotkey = crate::utils::ss58::encode_ss58(&owner_hk);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetAlphaIn",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_in = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetAlphaOut",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_out = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetTAO",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.tao_in = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetEmission",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.alpha_out_emission = decode_u128(&val).unwrap_or(0);
+    }
+
+    info.tao_in_emission = subnet_tao_in_emission(client, netuid).await?.unwrap_or(0) as u128;
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "PendingEmission",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.pending_emission = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetVolume",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.subnet_volume = decode_u128(&val).unwrap_or(0);
+    }
+
+    if let Some(val) = client
+        .storage_with_keys(
+            SUBTENSOR_MODULE,
+            "SubnetMovingPrice",
+            vec![Value::u128(netuid as u128)],
+        )
+        .await?
+    {
+        info.moving_price = decode_u128(&val).unwrap_or(0);
+    }
+
+    info.price = get_subnet_price(client, netuid)
+        .await
+        .unwrap_or(Rao::ZERO)
+        .as_u128();
+
+    Ok(info)
+}
+
+/// Get DynamicInfo for all subnets
+pub async fn get_all_dynamic_info(
+    client: &BittensorClient,
+) -> Result<Vec<crate::types::DynamicInfo>> {
+    let total = total_subnets(client).await.unwrap_or(0);
+    let mut results = Vec::with_capacity(total as usize);
+    for netuid in 0u16..total {
+        if subnet_exists(client, netuid).await.unwrap_or(false) {
+            match get_dynamic_info(client, netuid).await {
+                Ok(info) => results.push(info),
+                Err(_) => continue,
+            }
+        }
+    }
+    Ok(results)
+}
