@@ -1,5 +1,0 @@
-   Doc-tests bittensor_synapse
-   Doc-tests bittensor_tui
-   Doc-tests bittensor_wallet
-   Doc-tests bittensor_wasm
-cargo test: 575 passed, 2 ignored (27 suites, 66.16s)

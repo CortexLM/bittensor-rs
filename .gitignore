@@ -3,3 +3,28 @@
 Cargo.lock
 *.swp
 .DS_Store
+
+# Build artifacts
+*.so
+*.dll
+*.dylib
+
+# Python venvs
+.venv/
+**/.venv/
+
+# Coverage reports
+coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+
+# Internal tooling
+.mission/
+.sisyphus/
+devnet/
+
+# Metadata cache
+metadata/*.scale

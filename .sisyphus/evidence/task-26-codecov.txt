@@ -1,6 +1,0 @@
-coverage:
-  status:
-    project:
-      default:
-        target: 80%
---- codecov.yml: 80% target, excludes generated.rs, wasm, examples, test dirs

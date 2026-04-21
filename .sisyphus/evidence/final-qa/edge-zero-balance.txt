@@ -1,4 +1,0 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_core-d57482845a93ba2e)
-   Doc-tests bittensor_core
-cargo test: 13 passed, 80 filtered out (2 suites, 0.00s)

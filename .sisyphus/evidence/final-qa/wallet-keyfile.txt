@@ -1,9 +1,0 @@
-   Compiling bittensor-wallet v0.1.0 (/root/llm-proxy/bittensor-wallet)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_wallet-77f520e6351f6d36)
-   Doc-tests bittensor_wallet
-cargo test: 8 passed, 27 filtered out (2 suites, 29.48s)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_wallet-77f520e6351f6d36)
-   Doc-tests bittensor_wallet
-cargo test: 8 passed, 27 filtered out (2 suites, 29.40s)

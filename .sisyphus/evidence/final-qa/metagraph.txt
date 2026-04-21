@@ -1,9 +1,0 @@
-   Compiling bittensor-metagraph v0.1.0 (/root/llm-proxy/bittensor-metagraph)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.92s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_metagraph-3a981e158f001192)
-   Doc-tests bittensor_metagraph
-cargo test: 30 passed (2 suites, 0.00s)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_metagraph-3a981e158f001192)
-   Doc-tests bittensor_metagraph
-cargo test: 30 passed (2 suites, 0.00s)

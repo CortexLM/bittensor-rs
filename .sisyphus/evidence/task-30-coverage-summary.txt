@@ -1,2 +1,0 @@
-Filename                                           Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
-TOTAL                                                22141              9036    59.19%        2054               972    52.68%       13189              5533    58.05%           0                 0         -

@@ -1,3 +1,0 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
-     Running unittests src/lib.rs (target/debug/deps/bittensor_chain-9b12523a8cc9602c)
-cargo test: 0 passed, 97 filtered out (1 suite, 0.00s)
